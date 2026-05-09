@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
+from fin_insts.derived.Class_FI_Subscriber import Subscriber
+import asyncio
+
+'''
+for either mode, create class:
+    bestof = BestOf(
+        my_name="BTC venues",
+        objs_list=objs_list,
+        attr_tuples=[
+            ("mkt_bid", "max"),
+            ("mkt_ask", "min"),
+        ],
+        mode="auto",
+    )
+
+for timer mode:
+    for obj in bo_obj_list:
+        tasks.append(asyncio.create_task(obj.run_timer())) 
+
+for auto mode:
+    will be triggered by underlying objects at subscriber.update_unit_data() at end of mkt_data_update()
+'''
+
+
+# In[ ]:
+
+
+class BestOf(Subscriber):
+
+    consensus_attr_list = [
+        'my_pf_name',
+        'numerator_currency',
+        'denominator_currency',
+        'pf_prod_type'
+                        ]
+
+    def __init__(self, 
+                 my_name, 
+                 objs_list, 
+                 attr_tuples, 
+                 mode="timer",
+                 update_interval=1.0):
+
+        super().__init__()
+        
+        self.objs_list = objs_list
+        self.update_interval = update_interval
+        self.mode = mode.lower()     
+        
+        self.my_prod_type = 'best_of'
+        self.my_fi_name = 'b/o ' + my_name
+        
+        for attr in self.consensus_attr_list:
+            setattr(self, attr, self._consensus_attr(attr))
+         
+        self.mkt_attr_tuples = attr_tuples
+        for attr, agg_name in self.mkt_attr_tuples:
+            setattr(self, attr, None)
+            setattr(self, attr + '_name', None)
+
+        self._running = False
+        
+        # Market-update mode
+        if self.mode == "auto":
+            for obj in self.objs_list:
+                obj.subscribers.append(self)
+
+    def _consensus_attr(self, attr_name):
+        values = {getattr(obj, attr_name, None) for obj in self.objs_list}
+        return values.pop() if len(values) == 1 else "multi"
+
+    def update_subscriber_data(self):  # if self.mode == 'auto'
+        self.update_best_of()
+        
+    async def run_timer(self):  # if self.mode == 'timer'
+        self._running = True
+        while self._running:
+            self.update_best_of()
+            await asyncio.sleep(self.update_interval)
+
+    def stop_timer(self):  # if self.mode == 'timer'
+        self._running = False
+
+    def update_best_of(self):
+        for attr, agg_fn in self.mkt_attr_tuples:
+
+            candidates = []
+
+            for obj in self.objs_list:
+                val = getattr(obj, attr, None)
+
+                if val is not None:
+                    candidates.append((val, obj))
+
+            if not candidates:
+                best_amt = None
+                best_name = None
+
+            else:
+                best_amt = agg_fn(val for val, obj in candidates)
+
+                best_name = [
+                    obj.my_fi_name
+                    for val, obj in candidates
+                    if val == best_amt
+                ]
+
+            setattr(self, attr, best_amt)
+            setattr(self, attr + '_name', best_name)
+
+        for subscriber in self.subscribers:
+            subscriber.update_subscriber_data()
+
+        

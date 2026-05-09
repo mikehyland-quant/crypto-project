@@ -1,0 +1,577 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import asyncio, json, websockets, gzip, requests, uuid
+from datetime import datetime, UTC
+from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
+from collections import defaultdict
+
+from ws_feeds.Class_WSFeedBase import WSFeedBase
+
+# =============================================================================
+# EXCHANGE CLASSES
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+    
+class BinanceFeed(WSFeedBase):
+
+    name = "Binance"
+
+    @property
+    def url(self):
+        streams = "/".join(f"{o.platform_symbol}@bookTicker" for o in self.objs)
+        return f"wss://stream.binance.com:9443/stream?streams={streams}"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(self.url) as ws:
+            while True:
+                msg  = json.loads(await ws.recv())
+                data = msg["data"]
+                obj  = self.obj_map.get(data["s"])
+                if not obj:
+                    continue
+                obj.update_mkt_data(
+                    bid_price=float(data["b"]),
+                    ask_price=float(data["a"]),
+                    bid_size =float(data["B"]),
+                    ask_size =float(data["A"]),
+                )
+
+                
+# -----------------------------------------------------------------------------                
+                
+class CoinbaseFeed(WSFeedBase):
+
+    name = "Coinbase"
+    url  = "wss://ws-feed.exchange.coinbase.com"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(self.url) as ws:
+            await ws.send(json.dumps({
+                "type": "subscribe",
+                "channels": [{"name": "ticker", "product_ids": list(self.obj_map.keys())}]
+            }))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("type") != "ticker":
+                    self._handle_error(msg)
+                    continue
+                obj = self.obj_map.get(msg["product_id"])
+                if not obj:
+                    continue
+                obj.update_mkt_data(
+                    bid_price=float(msg["best_bid"]),
+                    bid_size =float(msg["best_bid_size"]),
+                    ask_price=float(msg["best_ask"]),
+                    ask_size =float(msg["best_ask_size"]),
+                )
+
+    def _handle_error(self, msg):
+        if msg.get("type") == "error":
+            print(f"{self.name} error: {msg.get('message')}")
+
+
+# -----------------------------------------------------------------------------
+
+class CoinbaseDerivsFeed(WSFeedBase):
+    name = "Coinbase Derivatives"
+    url = "wss://advanced-trade-ws.coinbase.com"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(
+            self.url,
+            ping_interval=20,
+            ping_timeout=20,
+            max_size=None,
+        ) as ws:
+            self.ws = ws
+            await self._subscribe_all()
+
+            async for raw in ws:
+                msg = json.loads(raw)
+                self._handle_message(msg)
+
+    async def _subscribe_all(self):
+        product_ids = list(self.obj_map.keys())
+        if not product_ids:
+            raise ValueError("No Coinbase derivatives product_ids found")
+
+        await self._send_subscribe("heartbeats")
+        await self._send_subscribe("level2", product_ids)
+        await self._send_subscribe("ticker", product_ids)
+        await self._send_subscribe("market_trades", product_ids)
+
+    def _update_obj_bid_ask(self, product_id, bid_px=None, bid_sz=None, ask_px=None, ask_sz=None, ts=None):
+        ts = ts or self._ts()
+        obj = self.obj_map.get(product_id.upper())
+        if not obj:
+            return
+        obj.update_mkt_data(
+            **{k: v for k, v in {
+                "bid_price": bid_px,
+                "bid_size": bid_sz,
+                "ask_price": ask_px,
+                "ask_size": ask_sz,
+                "timestamp": ts,
+            }.items() if v is not None}
+        )
+
+
+# -----------------------------------------------------------------------------
+
+class DeribitFeed(WSFeedBase):
+
+    name = "Deribit"
+    url  = "wss://www.deribit.com/ws/api/v2"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        channels = [
+            f"ticker.{o.platform_symbol}.100ms"
+            for o in self.objs
+        ]
+
+        sub_msg = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "public/subscribe",
+            "params": {"channels": channels},
+        }
+
+        async with websockets.connect(self.url, ping_interval=20, ping_timeout=20) as ws:
+            await ws.send(json.dumps(sub_msg))
+
+            while True:
+                msg = json.loads(await ws.recv())
+
+                if msg.get("method") != "subscription":
+                    self._handle_error(msg)
+                    continue
+
+                params  = msg.get("params", {})
+                channel = params.get("channel", "")
+                data    = params.get("data", {})
+
+                # channel format: ticker.BTC-27JUN25-90000-C.100ms
+                parts = channel.split(".")
+                if len(parts) < 3:
+                    continue
+
+                symbol = ".".join(parts[1:-1]).upper()
+                obj = self.obj_map.get(symbol)
+                if not obj:
+                    continue
+
+                update_kwargs = {}
+
+                best_bid = data.get("best_bid_price")
+                best_ask = data.get("best_ask_price")
+                best_bid_amount = data.get("best_bid_amount")
+                best_ask_amount = data.get("best_ask_amount")
+
+                if best_bid is not None:
+                    update_kwargs["bid_price"] = float(best_bid)
+                if best_ask is not None:
+                    update_kwargs["ask_price"] = float(best_ask)
+                if best_bid_amount is not None:
+                    update_kwargs["bid_size"] = float(best_bid_amount)
+                if best_ask_amount is not None:
+                    update_kwargs["ask_size"] = float(best_ask_amount)
+
+                if update_kwargs:
+                    obj.update_mkt_data(**update_kwargs)
+
+    def _handle_error(self, msg):
+        if "error" in msg:
+            print(f"{self.name} error: {msg['error']}")
+            
+            
+# -----------------------------------------------------------------------------            
+
+class GeminiFeed(WSFeedBase):
+    """
+    Gemini requires one connection per symbol.
+    Tasks are launched concurrently via asyncio.gather.
+    """
+
+    name = "Gemini"
+
+    def _symbol_url(self, symbol):
+        return f"wss://api.gemini.com/v1/marketdata/{symbol}?top_of_book=true"
+
+    async def stream(self):
+        await asyncio.gather(*(self._connect(obj) for obj in self.objs))
+
+    async def _connect(self, obj):
+        url = self._symbol_url(obj.platform_symbol)
+        while True:
+            try:
+                async with websockets.connect(url) as ws:
+                    while True:
+                        msg = json.loads(await ws.recv())
+                        for event in msg.get("events", []):
+                            if event.get("type") != "change":
+                                continue
+                            side      = event["side"]
+                            price     = float(event["price"])
+                            remaining = float(event["remaining"])
+                            if side == "bid":
+                                obj.update_mkt_data(bid_price=price, bid_size=remaining)
+                            elif side == "ask":
+                                obj.update_mkt_data(ask_price=price, ask_size=remaining)
+            except tuple(self.RECONNECT_DELAYS.keys()) as e:
+                delay = next(v for k, v in self.RECONNECT_DELAYS.items() if isinstance(e, k))
+                print(f"{self.name} WS error ({type(e).__name__}): {e}. Reconnecting in {delay}s...")
+                await asyncio.sleep(delay)
+
+
+# -----------------------------------------------------------------------------
+
+class HuobiFeed(WSFeedBase):
+
+    name = "Huobi"
+    url  = "wss://api.huobi.pro/ws"
+
+    def _make_obj_map(self, objs):
+        return {o.platform_symbol.lower(): o for o in objs}  # Huobi uses lowercase
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(self.url, ping_interval=None) as ws:
+            for sym in self.obj_map:
+                await ws.send(json.dumps({
+                    "sub": f"market.{sym}.bbo",
+                    "id" : f"spot_bbo_{sym}",
+                }))
+            while True:
+                raw = await ws.recv()
+                msg = json.loads(gzip.decompress(raw))
+                if self._handle_heartbeat(ws, msg):
+                    continue
+                tick = msg.get("tick")
+                if not tick:
+                    continue
+                symbol = msg.get("ch", "").split(".")[1].lower()
+                obj    = self.obj_map.get(symbol)
+                if not obj:
+                    continue
+                obj.update_mkt_data(
+                    bid_price=tick["bid"],
+                    bid_size =tick["bidSize"],
+                    ask_price=tick["ask"],
+                    ask_size =tick["askSize"],
+                )
+
+    def _handle_heartbeat(self, ws, msg):
+        if "ping" in msg:
+            asyncio.ensure_future(ws.send(json.dumps({"pong": msg["ping"]})))
+            return True
+        return False
+
+        
+# -----------------------------------------------------------------------------
+
+class KrakenFeed(WSFeedBase):
+
+    name = "Kraken"
+    url  = "wss://ws.kraken.com"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(self.url) as ws:
+            await ws.send(json.dumps({
+                "event"       : "subscribe",
+                "pair"        : list(self.obj_map.keys()),
+                "subscription": {"name": "book", "depth": 10},
+            }))
+            while True:
+                msg = json.loads(await ws.recv())
+                if isinstance(msg, dict):
+                    self._handle_error(msg)
+                    continue
+                if not isinstance(msg, list) or len(msg) < 4:
+                    continue
+                data = msg[1]
+                pair = msg[-1]
+                obj  = self.obj_map.get(pair.upper())
+                if not obj:
+                    continue
+                if 'bs' in data and data['bs']:
+                    p, s = map(float, data['bs'][0][:2])
+                    obj.update_mkt_data(bid_price=p, bid_size=s)
+                if 'as' in data and data['as']:
+                    p, s = map(float, data['as'][0][:2])
+                    obj.update_mkt_data(ask_price=p, ask_size=s)
+                if 'b' in data and data['b']:
+                    p, s = map(float, data['b'][0][:2])
+                    obj.update_mkt_data(bid_price=p, bid_size=s)
+                if 'a' in data and data['a']:
+                    p, s = map(float, data['a'][0][:2])
+                    obj.update_mkt_data(ask_price=p, ask_size=s)
+
+    def _handle_error(self, msg):
+        if msg.get("event") == "subscriptionStatus" and msg.get("status") != "subscribed":
+            print(f"{self.name} subscription error for {msg.get('pair')}: {msg}")
+
+
+# -----------------------------------------------------------------------------
+
+class KrakenDerivsFeed(WSFeedBase):
+
+    name = "Kraken-Derivs"
+    url  = "wss://futures.kraken.com/ws/v1"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        async with websockets.connect(self.url) as ws:
+            await ws.send(json.dumps({
+                "event"      : "subscribe",
+                "feed"       : "ticker",
+                "product_ids": list(self.obj_map.keys()),
+            }))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("feed") != "ticker":
+                    continue
+                symbol = msg.get("product_id", "").upper()
+                obj    = self.obj_map.get(symbol)
+                if not obj:
+                    continue
+                obj.update_mkt_data(
+                    bid_price=float(msg["bid"]),
+                    bid_size =float(msg["bid_size"]),
+                    ask_price=float(msg["ask"]),
+                    ask_size =float(msg["ask_size"]),
+                )
+
+
+# -----------------------------------------------------------------------------
+
+class KuCoinFeed(WSFeedBase):
+
+    name        = "KuCoin"
+    bullet_url  = "https://api.kucoin.com/api/v1/bullet-public"
+    topic_prefix = "/market/ticker:"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        r = requests.post(self.bullet_url, timeout=5)
+        r.raise_for_status()
+        data     = r.json()["data"]
+        token    = data["token"]
+        endpoint = data["instanceServers"][0]["endpoint"]
+        ws_url   = f"{endpoint}?token={token}"
+
+        async with websockets.connect(ws_url, ping_interval=None) as ws:
+            await ws.send(json.dumps({
+                "id"      : str(uuid.uuid4()),
+                "type"    : "subscribe",
+                "topic"   : self.topic_prefix + ",".join(self.obj_map.keys()),
+                "response": True,
+            }))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("type") != "message":
+                    continue
+                topic_parts  = msg.get("topic", "").split(":")
+                topic_prefix = topic_parts[0]
+                symbol       = topic_parts[1] if len(topic_parts) > 1 else ""
+                obj          = self.obj_map.get(symbol)
+                if not obj:
+                    continue
+                data     = msg.get("data", {})
+                bid_key  = "bestBid"      if topic_prefix == "/market/ticker" else "bestBidPrice"
+                ask_key  = "bestAsk"      if topic_prefix == "/market/ticker" else "bestAskPrice"
+                obj.update_mkt_data(
+                    bid_price=float(data[bid_key]),
+                    bid_size =float(data["bestBidSize"]),
+                    ask_price=float(data[ask_key]),
+                    ask_size =float(data["bestAskSize"]),
+                )
+
+
+class KuCoinDerivsFeed(KuCoinFeed):
+
+    name         = "KuCoin-Derivs"
+    bullet_url   = "https://api-futures.kucoin.com/api/v1/bullet-public"
+    topic_prefix = "/contractMarket/ticker:"
+
+
+# -----------------------------------------------------------------------------
+
+class OKXFeed(WSFeedBase):
+
+    name = "OKX"
+    url  = "wss://ws.okx.com:8443/ws/v5/public"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        sub_args = [
+            {
+                "channel" : "books5",
+                "instId"  : o.platform_symbol.upper(),
+                "instType": o.platform_type.upper(),
+            }
+            for o in self.objs
+        ]
+        async with websockets.connect(self.url) as ws:
+            await ws.send(json.dumps({"op": "subscribe", "args": sub_args}))
+            while True:
+                msg       = json.loads(await ws.recv())
+                data_list = msg.get("data")
+                if not data_list:
+                    continue
+                for book in data_list:
+                    symbol = book.get("instId", "").upper()
+                    obj    = self.obj_map.get(symbol)
+                    if not obj:
+                        continue
+                    bids = book.get("bids", [])
+                    asks = book.get("asks", [])
+                    if bids:
+                        bid_price, bid_size = map(float, bids[0][:2])
+                        obj.update_mkt_data(bid_price=bid_price, bid_size=bid_size)
+                    if asks:
+                        ask_price, ask_size = map(float, asks[0][:2])
+                        obj.update_mkt_data(ask_price=ask_price, ask_size=ask_size)
+
+
+# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+class BitfinexFeed(WSFeedBase):
+
+    name = "Bitfinex"
+    url  = "wss://api-pub.bitfinex.com/ws/2"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        best_bid_map = {sym: None for sym in self.obj_map}
+        best_ask_map = {sym: None for sym in self.obj_map}
+
+        async with websockets.connect(self.url) as ws:
+            for sym in self.obj_map:
+                await ws.send(json.dumps({
+                    "event"  : "subscribe",
+                    "channel": "book",
+                    "symbol" : sym,
+                    "prec"   : "P0",
+                    "freq"   : "F0",
+                    "len"    : 25,
+                }))
+            while True:
+                msg = json.loads(await ws.recv())
+                if isinstance(msg, dict):
+                    self._handle_error(msg)
+                    continue
+                if len(msg) < 2 or msg[1] == "hb":
+                    continue
+
+                # Bitfinex does not send symbol in data messages.
+                # With one channel per symbol this is fine; with multi-channel
+                # a chan_id -> symbol map would be needed.
+                data = msg[1]
+                for symbol, obj in self.obj_map.items():
+                    if data is None:
+                        continue
+                    if isinstance(data[0], list):   # snapshot
+                        bids = [x for x in data if x[2] > 0]
+                        asks = [x for x in data if x[2] < 0]
+                        if bids:
+                            p, _, a = max(bids, key=lambda x: x[0])
+                            best_bid_map[symbol] = p
+                            obj.update_mkt_data(bid_price=p, bid_size=a)
+                        if asks:
+                            p, _, a = min(asks, key=lambda x: x[0])
+                            best_ask_map[symbol] = p
+                            obj.update_mkt_data(ask_price=p, ask_size=abs(a))
+                        continue
+                    price, count, amount = data
+                    best_bid = best_bid_map[symbol]
+                    best_ask = best_ask_map[symbol]
+                    if count == 0:
+                        if amount ==  1 and price == best_bid:
+                            best_bid_map[symbol] = None
+                        if amount == -1 and price == best_ask:
+                            best_ask_map[symbol] = None
+                        continue
+                    if amount > 0:
+                        if best_bid is None or price > best_bid:
+                            best_bid_map[symbol] = price
+                            obj.update_mkt_data(bid_price=price, bid_size=amount)
+                    else:
+                        if best_ask is None or price < best_ask:
+                            best_ask_map[symbol] = price
+                            obj.update_mkt_data(ask_price=price, ask_size=abs(amount))
+
+    def _handle_error(self, msg):
+        if msg.get("event") == "error":
+            print(f"{self.name} error: {msg.get('msg')}")
+
+
+# -----------------------------------------------------------------------------
+
+class BybitFeed(WSFeedBase):
+
+    name = "Bybit"
+    url  = "wss://stream.bybit.com/v5/public/spot"
+
+    async def stream(self):
+        await self._reconnect_loop(self._connect)
+
+    async def _connect(self):
+        topics = [f"orderbook.1.{o.platform_symbol}" for o in self.objs]
+        async with websockets.connect(self.url) as ws:
+            await ws.send(json.dumps({"op": "subscribe", "args": topics}))
+            while True:
+                msg       = json.loads(await ws.recv())
+                data_list = msg.get("data")
+                if not data_list:
+                    continue
+                for data in data_list:
+                    topic  = data.get("s") or data.get("topic", "")
+                    symbol = topic.split(".")[-1].upper()
+                    obj    = self.obj_map.get(symbol)
+                    if not obj:
+                        continue
+                    if "b" in data and data["b"]:
+                        bid_price, bid_size = map(float, data["b"][0])
+                        obj.update_mkt_data(bid_price=bid_price, bid_size=bid_size)
+                    if "a" in data and data["a"]:
+                        ask_price, ask_size = map(float, data["a"][0])
+                        obj.update_mkt_data(ask_price=ask_price, ask_size=ask_size)
+
