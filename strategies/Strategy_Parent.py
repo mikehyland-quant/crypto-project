@@ -13,9 +13,9 @@ from datetime import datetime
 
 class Strategy:
     _RULE_FIELD_MAP = {
-        'min_tick': 'minTick',
-        'min_size': 'minSize',
-        'size_increment': 'sizeIncrement',
+        'min_tick'       : 'minTick',
+        'min_size'       : 'minSize',
+        'size_increment' : 'sizeIncrement',
     }
 
     def __init__(self, objs_list=None):
@@ -142,6 +142,8 @@ class Strategy:
         
 
     def place_order(self, obj, output_price, input_price, off_mkt=False):  # very literal to improve speed
+        # best to call round_price_to_tick before passing price to this function
+        # also best to call round_size_to_increment before passing size to this function
         if obj.is_mkt_data_valid():# or off_mkt:
             side         = obj.buy_sell
             size         = abs(obj.order_size)
