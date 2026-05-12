@@ -80,20 +80,17 @@ class PairsTrade(Strategy):
             
             if obj.active_passive.lower() == 'passive':
                 setattr(obj.opp_obj, 'strat_on_mkt_data', False)
+            elif obj.active_passive.lower() == 'active':
+                setattr(obj, 'strat_on_close_data', False)
 
         return self.obj1, self.obj2
                     
         
     def on_close_data(self, obj):
+        obj.strat_on_close_data = False
         order_id = super().on_close_data(obj)
-
         if order_id is not None:
-            self._zero_admin(
-                obj=obj,
-                input_price=obj.price_mkt_close,
-                output_price=obj.placeholder_price,
-                order_id=order_id
-            )
+            self._zero_admin(obj, obj.price_mkt_close, obj.placeholder_price, order_id)
             
     
     def on_mkt_data(self, input_obj):
@@ -148,9 +145,9 @@ class PairsTrade(Strategy):
 
 
     def _zero_admin(self, obj, input_price, output_price, order_id):        
-        obj.active_base_price  = input_price
-        obj.active_order_price = output_price        
-        obj.order_id           = order_id  
+        obj.active_base_price   = input_price
+        obj.active_order_price  = output_price        
+        obj.order_id            = order_id  
 
     
     def _one_admin(self, filled_obj, unfilled_obj, input_price, output_price, order_id):             

@@ -8,7 +8,7 @@ from ws_feeds.Class_WS_Binance       import BinanceSpotFeed
 from ws_feeds.Class_WS_BinanceUS     import BinanceUSFeed
 from ws_feeds.Class_WS_Bitfinex      import BitfinexFeed
 from ws_feeds.Class_WS_Bybit         import BybitFeed
-from ws_feeds.Class_WS_Coinbase      import CoinbaseFeed
+from ws_feeds.Class_WS_Coinbase      import CoinbaseSpotFeed, CoinbaseDerivsFeed
 from ws_feeds.Class_WS_Deribit       import DeribitFeed
 from ws_feeds.Class_WS_Gate          import GateFeed
 from ws_feeds.Class_WS_Gemini        import GeminiFeed
@@ -40,7 +40,8 @@ class WSFeedManager:
         "Bitfinex"        : BitfinexFeed,
         #bitnomial
         "Bybit"           : BybitFeed,
-        "Coinbase"        : CoinbaseFeed,
+        "Coinbase"        : CoinbaseSpotFeed,
+        "Coinbase-Derivs" : CoinbaseDerivsFeed,
         "Deribit"         : DeribitFeed,
         "Gate"            : GateFeed,
         "Gemini"          : GeminiFeed,

@@ -58,8 +58,8 @@ class Strategy:
             obj.placeholder_price = obj.price_mkt_close * 0.5
         elif obj.buy_sell == 'SELL':
             obj.placeholder_price = obj.price_mkt_close * 2.0
-
-        return self.place_order(obj, obj.placeholder_price, obj.price_mkt_close)
+        
+        return self.place_order(obj, obj.placeholder_price, obj.price_mkt_close, off_mkt=True)
         
 
     @classmethod
@@ -156,8 +156,8 @@ class Strategy:
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
         
 
-    def place_order(self, obj, output_price, input_price):  # very literal to improve speed
-        if obj.is_mkt_data_valid():
+    def place_order(self, obj, output_price, input_price, off_mkt=False):  # very literal to improve speed
+        if obj.is_mkt_data_valid():# or off_mkt:
             side         = obj.buy_sell
             size         = abs(obj.order_size)
             order_id     = obj.order_id
@@ -170,7 +170,7 @@ class Strategy:
                                          order_id=order_id)   
             if self.print_orders:
                 self.print_order_message(side, size, obj.my_fi_name, output_price, input_price, order_id)
-            
+    
             return order_id
             
     

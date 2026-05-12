@@ -14,7 +14,7 @@ import asyncio
 
 
 class IBKR_IB:
-    def __init__(self, host='127.0.0.1', port=7497):
+    def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))
@@ -108,15 +108,17 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
+#        print(ticker, '\n')
+
         obj = self.ticker_dict.get(ticker)
         if obj is None:
             return
-
-        if obj.need_close_data and ticker.close is not None:
-            obj.update_close_data(
-                close_price=ticker.close
-            )
         
+        if obj.need_close_data and ticker.close is not None:
+                obj.update_close_data(
+                    close_price=ticker.close
+                )
+                
         if ticker.bid is not None and ticker.ask is not None:
 #            print(ticker.bid, ticker.ask, ticker.bidSize, ticker.askSize)
             obj.update_mkt_data(
@@ -125,6 +127,7 @@ class IBKR_IB:
                 bid_size=ticker.bidSize,
                 ask_size=ticker.askSize
             )
+
             
     def place_limit_order(self, obj=None, side=None, price=None, size=None):
         contract = obj.ibkr_contract

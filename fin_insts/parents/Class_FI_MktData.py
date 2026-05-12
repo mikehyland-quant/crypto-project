@@ -26,8 +26,7 @@ class MktData:
         self.price_raw_close   = None
         self.price_mkt_close   = None
         self.price_unit_close  = None
-            
-            
+                       
         for bid_ask in ['bid', 'ask']:
              
             setattr(self, 'price_raw_'   + bid_ask, None)       
@@ -67,11 +66,6 @@ class MktData:
         
         self.price_mkt_close  = self.price_raw_close * self.scalar_price_order_to_mkt
         self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
-
-        strategy = getattr(self, "strategy", None)
-        if strategy is not None and getattr(self, "strat_on_close_data", False):
-            strategy.on_close_data(self)
-            return
     
 
     def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
@@ -185,7 +179,11 @@ class MktData:
         strategy = getattr(self, "strategy", None)
         if strategy is not None and getattr(self, "strat_on_mkt_data", False):
             strategy.on_mkt_data(self)
-            return
+    
+            if getattr(self, "strat_on_close_data", False):  
+                strategy.on_close_data(self)
+                
+            return  
 
     
     def calc_comm(self, price, maker_taker):

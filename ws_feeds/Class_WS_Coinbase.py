@@ -15,7 +15,7 @@ from ws_feeds.Class_WS_FeedBase import WSFeedBase
 # In[ ]:
 
 
-class CoinbaseFeed(WSFeedBase):
+class CoinbaseSpotFeed(WSFeedBase):
 
     name = "Coinbase"
     url  = "wss://advanced-trade-ws.coinbase.com"
@@ -168,79 +168,96 @@ class CoinbaseFeed(WSFeedBase):
 
         return pd.DataFrame(products), payload.get("pagination", {})
 
-        '''
+
 
 # In[ ]:
 
 
-class CoinbaseFeedFCM(WSFeedBase):
-    name = "Coinbase Derivatives"
+class CoinbaseDerivsFeed(WSFeedBase):
+    """
+    Coinbase Derivatives / FCM futures feed.
+
+    Uses same Advanced Trade websocket format as Coinbase spot,
+    but defaults REST completion to FUTURE products.
+    """
+    
+    name = "Coinbase-Derivs"
     url = "wss://advanced-trade-ws.coinbase.com"
 
-    async def stream(self):
-        await self._reconnect_loop(self._connect)
-
-    async def _connect(self):
-        async with websockets.connect(
-            self.url,
-            ping_interval=20,
-            ping_timeout=20,
-            max_size=None,
-        ) as ws:
-            self.ws = ws
-            await self._subscribe_all()
-
-            async for raw in ws:
-                msg = json.loads(raw)
-                self._handle_message(msg)
-
-    async def _subscribe_all(self):
+    async def _subscribe(self, ws):
         product_ids = list(self.obj_map.keys())
         if not product_ids:
             raise ValueError("No Coinbase derivatives product_ids found")
 
-        await self._send_subscribe("heartbeats")
-        await self._send_subscribe("level2", product_ids)
-        await self._send_subscribe("ticker", product_ids)
-        await self._send_subscribe("market_trades", product_ids)
+        # heartbeats help keep quiet subscriptions alive
+        await ws.send(json.dumps({
+            "type": "subscribe",
+            "product_ids": product_ids,
+            "channel": "heartbeats",
+        }))
 
-    def _update_obj_bid_ask(self, product_id, bid_px=None, bid_sz=None, ask_px=None, ask_sz=None, ts=None):
-        ts = ts or self._ts()
-        obj = self.obj_map.get(product_id.upper())
-        if not obj:
-            return
-        obj.update_mkt_data(
-            **{k: v for k, v in {
-                "bid_price": bid_px,
-                "bid_size": bid_sz,
-                "ask_price": ask_px,
-                "ask_size": ask_sz,
-                "timestamp": ts,
-            }.items() if v is not None}
+        await ws.send(json.dumps({
+            "type": "subscribe",
+            "product_ids": product_ids,
+            "channel": "ticker",
+        }))
+
+    @classmethod
+    def complete_objects(cls, objs_list):
+        locators_list = [obj.pf_locator for obj in objs_list]
+
+        df, _ = cls.get_product_info(
+            prod_type="FUTURE",
+            product_ids=locators_list,
         )
 
-    def complete_obj(self, obj):
-         pass
+        row_map = {
+            row.product_id.upper(): row
+            for row in df.itertuples(index=False)
+        }
 
+        for obj in objs_list:
+            obj.fi_row = row_map.get(obj.pf_locator.upper())
+
+            if obj.fi_row is None:
+                raise ValueError(f"No Coinbase derivatives product found for {obj.pf_locator}")
+
+            cls.complete_obj(obj)
+
+    @classmethod
+    def complete_obj(cls, obj):
+        row = obj.fi_row
+
+        obj.pf_symbol    = row.product_id
+        obj.pf_number    = None
+        obj.pf_prod_type = row.product_type
+
+        obj.numerator_currency   = row.base_currency_id
+        obj.denominator_currency = row.quote_currency_id
+        obj.quote_currency       = row.quote_currency_id
+        obj.settlement_currency  = getattr(row, "settlement_currency_id", None)
+
+        obj.expiration_date = getattr(row, "future_product_details", None)
+
+    @classmethod
     def get_product_info(
-                        self,
-                        prod_type=None,
-                        expire_type=None,
-                        expire_status=None,
-                        product_ids=None,
-                        get_all_products=None,
-                        limit=None,
-                        cursor=None,
-                        ):
-        CoinbaseFeedFCM.get_product_info(
-                                        self,
-                                        prod_type=None,
-                                        expire_type=None,
-                                        expire_status=None,
-                                        product_ids=None,
-                                        get_all_products=None,
-                                        limit=None,
-                                        cursor=None,
-                                        )
+        cls,
+        prod_type="FUTURE",
+        expire_type=None,
+        expire_status="STATUS_UNEXPIRED",
+        product_ids=None,
+        get_all_products=None,
+        limit=None,
+        cursor=None,
+    ):
+        return CoinbaseSpotFeed.get_product_info(
+            prod_type=prod_type,
+            expire_type=expire_type,
+            expire_status=expire_status,
+            product_ids=product_ids,
+            get_all_products=get_all_products,
+            limit=limit,
+            cursor=cursor,
+        )
 
-        '''
+        
