@@ -40,10 +40,9 @@ class Strategy:
             obj.avg_fill_price       = None
             obj.last_fill_price      = None
             
-            # obj.placeholder_price = None
-
-            obj.strat_on_mkt_data    = None
-            obj.strat_on_trade_exec  = None
+            obj.strat_on_mkt_data    = True
+            obj.strat_on_trade_exec  = True
+            obj.strat_on_close_data  = True
         
             
     def on_mkt_data(self, obj):
@@ -52,8 +51,17 @@ class Strategy:
 
     def on_trade_exec(self, obj):
         pass
+
+
+    def on_close_data(self, obj):
+        if obj.buy_sell == 'BUY':
+            obj.placeholder_price = obj.price_mkt_close * 0.5
+        elif obj.buy_sell == 'SELL':
+            obj.placeholder_price = obj.price_mkt_close * 2.0
+
+        return self.place_order(obj, obj.placeholder_price, obj.price_mkt_close)
         
-      
+
     @classmethod
     def _attach_trading_helpers(cls, obj):
         obj.my_trading_rules = cls._extract_trading_rules(obj)

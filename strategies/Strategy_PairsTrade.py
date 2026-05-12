@@ -74,22 +74,28 @@ class PairsTrade(Strategy):
             obj.order_size                          = abs(obj.order_size)
             obj.calc_price                          = self.calc_price   # assigns function below - might be able to lose this
             obj.spread_ratio                        = obj.opp_obj.ratio_size / min_ratio_size
-#            obj.spread_ratio_inv                    = 1 / obj.spread_ratio
             obj.adj_spread                          = self.target_spread / obj.spread_ratio
             
-
-            obj.input_price_attr, obj.filled_scalar = buy_sell_dict[obj.buy_sell]
-
-            setattr(obj.opp_obj, 'strat_on_trade_exec', True)   
+            obj.input_price_attr, obj.filled_scalar = buy_sell_dict[obj.buy_sell]  
             
-            if obj.active_passive.lower() == 'active':
-                setattr(obj.opp_obj, 'strat_on_mkt_data', True)
-            elif obj.active_passive.lower() == 'passive':
+            if obj.active_passive.lower() == 'passive':
                 setattr(obj.opp_obj, 'strat_on_mkt_data', False)
 
         return self.obj1, self.obj2
                     
         
+    def on_close_data(self, obj):
+        order_id = super().on_close_data(obj)
+
+        if order_id is not None:
+            self._zero_admin(
+                obj=obj,
+                input_price=obj.price_mkt_close,
+                output_price=obj.placeholder_price,
+                order_id=order_id
+            )
+            
+    
     def on_mkt_data(self, input_obj):
         if self.stage != "ZERO FILLED":
             return  # no need to update price 

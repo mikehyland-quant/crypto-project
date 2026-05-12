@@ -21,6 +21,12 @@ class MktData:
     def __init__(self):
         self.subscribers = []
 #        self.skip_mkt_data_update = False
+        
+        self.need_close_data   = True
+        self.price_raw_close   = None
+        self.price_mkt_close   = None
+        self.price_unit_close  = None
+            
             
         for bid_ask in ['bid', 'ask']:
              
@@ -54,6 +60,20 @@ class MktData:
         self.scalar_order_size = 1
 
                     
+    def update_close_data(self, close_price=None):
+        self.need_close_data  = False
+
+        self.price_raw_close  = self._safe_float(close_price, default=None)
+        
+        self.price_mkt_close  = self.price_raw_close * self.scalar_price_order_to_mkt
+        self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
+
+        strategy = getattr(self, "strategy", None)
+        if strategy is not None and getattr(self, "strat_on_close_data", False):
+            strategy.on_close_data(self)
+            return
+    
+
     def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
         changed = False
         ts = None
@@ -195,7 +215,7 @@ class MktData:
         bid = self.price_mkt_bid
         ask = self.price_mkt_ask
         b_sz = self.size_mkt_bid
-        a_sz = self.size_mkt_bid
+        a_sz = self.size_mkt_ask
         return (bid is not None) and (ask is not None) and (bid < ask) and (b_sz is not None) and (a_sz is not None)
 
         

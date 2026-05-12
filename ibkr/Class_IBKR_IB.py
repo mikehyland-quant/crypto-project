@@ -111,6 +111,11 @@ class IBKR_IB:
         obj = self.ticker_dict.get(ticker)
         if obj is None:
             return
+
+        if obj.need_close_data and ticker.close is not None:
+            obj.update_close_data(
+                close_price=ticker.close
+            )
         
         if ticker.bid is not None and ticker.ask is not None:
 #            print(ticker.bid, ticker.ask, ticker.bidSize, ticker.askSize)
