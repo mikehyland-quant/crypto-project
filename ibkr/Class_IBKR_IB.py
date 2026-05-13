@@ -120,7 +120,6 @@ class IBKR_IB:
                 )
                 
         if ticker.bid is not None and ticker.ask is not None:
-#            print(ticker.bid, ticker.ask, ticker.bidSize, ticker.askSize)
             obj.update_mkt_data(
                 bid_price=ticker.bid,
                 ask_price=ticker.ask,

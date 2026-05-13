@@ -7,6 +7,8 @@
 import asyncio
 import math
 import types
+import winsound
+
 
 from datetime import datetime
 
@@ -26,10 +28,6 @@ class Strategy:
                
         for obj in self.objs_list:
             self._attach_trading_helpers(obj)
-            
-            #the next two lines are taken care of as part of _attach_trading_helpers below
-            #obj.round_price_to_tick     = self.round_price_to_tick
-            #obj.round_size_to_increment = self.round_size_to_increment
             
             obj.strategy             = self
 
@@ -59,7 +57,7 @@ class Strategy:
         elif obj.buy_sell == 'SELL':
             obj.placeholder_price = obj.price_mkt_close * 2.0
         
-        return self.place_order(obj, obj.placeholder_price, obj.price_mkt_close, off_mkt=True)
+        return self.place_limit_order(obj, obj.placeholder_price, obj.price_mkt_close)
         
 
     @classmethod
@@ -68,12 +66,10 @@ class Strategy:
 
         obj.round_price_to_tick = types.MethodType(cls.round_price_to_tick, obj)
         obj.round_size_to_increment = types.MethodType(cls.round_size_to_increment, obj)
-         #obj.is_mkt_data_valid = types.MethodType(cls.is_valid_bid_ask, obj)
         
 
     @classmethod
     def _extract_trading_rules(cls, obj):
-        rules = {}
         details = getattr(obj, 'ibkr_details', None)
 
         for my_key, ibkr_key in cls._RULE_FIELD_MAP.items():
@@ -83,9 +79,16 @@ class Strategy:
             if val in (None, 0):
                 val = None
 
-            rules[my_key] = val
+            setattr(obj, my_key, val)
 
-        return rules
+    
+    @classmethod    
+    def play_fill_sound(self):
+        winsound.PlaySound(
+            r"C:\Windows\Media\notify.wav",
+#            r"C:\Windows\Media\tada.wav"
+#            r"C:\Windows\Media\Ring08.wav"
+            winsound.SND_FILENAME | winsound.SND_ASYNC)
         
 
     def round_price_to_tick(self, price):
@@ -94,7 +97,7 @@ class Strategy:
             return None
     
         price = self._safe_float(price, default=None)
-        tick  = self._safe_float(self.my_trading_rules.get('min_tick'), default=None)
+        tick  = self._safe_float(self.min_tick, default=None)
         side  = self.buy_sell.upper()
 
         if price is None:
@@ -123,8 +126,8 @@ class Strategy:
         if size is None:
             return None
 
-        inc = self.my_trading_rules.get('size_increment')
-        min_size = self.my_trading_rules.get('min_size')
+        inc = self.size_increment
+        min_size = self.min_size
 
         if inc in (None, 0):
             rounded = size
@@ -135,29 +138,10 @@ class Strategy:
             return 0.0
 
         return round(rounded, 10)
-        
-
-    '''
-    def validate_market(self, objs_list=None):
-        objs = objs_list if objs_list is not None else self.objs_list
-        if not objs:
-            return False
-        return all(obj.is_valid_mkt_data() for obj in objs)
-    '''
 
     
-    def update_order(self, obj=None, side=None, price=None, size=None, order_id=None):
-        if obj.my_pf_name.upper() == "IBKR":
-            if order_id is None:
-                return obj.platform_obj.place_limit_order(obj=obj, side=side, price=price, size=size)
-            else:
-                return obj.platform_obj.modify_limit_order(order_id=order_id, obj=obj, price=price, size=size)
-   
-        raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
-        
-
-    def place_order(self, obj, output_price, input_price, off_mkt=False):  # very literal to improve speed
-        if obj.is_mkt_data_valid():# or off_mkt:
+    def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
+        if obj.is_mkt_data_valid():
             side         = obj.buy_sell
             size         = abs(obj.order_size)
             order_id     = obj.order_id
@@ -173,6 +157,44 @@ class Strategy:
     
             return order_id
             
+
+    def update_limit_order(self, obj=None, side=None, price=None, size=None, order_id=None):
+        if obj.my_pf_name.upper() == "IBKR":
+            if order_id is None:
+                return obj.platform_obj.place_limit_order(obj=obj, side=side, price=price, size=size)
+            else:
+                return obj.platform_obj.modify_limit_order(order_id=order_id, obj=obj, price=price, size=size)
+   
+        raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
+        
+
+    def place_market_order(self, obj):  # send market order if limit order doesn't fill in a certain amount of time
+            if obj.is_mkt_data_valid():
+                side         = obj.buy_sell
+                size         = abs(obj.order_size) 
+                order_id     = obj.order_id
+                #output_price = abs(obj.placeholder_price)
+                
+                order_id = self.update_market_order(obj=obj,                                      
+                                                    #price=output_price, 
+                                                    side=side, 
+                                                    size=size, 
+                                                    order_id=order_id)   
+                if self.print_orders:
+                    self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
+        
+                return order_id
+
+
+    def update_to_market_order(self, obj=None, side=None, size=None, order_id=None):
+        if obj.my_pf_name.upper() == "IBKR":
+            if order_id is None:
+                return obj.platform_obj.place_market_order(obj=obj, side=side, size=size)
+            else:
+                return obj.platform_obj.modify_to_market_order(order_id=order_id, obj=obj, side=side, size=size)
+
+        raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
+      
     
     def print_order_message(self, side, size, name, output_price, input_price, order_id):
         print(f"{datetime.now():%H:%M:%S.%f}", 
@@ -181,6 +203,7 @@ class Strategy:
               ', base price = ' , input_price, 
               ', order id = '   , order_id,
               '\n')
+
 
     
                 

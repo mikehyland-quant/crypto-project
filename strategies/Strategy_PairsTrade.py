@@ -108,7 +108,7 @@ class PairsTrade(Strategy):
         if output_obj.active_order_price is not None and abs(output_price - output_obj.active_order_price) < 1e-9:
             return
             
-        order_id = self.place_order(output_obj, output_price, input_price)
+        order_id = self.place_limit_order(output_obj, output_price, input_price)
         
         if order_id is not None:
             self._zero_admin(output_obj, input_price, output_price, order_id)
@@ -130,10 +130,16 @@ class PairsTrade(Strategy):
             unfilled_obj = filled_obj.opp_obj
             
             output_price = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
-            order_id     = self.place_order(unfilled_obj, output_price, input_price)
+            order_id     = self.place_limit_order(unfilled_obj, output_price, input_price)
+
+            self.play_fill_sound()  
             
             if order_id is not None:
                 self._one_admin(filled_obj, unfilled_obj, input_price, output_price, order_id)
+
+            asyncio.sleep(1)  # wait a bit before launching market order 
+
+            order_id_backup = self.place_backup_order(unfilled_obj, order_id)
                                
         elif self.stage == "ONE FILLED":
             if filled_obj.remaining > 0:
@@ -141,7 +147,7 @@ class PairsTrade(Strategy):
                 
             self.stage = "TWO FILLED"
             
-            self._two_admin(filled_obj)     
+            self._two_admin(filled_obj)   
 
 
     def _zero_admin(self, obj, input_price, output_price, order_id):        

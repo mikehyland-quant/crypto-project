@@ -20,7 +20,6 @@ class MktData:
     
     def __init__(self):
         self.subscribers = []
-#        self.skip_mkt_data_update = False
         
         self.need_close_data   = True
         self.price_raw_close   = None
@@ -79,7 +78,6 @@ class MktData:
         
         if bid_price is not None and bid_price != self.price_raw_bid:
             changed = True
-#            print('bid')
             
             if ts is None:
                 ts = time.time_ns()
@@ -111,7 +109,6 @@ class MktData:
     
         if ask_price is not None and ask_price != self.price_raw_ask:
             changed = True
-#            print('ask')
             
             if ts is None:
                 ts = time.time_ns()
@@ -143,7 +140,6 @@ class MktData:
             
         if bid_size is not None and bid_size != self.size_raw_bid:
             changed = True
-#            print('bid_sz')
             
             if ts is None:
                 ts = time.time_ns()
@@ -158,7 +154,6 @@ class MktData:
             
         if ask_size is not None and ask_size != self.size_raw_ask:
             changed = True
-#            print('ask_sz')
             
             if ts is None:
                 ts = time.time_ns()
@@ -217,40 +212,3 @@ class MktData:
         return (bid is not None) and (ask is not None) and (bid < ask) and (b_sz is not None) and (a_sz is not None)
 
         
-
-'''
-bid_price                
-self.price_raw_bid          
-
-self.price_order_bid      
-self.price_mkt_bid       
-self.price_unit_bid      
-
-self.cf_order_join_bid   
-self.cf_order_hit_bid    
-
-self.cf_mkt_join_bid    
-self.cf_mkt_hit_bid      
-
-self.cf_unit_join_bid  
-self.cf_unit_hit_bid   
-
-self.comm_order_join_bid 
-self.comm_order_hit_bid  
-
-self.comm_mkt_join_bid    
-self.comm_mkt_hit_bid    
-
-self.comm_unit_join_bid  
-self.comm_unit_hit_bid   
-
-self.scalar_price_raw_to_order
-self.scalar_price_order_to_mkt
-self.scalar_price_mkt_to_unit
-
-self.scalar_size_raw_to_order
-self.scalar_size_order_to_mkt
-self.scalar_size_mkt_to_unit
-
-self.scalar_order_size
-'''
