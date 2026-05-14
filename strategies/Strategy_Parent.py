@@ -176,7 +176,7 @@ class Strategy:
             order_id     = obj.order_id
             output_price = abs(output_price)
             
-            order_id = self.update_order(obj=obj,                                      
+            order_id = self.update_limit_order(obj=obj,                                      
                                          price=output_price, 
                                          side=side, 
                                          size=size, 

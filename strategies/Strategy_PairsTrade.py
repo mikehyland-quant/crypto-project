@@ -3,6 +3,7 @@
 
 #import asyncio
 
+import asyncio
 from datetime import datetime
 from strategies.Strategy_Parent import Strategy
 
@@ -112,7 +113,7 @@ class PairsTrade(Strategy):
             self._zero_admin(output_obj, input_price, output_price, order_id)
 
           
-    def on_trade_exec(self, filled_obj, filled_order):        
+    async def on_trade_exec(self, filled_obj, filled_order):        
         filled_obj.trade_status    = filled_order.orderStatus.status
         filled_obj.filled          = filled_order.orderStatus.filled
         filled_obj.remaining       = filled_order.orderStatus.remaining
@@ -136,7 +137,7 @@ class PairsTrade(Strategy):
             if order_id is not None:
                 self._one_admin(filled_obj, unfilled_obj, input_price, output_price, order_id)
 
-            asyncio.sleep(1)  # wait a second before launching market order 
+            await asyncio.sleep(1)  # wait a second before launching market order 
 
             order_id = self.place_market_order(unfilled_obj)
                                

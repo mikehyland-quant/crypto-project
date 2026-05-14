@@ -1,14 +1,16 @@
 
 
+import asyncio
+
 from numpy import size
 
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
-import asyncio
+
 
 
 class IBKR_IB:
-    def __init__(self, host='127.0.0.1', port=7497):
+    def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))
@@ -133,7 +135,7 @@ class IBKR_IB:
 
         strategy = getattr(obj, "strategy", None)
         if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
-            strategy.on_trade_exec(obj, order)
+            asyncio.create_task(strategy.on_trade_exec(obj, order))
             
     def place_market_order(self, obj=None, side=None, size=None):
         contract = obj.ibkr_contract
@@ -157,7 +159,7 @@ class IBKR_IB:
 
         return my_order.order.orderId
 
-    def modify_to_market_order(self, order_id=None, obj=None, size=None):
+    def modify_to_market_order(self, order_id=None, obj=None, side=None, size=None):
         key = (self.clientId, order_id)
         trade = self.trades_by_order_id.get(key)
 
@@ -166,6 +168,7 @@ class IBKR_IB:
     
         trade.order.orderType = "MKT"
         trade.order.totalQuantity = size
+        trade.order.side = side
 
         # Important: market orders should not keep a limit price
         trade.order.lmtPrice = None
