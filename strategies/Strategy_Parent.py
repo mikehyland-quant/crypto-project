@@ -56,9 +56,12 @@ class Strategy:
             obj.placeholder_price = obj.price_mkt_close * 0.5
         elif obj.buy_sell == 'SELL':
             obj.placeholder_price = obj.price_mkt_close * 2.0
-        
-        return self.place_limit_order(obj, obj.placeholder_price, obj.price_mkt_close)
-        
+
+        obj.placeholder_price = obj.round_price_to_tick(abs(obj.placeholder_price)) 
+
+        order_id = self.place_limit_order(obj, obj.placeholder_price, obj.price_mkt_close)
+
+        return order_id         
 
     @classmethod
     def _attach_trading_helpers(cls, obj):

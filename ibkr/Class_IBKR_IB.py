@@ -8,7 +8,6 @@ from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
 
 
-
 class IBKR_IB:
     def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
@@ -111,9 +110,16 @@ class IBKR_IB:
             return
         
         if obj.need_close_data and ticker.close is not None:
-                obj.on_close_data(
-                    close_price=ticker.close
-                )
+            obj.update_mkt_data(
+                bid_price=ticker.bid,
+                ask_price=ticker.ask,
+                bid_size=ticker.bidSize,
+                ask_size=ticker.askSize
+            )
+            
+            obj.on_close_data(
+                close_price=ticker.close
+            )
                 
         elif ticker.bid is not None and ticker.ask is not None:
             obj.on_mkt_data(

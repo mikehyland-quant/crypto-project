@@ -137,7 +137,7 @@ class PairsTrade(Strategy):
             if order_id is not None:
                 self._one_admin(filled_obj, unfilled_obj, input_price, output_price, order_id)
 
-            await asyncio.sleep(1)  # wait a second before launching market order 
+            await asyncio.sleep(1000)  # wait a second before launching market order 
 
             order_id = self.place_market_order(unfilled_obj)
                                
