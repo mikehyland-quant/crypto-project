@@ -113,7 +113,7 @@ class IBKR_IB:
                     close_price=ticker.close
                 )
                 
-        if ticker.bid is not None and ticker.ask is not None:
+        elif ticker.bid is not None and ticker.ask is not None:
             obj.on_mkt_data(
                 bid_price=ticker.bid,
                 ask_price=ticker.ask,
