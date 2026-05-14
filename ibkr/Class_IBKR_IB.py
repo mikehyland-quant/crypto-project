@@ -1,16 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
 
 
+from numpy import size
 
-from ib_insync import IB, Contract, ComboLeg, LimitOrder
+from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
 import asyncio
-
-
-# In[2]:
 
 
 class IBKR_IB:
@@ -115,19 +109,71 @@ class IBKR_IB:
             return
         
         if obj.need_close_data and ticker.close is not None:
-                obj.update_close_data(
+                obj.on_close_data(
                     close_price=ticker.close
                 )
                 
         if ticker.bid is not None and ticker.ask is not None:
-            obj.update_mkt_data(
+            obj.on_mkt_data(
                 bid_price=ticker.bid,
                 ask_price=ticker.ask,
                 bid_size=ticker.bidSize,
                 ask_size=ticker.askSize
             )
+           
+    def order_handler(self, order):
+        key = (
+            order.order.clientId,
+            order.order.orderId
+            )
+        
+        obj = self.obj_by_order_id.get(key)
+        if obj is None:
+            return
 
+        strategy = getattr(obj, "strategy", None)
+        if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
+            strategy.on_trade_exec(obj, order)
             
+    def place_market_order(self, obj=None, side=None, size=None):
+        contract = obj.ibkr_contract
+
+        order = MarketOrder(
+            action=side,
+            totalQuantity=size,
+            tif="DAY",
+        )
+
+        my_order = self.ib.placeOrder(contract, order)
+        my_order.statusEvent += self.order_handler
+
+        key = (
+            my_order.order.clientId,
+            my_order.order.orderId
+        )
+
+        self.trades_by_order_id[key] = my_order
+        self.obj_by_order_id[key] = obj
+
+        return my_order.order.orderId
+
+    def modify_to_market_order(self, order_id=None, obj=None, size=None):
+        key = (self.clientId, order_id)
+        trade = self.trades_by_order_id.get(key)
+
+        if trade is None:
+            raise ValueError(f"Order {order_id} not found")
+    
+        trade.order.orderType = "MKT"
+        trade.order.totalQuantity = size
+
+        # Important: market orders should not keep a limit price
+        trade.order.lmtPrice = None
+    
+        self.ib.placeOrder(obj.ibkr_contract, trade.order)
+    
+        return order_id
+    
     def place_limit_order(self, obj=None, side=None, price=None, size=None):
         contract = obj.ibkr_contract
 
@@ -165,17 +211,5 @@ class IBKR_IB:
     
         return order_id
 
-    def order_handler(self, order):
-        key = (
-            order.order.clientId,
-            order.order.orderId
-            )
-        
-        obj = self.obj_by_order_id.get(key)
-        if obj is None:
-            return
-
-        strategy = getattr(obj, "strategy", None)
-        if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
-            strategy.on_trade_exec(obj, order)
+    
 

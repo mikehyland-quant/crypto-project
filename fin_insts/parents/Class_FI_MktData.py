@@ -47,6 +47,7 @@ class MktData:
             setattr(self, 'comm_mkt_'    + bid_ask, None)        
             setattr(self, 'comm_unit_'   + bid_ask, None)
             
+        # the settings below are initial; they may get overwritten later in complete object phase
         self.scalar_price_raw_to_order = 1
         self.scalar_price_order_to_mkt = 1
         self.scalar_price_mkt_to_unit  = 1
@@ -58,15 +59,50 @@ class MktData:
         self.scalar_order_size = 1
 
                     
-    def update_close_data(self, close_price=None):
-        self.need_close_data  = False
-
-        self.price_raw_close  = self._safe_float(close_price, default=None)
+    @staticmethod
+    def _safe_float(x, default=None):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return default
         
-        self.price_mkt_close  = self.price_raw_close * self.scalar_price_order_to_mkt
-        self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
-    
 
+    def is_mkt_data_valid(self):
+        bid = self.price_mkt_bid
+        ask = self.price_mkt_ask
+        b_sz = self.size_mkt_bid
+        a_sz = self.size_mkt_ask
+        return (bid is not None) and (ask is not None) and (bid < ask) and (b_sz is not None) and (a_sz is not None)
+        
+        
+    def on_close_data(self, close_price=None):
+        if close_price is not None:
+            self.need_close_data  = False
+
+            self.price_raw_close  = self._safe_float(close_price, default=None)
+        
+            self.price_mkt_close  = self.price_raw_close * self.scalar_price_order_to_mkt
+            self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
+
+            strategy = getattr(self, "strategy", None)
+            if getattr(self, "strat_on_close_data", False):  
+                strategy.on_close_data(self)
+
+
+    def on_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None): 
+        changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
+
+        if not changed:
+             return 
+              
+        for subscriber in self.subscribers:
+            subscriber.update_subscriber_data()
+
+        strategy = getattr(self, "strategy", None)
+        if strategy is not None and getattr(self, "strat_on_mkt_data", False):
+            strategy.on_mkt_data(self)
+    
+      
     def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
         changed = False
         ts = None
@@ -165,21 +201,8 @@ class MktData:
             self.size_mkt_ask       =  self.size_order_ask * self.scalar_size_order_to_mkt
             self.size_unit_ask      =  self.size_mkt_ask   * self.scalar_size_mkt_to_unit
     
-        if not changed:
-            return
-            
-        for subscriber in self.subscribers:
-            subscriber.update_subscriber_data()
-
-        strategy = getattr(self, "strategy", None)
-        if strategy is not None and getattr(self, "strat_on_mkt_data", False):
-            strategy.on_mkt_data(self)
-    
-            if getattr(self, "strat_on_close_data", False):  
-                strategy.on_close_data(self)
-                
-            return  
-
+        return changed
+        
     
     def calc_comm(self, price, maker_taker):
         type_ = self.comm_type
@@ -196,19 +219,7 @@ class MktData:
             return 0
 
 
-    @staticmethod
-    def _safe_float(x, default=None):
-        try:
-            return float(x)
-        except (TypeError, ValueError):
-            return default
+    
 
 
-    def is_mkt_data_valid(self):
-        bid = self.price_mkt_bid
-        ask = self.price_mkt_ask
-        b_sz = self.size_mkt_bid
-        a_sz = self.size_mkt_ask
-        return (bid is not None) and (ask is not None) and (bid < ask) and (b_sz is not None) and (a_sz is not None)
-
-        
+    

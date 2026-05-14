@@ -17,5 +17,8 @@ class Subscriber(ABC):
         
     @abstractmethod
     def update_subscriber_data(self):
+        # work
+        # for subscriber in self.subscribers:
+        #    subscriber.update_subscriber_data()
         pass
 

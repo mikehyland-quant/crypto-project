@@ -20,11 +20,9 @@ class PairsTrade(Strategy):
         self.stage = 'ZERO FILLED'
         
         self.target_spread = df.loc['target_spread'].sum()
-        self.epsilon       = df.loc['wiggle_on_2nd_fill'].sum()
+        self.epsilon       = df.loc['epsilon'].sum()
 
-        # make objs_dict
-        #df = df.drop(columns=, 'TRUE/FALSE'])
-        df = df.drop(index=['target_spread', 'wiggle_on_2nd_fill'])
+        df = df.drop(index=['target_spread', 'epsilon'])
 
         objs_dict = df.to_dict()
 
@@ -41,13 +39,13 @@ class PairsTrade(Strategy):
         for obj_name, obj_dict in objs_dict.items():
     
             obj = next(
-                (
-                    o for o in objs_list
-                    if o.my_fi_name == obj_dict['my_fi_name']
-                    and o.my_pf_name == obj_dict['my_pf_name']
-                ),
-                None
-            )
+                        (
+                        o for o in objs_list
+                        if o.my_fi_name == obj_dict['my_fi_name']
+                        and o.my_pf_name == obj_dict['my_pf_name']
+                        ),
+                        None
+                    )
     
             if obj is None:
                 raise ValueError(f"Could not find object for {obj_name}: {obj_dict}")
@@ -72,7 +70,7 @@ class PairsTrade(Strategy):
 
             obj.buy_sell                            = obj.buy_sell.upper()
             obj.order_size                          = abs(obj.order_size)
-            obj.calc_price                          = self.calc_price   # assigns function below - might be able to lose this
+            obj.calc_price                          = self.calc_price   # assigns function below 
             obj.spread_ratio                        = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread                          = self.target_spread / obj.spread_ratio
             
@@ -87,10 +85,10 @@ class PairsTrade(Strategy):
                     
         
     def on_close_data(self, obj):
-        obj.strat_on_close_data = False
         order_id = super().on_close_data(obj)
         if order_id is not None:
             self._zero_admin(obj, obj.price_mkt_close, obj.placeholder_price, order_id)
+            obj.strat_on_close_data = False
             
     
     def on_mkt_data(self, input_obj):
@@ -103,7 +101,7 @@ class PairsTrade(Strategy):
         if output_obj.active_base_price is not None and abs(input_price - output_obj.active_base_price) < 1e-9:
             return
 
-        output_price = output_obj.calc_price(input_price, output_obj, 0)  # goes to either _calc_obj1_price or _calc_obj2_price
+        output_price = output_obj.calc_price(input_price, output_obj, 0)  
         
         if output_obj.active_order_price is not None and abs(output_price - output_obj.active_order_price) < 1e-9:
             return
@@ -126,6 +124,7 @@ class PairsTrade(Strategy):
                 return
                 
             self.stage   = "ONE FILLED"        
+            
             input_price  = filled_obj.avg_fill_price * filled_obj.filled_scalar
             unfilled_obj = filled_obj.opp_obj
             
@@ -137,9 +136,9 @@ class PairsTrade(Strategy):
             if order_id is not None:
                 self._one_admin(filled_obj, unfilled_obj, input_price, output_price, order_id)
 
-            asyncio.sleep(1)  # wait a bit before launching market order 
+            asyncio.sleep(1)  # wait a second before launching market order 
 
-            order_id_backup = self.place_backup_order(unfilled_obj, order_id)
+            order_id = self.place_market_order(unfilled_obj)
                                
         elif self.stage == "ONE FILLED":
             if filled_obj.remaining > 0:
@@ -198,7 +197,6 @@ class PairsTrade(Strategy):
 
         
     def calc_price(self, input_price, output_obj, epsilon_scalar):     
-#        print(input_price, output_obj.my_fi_name, output_obj.adj_spread, output_obj.spread_ratio)
         fair_value   = output_obj.adj_spread - (input_price * output_obj.spread_ratio)
         output_price = fair_value - (epsilon_scalar * self.epsilon)
         output_price = output_obj.round_price_to_tick(abs(output_price))                                             

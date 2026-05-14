@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# In[ ]:
 
 
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
@@ -14,8 +11,6 @@ def _aggregate_timestamp(self, dict_name, key):         # reconsider whether you
     vals = [v for v in vals if v is not None]
     return max(vals) if vals else None
 '''
-
-# In[ ]:
 
 
 class Synthetic(Subscriber):
@@ -69,15 +64,14 @@ class Synthetic(Subscriber):
     
     def update_subscriber_data(self):
         self.update_syn()
+        for subscriber in self.subscribers:
+            subscriber.update_subscriber_data()
 
     
     def update_syn(self):
         self.update_prices()
         self.update_sizes()
     
-        for subscriber in self.subscribers:
-            subscriber.update_subscriber_data()
-
     
     def update_prices(self):   
         self.price_unit_bid     = 0

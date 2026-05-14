@@ -21,8 +21,8 @@ class Strategy:
     }
 
     def __init__(self, objs_list=None):
-        self.done_event = asyncio.Event()  # needs to be set at the end of each strategy and awaited in main()
-        self.print_orders = True
+        self.done_event = asyncio.Event()  # needs to be awaited in main() and set at the end of each strategy
+        self.print_orders = True  # set to False in main() to disable order printing
         
         self.objs_list = objs_list if objs_list is not None else []
                
@@ -92,7 +92,7 @@ class Strategy:
         
 
     def round_price_to_tick(self, price):
-        #best to input price as abs(price) when calling function
+        # best to input price as abs(price) when calling function
         if price is None:
             return None
     
@@ -119,6 +119,7 @@ class Strategy:
         
 
     def round_size_to_increment(self, size):
+        # best to input size asabs(size) when calling function
         if size is None:
             return None
 
@@ -139,6 +140,34 @@ class Strategy:
 
         return round(rounded, 10)
 
+    
+    def place_market_order(self, obj):  # very literal to improve speed
+            if obj.is_mkt_data_valid():
+                side         = obj.buy_sell
+                size         = abs(obj.order_size) 
+                order_id     = obj.order_id
+                # output_price = abs(obj.placeholder_price)  no need for price when placing market order
+                
+                order_id = self.update_market_order(obj=obj,                                      
+                                                    #price=output_price, 
+                                                    side=side, 
+                                                    size=size, 
+                                                    order_id=order_id)   
+                if self.print_orders:
+                    self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
+        
+                return order_id
+
+
+    def update_market_order(self, obj=None, side=None, size=None, order_id=None):
+        if obj.my_pf_name.upper() == "IBKR":
+            if order_id is None:
+                return obj.platform_obj.place_market_order(obj=obj, side=side, size=size)
+            else:
+                return obj.platform_obj.modify_to_market_order(order_id=order_id, obj=obj, side=side, size=size)
+
+        raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
+    
     
     def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
         if obj.is_mkt_data_valid():
@@ -167,34 +196,6 @@ class Strategy:
    
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
         
-
-    def place_market_order(self, obj):  # send market order if limit order doesn't fill in a certain amount of time
-            if obj.is_mkt_data_valid():
-                side         = obj.buy_sell
-                size         = abs(obj.order_size) 
-                order_id     = obj.order_id
-                #output_price = abs(obj.placeholder_price)
-                
-                order_id = self.update_market_order(obj=obj,                                      
-                                                    #price=output_price, 
-                                                    side=side, 
-                                                    size=size, 
-                                                    order_id=order_id)   
-                if self.print_orders:
-                    self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
-        
-                return order_id
-
-
-    def update_to_market_order(self, obj=None, side=None, size=None, order_id=None):
-        if obj.my_pf_name.upper() == "IBKR":
-            if order_id is None:
-                return obj.platform_obj.place_market_order(obj=obj, side=side, size=size)
-            else:
-                return obj.platform_obj.modify_to_market_order(order_id=order_id, obj=obj, side=side, size=size)
-
-        raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
-      
     
     def print_order_message(self, side, size, name, output_price, input_price, order_id):
         print(f"{datetime.now():%H:%M:%S.%f}", 

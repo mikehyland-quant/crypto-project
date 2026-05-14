@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# In[1]:
 
 
 #imports
@@ -13,9 +10,6 @@ import numbers
 
 import pandas_market_calendars as mcal
 _NYSE = mcal.get_calendar("NYSE")   # module-level, built once
-
-
-# In[2]:
 
 
 class Dates():

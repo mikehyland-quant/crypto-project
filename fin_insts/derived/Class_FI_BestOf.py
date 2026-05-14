@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
 import asyncio
@@ -28,9 +23,6 @@ for auto mode:
 '''
 
 
-# In[ ]:
-
-
 class BestOf(Subscriber):
 
     consensus_attr_list = [
@@ -39,7 +31,6 @@ class BestOf(Subscriber):
         'denominator_currency',
         'pf_prod_type'
                         ]
-
     def __init__(self, 
                  my_name, 
                  objs_list, 
@@ -50,8 +41,8 @@ class BestOf(Subscriber):
         super().__init__()
         
         self.objs_list = objs_list
-        self.update_interval = update_interval
-        self.mode = mode.lower()     
+        self.mode = mode.lower() 
+        self.update_interval = update_interval            
         
         self.my_prod_type = 'best_of'
         self.my_fi_name = 'b/o ' + my_name
@@ -74,10 +65,7 @@ class BestOf(Subscriber):
     def _consensus_attr(self, attr_name):
         values = {getattr(obj, attr_name, None) for obj in self.objs_list}
         return values.pop() if len(values) == 1 else "multi"
-
-    def update_subscriber_data(self):  # if self.mode == 'auto'
-        self.update_best_of()
-        
+    
     async def run_timer(self):  # if self.mode == 'timer'
         self._running = True
         while self._running:
@@ -87,6 +75,11 @@ class BestOf(Subscriber):
     def stop_timer(self):  # if self.mode == 'timer'
         self._running = False
 
+    def update_subscriber_data(self):  # if self.mode == 'auto'
+        self.update_best_of()
+        for subscriber in self.subscribers:
+            subscriber.update_subscriber_data()
+        
     def update_best_of(self):
         for attr, agg_fn in self.mkt_attr_tuples:
 
@@ -113,8 +106,5 @@ class BestOf(Subscriber):
 
             setattr(self, attr, best_amt)
             setattr(self, attr + '_name', best_name)
-
-        for subscriber in self.subscribers:
-            subscriber.update_subscriber_data()
 
         

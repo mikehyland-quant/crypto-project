@@ -10,18 +10,9 @@ creation process for a financial instrument
 '''
 
 
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 from fin_insts.parents.Class_FI_Dates import Dates
 from fin_insts.parents.Class_FI_MktData import MktData
 from datetime import date
-
-
-# In[2]:
 
 
 class FinancialInstrument(MktData):

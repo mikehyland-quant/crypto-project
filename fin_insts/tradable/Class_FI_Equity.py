@@ -34,7 +34,7 @@ class Equity(FinancialInstrument):
         self.scalar_size_mkt_to_unit  = self.scalar_price_mkt_to_unit
 
     def get_scalar(self):
-        df = xlw.get_df('2026 Crypto ETF Ratios.xlsx', 
+        df = xlw.get_df('2026 BTC ETF Ratios.xlsx', 
                         'BTC RATIOS', 
                         'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
