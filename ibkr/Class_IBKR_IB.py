@@ -9,6 +9,8 @@ from datetime import datetime
 
 
 class IBKR_IB:
+    SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
+
     def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
@@ -171,10 +173,13 @@ class IBKR_IB:
 
         if trade is None:
             raise ValueError(f"Order {order_id} not found")
-    
+
+        if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
+            raise ValueError(f"Order {order_id} is not in a modifiable state")
+
         trade.order.orderType = "MKT"
         trade.order.totalQuantity = size
-        trade.order.side = side
+        trade.order.action = side
 
         # Important: market orders should not keep a limit price
         trade.order.lmtPrice = None
@@ -213,6 +218,9 @@ class IBKR_IB:
         if trade is None:
             raise ValueError(f"Order {order_id} not found")
     
+        if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
+            raise ValueError(f"Order {order_id} is not in a modifiable state")
+            
         trade.order.lmtPrice = price
         trade.order.totalQuantity = size
     
