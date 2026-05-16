@@ -175,7 +175,8 @@ class IBKR_IB:
             raise ValueError(f"Order {order_id} not found")
 
         if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
-            raise ValueError(f"Order {order_id} is not in a modifiable state")
+            #raise ValueError(f"Order {order_id} is not in a modifiable state")
+            return
 
         trade.order.orderType = "MKT"
         trade.order.totalQuantity = size
@@ -219,8 +220,9 @@ class IBKR_IB:
             raise ValueError(f"Order {order_id} not found")
     
         if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
-            raise ValueError(f"Order {order_id} is not in a modifiable state")
-            
+            #raise ValueError(f"Order {order_id} is not in a modifiable state")
+            return
+
         trade.order.lmtPrice = price
         trade.order.totalQuantity = size
     

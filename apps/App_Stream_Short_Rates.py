@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
 
 
 def WorkbookDetails():
@@ -33,8 +29,13 @@ import threading
 import time
 from datetime import datetime
 
+# --- system setup ---
+import sys
+import os
+sys.path.append(os.path.abspath(".."))
+
 #self-written shortcuts
-from Class_xlWings import *
+from output.Class_xlWings import xlWings
 xlw  = xlWings()
 
 ##########################################
@@ -107,7 +108,7 @@ def main():
     WorkbookDetailsDict = WorkbookDetails()
 
 #Step 2 - get instructions
-    FixedInputsDict = xlw.getDict(WorkbookDetailsDict["Workbook Name"], 
+    FixedInputsDict = xlw.get_dict(WorkbookDetailsDict["Workbook Name"], 
                                   WorkbookDetailsDict["Instruction Worksheet Name"], 
                                   'Table1', True, int)
 
@@ -115,7 +116,7 @@ def main():
     IBKR = IBKRLightOW() 
 
 #Step 4 - create Financial Instrument dataframe
-    IBKR.FinInstDF = xlw.getDF(FixedInputsDict["Workbook Name"],
+    IBKR.FinInstDF = xlw.get_df(FixedInputsDict["Workbook Name"],
                                FixedInputsDict["Input Worksheet"],
                                FixedInputsDict["Input Range"], True,
                                FixedInputsDict["Header Rows"], int)
