@@ -66,14 +66,21 @@ class PairsTrade(Strategy):
         min_ratio_size = min(self.obj1.ratio_size, self.obj2.ratio_size)
         
         for obj in objs_list:
-            obj.active_base_price                   = None
-            obj.active_order_price                  = None  
+            obj.active_base_price  = None
+            obj.active_order_price = None  
 
-            obj.buy_sell                            = obj.buy_sell.upper()
-            obj.order_size                          = abs(obj.order_size)
-            obj.calc_price                          = self.calc_price   # assigns function below 
-            obj.spread_ratio                        = obj.opp_obj.ratio_size / min_ratio_size
-            obj.adj_spread                          = self.target_spread / obj.spread_ratio
+            obj.order_id           = None
+            obj.trade_status       = None
+            obj.filled             = 0
+            obj.remaining          = None
+            obj.avg_fill_price     = None
+            obj.last_fill_price    = None
+            
+            obj.buy_sell           = obj.buy_sell.upper()
+            obj.order_size         = abs(obj.order_size)
+            obj.calc_price         = self.calc_price   # assigns function below 
+            obj.spread_ratio       = obj.opp_obj.ratio_size / min_ratio_size
+            obj.adj_spread         = self.target_spread / obj.spread_ratio
             
             obj.input_price_attr, obj.filled_scalar = buy_sell_dict[obj.buy_sell]  
             
@@ -86,7 +93,15 @@ class PairsTrade(Strategy):
                     
         
     def on_close_data(self, obj):
-        order_id = super().on_close_data(obj)
+        if obj.buy_sell == 'BUY':
+            obj.placeholder_price = obj.price_mkt_close * 0.5
+        elif obj.buy_sell == 'SELL':
+            obj.placeholder_price = obj.price_mkt_close * 2.0
+
+        obj.placeholder_price = obj.round_price_to_tick(abs(obj.placeholder_price)) 
+
+        order_id = self.place_limit_order(obj, obj.placeholder_price, obj.price_mkt_close)
+
         if order_id is not None:
             self._zero_admin(obj, obj.price_mkt_close, obj.placeholder_price, order_id)
             obj.strat_on_close_data = False
