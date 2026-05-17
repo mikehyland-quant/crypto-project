@@ -42,5 +42,5 @@ class Equity(FinancialInstrument):
         scalar = self._safe_float(df.loc[df['Date'] == exp_date, self.my_fi_name].to_list()[0])
         return scalar
         
-
+ 
         

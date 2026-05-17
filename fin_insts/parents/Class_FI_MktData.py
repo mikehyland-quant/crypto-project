@@ -91,6 +91,7 @@ class MktData:
 
     def on_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None): 
         changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
+            #self.update_mkt_data() is overwritten in strategy classes to update additional attributes when necessary
 
         if not changed:
              return 

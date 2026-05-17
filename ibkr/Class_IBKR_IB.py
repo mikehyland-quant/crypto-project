@@ -97,7 +97,7 @@ class IBKR_IB:
         self.ticker_dict[ticker] = obj
         
         return ticker
-        
+         
     def tick_handler(self, ticker):
         '''
         IBKRClient.tick_handler is a synchronous method used as an event callback, 
@@ -112,7 +112,7 @@ class IBKR_IB:
             return
         
         if obj.need_close_data and ticker.close is not None:
-            obj.update_mkt_data(
+            changed = obj.update_mkt_data(
                 bid_price=ticker.bid,
                 ask_price=ticker.ask,
                 bid_size=ticker.bidSize,
@@ -145,16 +145,14 @@ class IBKR_IB:
         if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
             asyncio.create_task(strategy.on_trade_exec(obj, order))
             
-    def place_market_order(self, obj=None, side=None, size=None):
-        contract = obj.ibkr_contract
-
+    def place_market_order(self, obj=None, size=None, side=None):
         order = MarketOrder(
             action=side,
             totalQuantity=size,
             tif="DAY",
         )
 
-        my_order = self.ib.placeOrder(contract, order)
+        my_order = self.ib.placeOrder(obj.ibkr_contract, order)
         my_order.statusEvent += self.order_handler
 
         key = (
@@ -166,32 +164,8 @@ class IBKR_IB:
         self.obj_by_order_id[key] = obj
 
         return my_order.order.orderId
-
-    def modify_to_market_order(self, order_id=None, obj=None, side=None, size=None):
-        key = (self.clientId, order_id)
-        trade = self.trades_by_order_id.get(key)
-
-        if trade is None:
-            raise ValueError(f"Order {order_id} not found")
-
-        if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
-            #raise ValueError(f"Order {order_id} is not in a modifiable state")
-            return
-
-        trade.order.orderType = "MKT"
-        trade.order.totalQuantity = size
-        trade.order.action = side
-
-        # Important: market orders should not keep a limit price
-        trade.order.lmtPrice = None
     
-        self.ib.placeOrder(obj.ibkr_contract, trade.order)
-    
-        return order_id
-    
-    def place_limit_order(self, obj=None, side=None, price=None, size=None):
-        contract = obj.ibkr_contract
-
+    def place_limit_order(self, obj=None, size=None, side=None, price=None):
         order = LimitOrder(
             action=side,
             totalQuantity=size,
@@ -199,7 +173,7 @@ class IBKR_IB:
             tif="DAY",
         )
 
-        my_order = self.ib.placeOrder(contract, order)
+        my_order = self.ib.placeOrder(obj.ibkr_contract, order)
         my_order.statusEvent += self.order_handler
         
         key = (
@@ -212,7 +186,30 @@ class IBKR_IB:
 
         return my_order.order.orderId
 
-    def modify_limit_order(self, order_id=None, obj=None, price=None, size=None):
+    def modify_to_market_order(self, obj=None, size=None, order_id=None):
+        key = (self.clientId, order_id)
+        trade = self.trades_by_order_id.get(key)
+
+        if trade is None:
+            raise ValueError(f"Order {order_id} not found")
+
+        if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
+            #raise ValueError(f"Order {order_id} is not in a modifiable state")
+            return
+
+        trade.order.orderType = "MKT"
+        
+        if size is not None:
+            trade.order.totalQuantity = size
+
+        # Important: market orders should not keep a limit price
+        trade.order.lmtPrice = None
+    
+        self.ib.placeOrder(obj.ibkr_contract, trade.order)
+    
+        return order_id 
+    
+    def modify_limit_order(self, obj=None, size=None, order_id=None, price=None):
         key = (self.clientId, order_id)
         trade = self.trades_by_order_id.get(key)
 
@@ -224,7 +221,9 @@ class IBKR_IB:
             return
 
         trade.order.lmtPrice = price
-        trade.order.totalQuantity = size
+
+        if size is not None:
+            trade.order.totalQuantity = size
     
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
     

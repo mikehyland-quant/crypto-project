@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 # In[ ]:
 
-
+ 
 class Subscriber(ABC):
 
     def __init__(self):       

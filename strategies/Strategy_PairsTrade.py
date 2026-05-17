@@ -181,7 +181,7 @@ class PairsTrade(Strategy):
 
         filled_obj.active_order_price = None
         filled_obj.active_input_price = None
-
+ 
     
     def _two_admin(self, filled_obj):
         filled_obj.strat_on_trade_exec = False
@@ -189,7 +189,7 @@ class PairsTrade(Strategy):
         filled_obj.active_price        = None
         filled_obj.active_input_price  = None
 
-        final_spread = self.calc_final_spread(self.obj1, self.obj2)
+        final_spread = self.calc_final_outcome(self.obj1, self.obj2)
 
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
@@ -219,11 +219,47 @@ class PairsTrade(Strategy):
         return output_price
 
     
-    def calc_final_spread(self, obj1, obj2):    
+    def calc_final_outcome(self, obj1, obj2):    
         final_spread = (obj2.avg_fill_price * obj2.spread_ratio * obj2.filled_scalar + 
                         obj1.avg_fill_price * obj1.spread_ratio * obj1.filled_scalar)  
         return final_spread
+    
+
+    def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
+        if obj.is_mkt_data_valid():
+            side         = obj.buy_sell
+            size         = abs(obj.order_size)
+            order_id     = obj.order_id
+            output_price = abs(output_price)
+            
+            order_id = self.update_limit_order(obj=obj,                                      
+                                               price=output_price, 
+                                               side=side, 
+                                               size=size, 
+                                               order_id=order_id)   
+            if self.print_orders:
+                self.print_order_message(side, size, obj.my_fi_name, output_price, input_price, order_id)
+
+            return order_id
+
+
+    def place_market_order(self, obj):  # very literal to improve speed
+        if obj.is_mkt_data_valid():
+            side         = obj.buy_sell
+            size         = abs(obj.order_size) 
+            order_id     = obj.order_id
+            # output_price = abs(obj.placeholder_price)  no need for price when placing market order
+            
+            order_id = self.update_market_order(obj=obj,                                      
+                                                #price=output_price, 
+                                                side=side, 
+                                                size=size, 
+                                                order_id=order_id)   
+            if self.print_orders:
+                self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
+
+            return order_id
 
 
             
-            
+        

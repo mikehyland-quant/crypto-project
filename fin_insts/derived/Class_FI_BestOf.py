@@ -72,7 +72,7 @@ class BestOf(Subscriber):
             self.update_best_of()
             #strat.on_best_of_update()
             await asyncio.sleep(self.update_interval)
-
+ 
     def stop_timer(self):  # if self.mode == 'timer'
         self._running = False
 
@@ -105,6 +105,6 @@ class BestOf(Subscriber):
 
             setattr(self, attr, best_amt)
             setattr(self, attr + '_obj', best_obj)  
-            setattr(self, attr + '_name', best_obj.my_fi_name)
+            
 
         

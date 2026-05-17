@@ -50,7 +50,7 @@ class Strategy:
         obj.round_size_to_increment = types.MethodType(cls.round_size_to_increment, obj)
         
 
-    @classmethod
+    @classmethod 
     def _extract_trading_rules(cls, obj):
         details = getattr(obj, 'ibkr_details', None)
 
@@ -123,68 +123,21 @@ class Strategy:
         return round(rounded, 10)
 
 
-    def update_market_order(self, obj=None, side=None, size=None, order_id=None):
+    def update_market_order(self, obj=None, size=None, side=None, order_id=None):
         if order_id is None:
-            return obj.platform_obj.place_market_order(obj=obj, side=side, size=size)
+            return obj.platform_obj.place_market_order(obj=obj, size=size, side=side)
         else:
-            return obj.platform_obj.modify_to_market_order(order_id=order_id, obj=obj, side=side, size=size)
-
+            return obj.platform_obj.modify_to_market_order(obj=obj, size=size, order_id=order_id)
         raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
             
 
-    def update_limit_order(self, obj=None, side=None, price=None, size=None, order_id=None):
+    def update_limit_order(self, obj=None, size=None, side=None, order_id=None, price=None):
         if order_id is None:
-            return obj.platform_obj.place_limit_order(obj=obj, side=side, price=price, size=size)
+            return obj.platform_obj.place_limit_order(obj=obj, size=size, side=side, price=price)
         else:
-            return obj.platform_obj.modify_limit_order(order_id=order_id, obj=obj, price=price, size=size)
-
+            return obj.platform_obj.modify_limit_order(obj=obj, size=size, order_id=order_id, price=price)
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
         
-    
-    def print_order_message(self, side, size, name, output_price, input_price, order_id):
-        print(f"{datetime.now():%H:%M:%S.%f}", 
-              side, size, name, 
-              ', order price = ', output_price, 
-              ', base price = ' , input_price, 
-              ', order id = '   , order_id,
-              '\n')
-
-
-    def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
-        if obj.is_mkt_data_valid():
-            side         = obj.buy_sell
-            size         = abs(obj.order_size)
-            order_id     = obj.order_id
-            output_price = abs(output_price)
-            
-            order_id = self.update_limit_order(obj=obj,                                      
-                                            price=output_price, 
-                                            side=side, 
-                                            size=size, 
-                                            order_id=order_id)   
-            if self.print_orders:
-                self.print_order_message(side, size, obj.my_fi_name, output_price, input_price, order_id)
-
-            return order_id
-
-
-    def place_market_order(self, obj):  # very literal to improve speed
-        if obj.is_mkt_data_valid():
-            side         = obj.buy_sell
-            size         = abs(obj.order_size) 
-            order_id     = obj.order_id
-            # output_price = abs(obj.placeholder_price)  no need for price when placing market order
-            
-            order_id = self.update_market_order(obj=obj,                                      
-                                                #price=output_price, 
-                                                side=side, 
-                                                size=size, 
-                                                order_id=order_id)   
-            if self.print_orders:
-                self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
-    
-            return order_id
-
 
     
                 
