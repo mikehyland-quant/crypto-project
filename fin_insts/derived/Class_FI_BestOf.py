@@ -2,28 +2,27 @@
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
 import asyncio
 
-'''
-for either mode, create class:
-    bestof = BestOf(
-        my_name="BTC venues",
-        objs_list=objs_list,
-        attr_tuples=[
-            ("mkt_bid", "max"),
-            ("mkt_ask", "min"),
-        ],
-        mode="auto",
-    )
-
-for timer mode:
-    for obj in bo_obj_list:
-        tasks.append(asyncio.create_task(obj.run_timer())) 
-
-for auto mode:
-    will be triggered by underlying objects at subscriber.update_unit_data() at end of mkt_data_update()
-'''
-
 
 class BestOf(Subscriber):
+    '''
+    for either mode, create class:
+        bestof = BestOf(
+            my_name="BTC venues",
+            objs_list=objs_list,
+            attr_tuples=[
+                ("mkt_bid", "max"),
+                ("mkt_ask", "min"),
+            ],
+            mode="auto",
+        )
+
+    for timer mode:
+        for obj in bo_obj_list:
+            tasks.append(asyncio.create_task(obj.run_timer())) 
+
+    for auto mode:
+        will be triggered by underlying objects at subscriber.update_unit_data() at end of mkt_data_update()
+    '''
 
     consensus_attr_list = [
         'my_pf_name',
@@ -31,6 +30,7 @@ class BestOf(Subscriber):
         'denominator_currency',
         'pf_prod_type'
                         ]
+
     def __init__(self, 
                  my_name, 
                  objs_list, 
@@ -70,6 +70,7 @@ class BestOf(Subscriber):
         self._running = True
         while self._running:
             self.update_best_of()
+            #strat.on_best_of_update()
             await asyncio.sleep(self.update_interval)
 
     def stop_timer(self):  # if self.mode == 'timer'
@@ -93,18 +94,17 @@ class BestOf(Subscriber):
 
             if not candidates:
                 best_amt = None
-                best_name = None
+                best_obj = None
 
             else:
                 best_amt = agg_fn(val for val, obj in candidates)
 
-                best_name = [
-                    obj.my_fi_name
-                    for val, obj in candidates
-                    if val == best_amt
+                best_obj = [
+                    obj for val, obj in candidatesif val == best_amt
                 ]
 
             setattr(self, attr, best_amt)
-            setattr(self, attr + '_name', best_name)
+            setattr(self, attr + '_obj', best_obj)  
+            setattr(self, attr + '_name', best_obj.my_fi_name)
 
         

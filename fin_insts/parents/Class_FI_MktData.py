@@ -96,13 +96,13 @@ class MktData:
              return 
               
         for subscriber in self.subscribers:
-            subscriber.update_subscriber_data()
+            subscriber.update_subscriber_data(self)
 
         strategy = getattr(self, "strategy", None)
         if strategy is not None and getattr(self, "strat_on_mkt_data", False):
-            strategy.on_mkt_data(self)
-    
-      
+            strategy.on_mkt_data()
+
+
     def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
         changed = False
         ts = None
@@ -186,8 +186,7 @@ class MktData:
             self.size_order_bid     =  self.size_raw_bid   * self.scalar_size_raw_to_order
             self.size_mkt_bid       =  self.size_order_bid * self.scalar_size_order_to_mkt
             self.size_unit_bid      =  self.size_mkt_bid   * self.scalar_size_mkt_to_unit
-    
-            
+               
         if ask_size is not None and ask_size != self.size_raw_ask:
             changed = True
             
