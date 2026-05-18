@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-#import asyncio
 
 import asyncio
 from datetime import datetime
@@ -91,7 +87,7 @@ class PairsTrade(Strategy):
 
         return self.obj1, self.obj2
                     
-        
+         
     def on_close_data(self, obj):
         if obj.buy_sell == 'BUY':
             obj.placeholder_price = obj.price_mkt_close * 0.5

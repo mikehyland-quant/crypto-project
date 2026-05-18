@@ -11,7 +11,7 @@ from datetime import datetime
 class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
 
-    def __init__(self, host='127.0.0.1', port=7496):
+    def __init__(self, host='127.0.0.1', port=7497):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))

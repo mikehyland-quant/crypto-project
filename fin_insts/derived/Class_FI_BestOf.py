@@ -100,8 +100,8 @@ class BestOf(Subscriber):
                 best_amt = agg_fn(val for val, obj in candidates)
 
                 best_obj = [
-                    obj for val, obj in candidatesif val == best_amt
-                ]
+                    obj for val, obj in candidates if val == best_amt
+                ][0]
 
             setattr(self, attr, best_amt)
             setattr(self, attr + '_obj', best_obj)  

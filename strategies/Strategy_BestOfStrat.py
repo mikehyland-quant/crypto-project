@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-#import asyncio
 
 import asyncio
 from datetime import datetime
@@ -19,7 +15,7 @@ class BestOfStrat(Strategy):
         for obj in bo_obj.objs_list:
             self._prep_obj_for_strat(obj, unit_size, safety_margin)
                 
- 
+  
     def _prep_obj_for_strat(self, obj, unit_size, safety_margin):
         obj.cf_unit_bid_net = None
         obj.cf_unit_ask_net = None
@@ -101,7 +97,7 @@ class BestOfStrat(Strategy):
 
 
     
-
+    '''
 
     def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
         if obj.is_mkt_data_valid():
@@ -203,4 +199,4 @@ class BestOfStrat(Strategy):
 
 
             
-            
+    '''

@@ -101,7 +101,7 @@ class MktData:
 
         strategy = getattr(self, "strategy", None)
         if strategy is not None and getattr(self, "strat_on_mkt_data", False):
-            strategy.on_mkt_data()
+            strategy.on_mkt_data(self)
 
 
     def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
