@@ -4,9 +4,7 @@ import math
 import types
 import winsound
 
-
 from datetime import datetime
-
 
 class Strategy:
     _RULE_FIELD_MAP = {
@@ -80,7 +78,7 @@ class Strategy:
     
         price = self._safe_float(price, default=None)
         tick  = self._safe_float(self.min_tick, default=None)
-        side  = self.buy_sell.upper()
+        buy_sell  = self.buy_sell.upper()
 
         if price is None:
             return None
@@ -90,12 +88,12 @@ class Strategy:
     
         scaled = price / tick
     
-        if side == 'BUY':
+        if buy_sell == 'BUY':
             rounded = math.floor(scaled) * tick
-        elif side == 'SELL':
+        elif buy_sell == 'SELL':
             rounded = math.ceil(scaled) * tick
         else:
-            raise ValueError("side must be 'BUY' or 'SELL'")
+            raise ValueError("buy_sell must be 'BUY' or 'SELL'")
     
         return round(rounded, 10)
         
@@ -123,21 +121,22 @@ class Strategy:
         return round(rounded, 10)
 
 
-    def update_market_order(self, obj=None, size=None, side=None, order_id=None):
+    def update_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
         if order_id is None:
-            return obj.platform_obj.place_market_order(obj=obj, size=size, side=side)
+            return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
         else:
-            return obj.platform_obj.modify_to_market_order(obj=obj, size=size, order_id=order_id)
+            return obj.platform_obj.modify_to_market_order(obj=obj, size=size, buy_sell=buy_sell, order_id=order_id)
         raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
             
 
-    def update_limit_order(self, obj=None, size=None, side=None, order_id=None, price=None):
+    def update_limit_order(self, obj=None, size=None, buy_sell=None, order_id=None, price=None):
+        print(order_id)
         if order_id is None:
-            return obj.platform_obj.place_limit_order(obj=obj, size=size, side=side, price=price)
+            return obj.platform_obj.place_limit_order(obj=obj, size=size, buy_sell=buy_sell, price=price)
         else:
-            return obj.platform_obj.modify_limit_order(obj=obj, size=size, order_id=order_id, price=price)
+            return obj.platform_obj.modify_limit_order(obj=obj, size=size, buy_sell=buy_sell, order_id=order_id, price=price)
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
-        
-
     
-                
+
+    def print_order_message(self, buy_sell, size, fi_name, price, mkt_price, order_id):
+        print(f"{buy_sell} {size} of {fi_name} at {price} (mkt: {mkt_price}) - order_id: {order_id}")

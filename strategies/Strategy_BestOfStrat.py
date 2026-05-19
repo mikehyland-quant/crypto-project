@@ -1,8 +1,8 @@
 
 import asyncio
+
 from datetime import datetime
 from strategies.Strategy_Parent import Strategy
-
 
 class BestOfStrat(Strategy):
 
@@ -38,15 +38,16 @@ class BestOfStrat(Strategy):
         
     def on_close_data(self, obj):
         # from MktData.on_close_data()
+        mkt_close = obj.price_mkt_close
         buy_order_id = self.update_limit_order(obj=obj, 
                                                side="BUY", 
-                                               price=0.5 * obj.price_mkt_close, 
+                                               price=0.5 * mkt_close, 
                                                size=obj.order_size, 
                                                order_id=None)
         
         sell_order_id = self.update_limit_order(obj=obj, 
                                                 side="SELL", 
-                                                price=2.0 * obj.price_mkt_close, 
+                                                price=2.0 * mkt_close, 
                                                 size=obj.order_size, 
                                                 order_id=None)  
         

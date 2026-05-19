@@ -1,5 +1,4 @@
 
-
 import asyncio
 
 from numpy import size
@@ -7,9 +6,9 @@ from numpy import size
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
 
-
 class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
+
 
     def __init__(self, host='127.0.0.1', port=7497):
         self.host = host
@@ -21,14 +20,17 @@ class IBKR_IB:
         self.trades_by_order_id = {}  # created in place_limit_order
         self.obj_by_order_id = {}  # created in place_limit_order
 
+
     async def create_simple_contract(self, obj):
         obj.ibkr_contract = await self.contract_by_conId(int(obj.pf_locator))
         obj.ibkr_details = (await self.ib.reqContractDetailsAsync(obj.ibkr_contract))[0]
+
 
     async def contract_by_conId(self, conid):
         contract = Contract(conId=int(conid))
         await self.ib.qualifyContractsAsync(contract)
         return contract
+
 
     async def create_bag_contract(self, spread_obj):
         leg1 = ComboLeg()
@@ -51,7 +53,8 @@ class IBKR_IB:
         bag.comboLegs = [leg1, leg2]
 
         spread_obj.ibkr_contract = bag        
-            
+
+
     @classmethod
     async def complete_obj(cls, obj):
         obj.pf_symbol    = obj.ibkr_contract.localSymbol
@@ -68,6 +71,7 @@ class IBKR_IB:
         
         obj.complete_obj()
         
+
     async def connect(self):
         if not self.ib.isConnected():
             await self.ib.connectAsync(
@@ -78,6 +82,7 @@ class IBKR_IB:
         #print("Next Order ID:", self.ib.client.getReqId())
         return self.ib.isConnected()
 
+
     async def start_streams(self, dict_or_list):
         if isinstance(dict_or_list, dict):
             objs = list(dict_or_list.values())
@@ -87,6 +92,7 @@ class IBKR_IB:
         for obj in objs:
             await self.stream_contract(obj, self.tick_handler)
             
+
     async def stream_contract(self, obj, handler):
         if obj.ibkr_contract.secType == 'BAG':
             ticker = self.ib.reqMktData(obj.ibkr_contract, "233", False, False)
@@ -98,6 +104,7 @@ class IBKR_IB:
         
         return ticker
          
+
     def tick_handler(self, ticker):
         '''
         IBKRClient.tick_handler is a synchronous method used as an event callback, 
@@ -105,7 +112,7 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-#        print(ticker, '\n')
+        print(f'ticker: {ticker}\n')
 
         obj = self.ticker_dict.get(ticker)
         if obj is None:
@@ -131,7 +138,9 @@ class IBKR_IB:
                 ask_size=ticker.askSize
             )
            
+
     def order_handler(self, order):
+        print(f'order: {order}\n')
         key = (
             order.order.clientId,
             order.order.orderId
@@ -144,10 +153,11 @@ class IBKR_IB:
         strategy = getattr(obj, "strategy", None)
         if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
             asyncio.create_task(strategy.on_trade_exec(obj, order))
-            
-    def place_market_order(self, obj=None, size=None, side=None):
+
+
+    def place_market_order(self, obj=None, size=None, buy_sell=None):
         order = MarketOrder(
-            action=side,
+            action=buy_sell,
             totalQuantity=size,
             tif="DAY",
         )
@@ -165,9 +175,10 @@ class IBKR_IB:
 
         return my_order.order.orderId
     
-    def place_limit_order(self, obj=None, size=None, side=None, price=None):
+
+    def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None):
         order = LimitOrder(
-            action=side,
+            action=buy_sell,
             totalQuantity=size,
             lmtPrice=price,
             tif="DAY",
@@ -175,18 +186,19 @@ class IBKR_IB:
 
         my_order = self.ib.placeOrder(obj.ibkr_contract, order)
         my_order.statusEvent += self.order_handler
-        
+
         key = (
             my_order.order.clientId,
             my_order.order.orderId
-            )
-        
+        )
+
         self.trades_by_order_id[key] = my_order
         self.obj_by_order_id[key] = obj
 
         return my_order.order.orderId
+ 
 
-    def modify_to_market_order(self, obj=None, size=None, order_id=None):
+    def modify_to_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
         key = (self.clientId, order_id)
         trade = self.trades_by_order_id.get(key)
 
@@ -198,9 +210,8 @@ class IBKR_IB:
             return
 
         trade.order.orderType = "MKT"
-        
-        if size is not None:
-            trade.order.totalQuantity = size
+        trade.order.totalQuantity = size
+        trade.order.action = buy_sell
 
         # Important: market orders should not keep a limit price
         trade.order.lmtPrice = None
@@ -209,7 +220,8 @@ class IBKR_IB:
     
         return order_id 
     
-    def modify_limit_order(self, obj=None, size=None, order_id=None, price=None):
+
+    def modify_limit_order(self, obj=None, size=None, buy_sell=None, order_id=None, price=None):
         key = (self.clientId, order_id)
         trade = self.trades_by_order_id.get(key)
 
@@ -221,10 +233,9 @@ class IBKR_IB:
             return
 
         trade.order.lmtPrice = price
+        trade.order.totalQuantity = size
+        trade.order.action = buy_sell
 
-        if size is not None:
-            trade.order.totalQuantity = size
-    
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
     
         return order_id

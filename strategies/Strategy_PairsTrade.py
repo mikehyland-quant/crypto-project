@@ -1,5 +1,6 @@
 
 import asyncio
+
 from datetime import datetime
 from strategies.Strategy_Parent import Strategy
 
@@ -30,6 +31,9 @@ class PairsTrade(Strategy):
         self.obj2.opp_obj = self.obj1
 
         self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
+
+        print(vars(self.obj1), '\n')
+        print(vars(self.obj2), '\n')  
 
                 
     def _attach_dict_attr(self, objs_list, objs_dict):
@@ -74,7 +78,7 @@ class PairsTrade(Strategy):
             
             obj.buy_sell           = obj.buy_sell.upper()
             obj.order_size         = abs(obj.order_size)
-            obj.calc_price         = self.calc_price   # assigns function below 
+            obj.calc_price         = self._calc_price   # assigns function below 
             obj.spread_ratio       = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread         = self.target_spread / obj.spread_ratio
             
@@ -82,25 +86,38 @@ class PairsTrade(Strategy):
             
             if obj.active_passive.lower() == 'passive':
                 setattr(obj.opp_obj, 'strat_on_mkt_data', False)
-            elif obj.active_passive.lower() == 'active':
-                setattr(obj, 'strat_on_close_data', False)
+            #elif obj.active_passive.lower() == 'active':
+             #   setattr(obj, 'strat_on_close_data', False)
 
         return self.obj1, self.obj2
                     
          
     def on_close_data(self, obj):
+        mkt_close = obj.price_mkt_close
         if obj.buy_sell == 'BUY':
-            obj.placeholder_price = obj.price_mkt_close * 0.5
+            placeholder_price = mkt_close * 0.5
         elif obj.buy_sell == 'SELL':
-            obj.placeholder_price = obj.price_mkt_close * 2.0
+            placeholder_price = mkt_close * 2.0
 
-        obj.placeholder_price = obj.round_price_to_tick(abs(obj.placeholder_price)) 
+        placeholder_price = obj.round_price_to_tick(placeholder_price)
 
-        order_id = self.place_limit_order(obj, obj.placeholder_price, obj.price_mkt_close)
-
+        size=obj.order_size
+        buy_sell=obj.buy_sell
+        
+        order_id = self.update_limit_order(obj=obj, 
+                                           size=size, 
+                                           buy_sell=buy_sell, 
+                                           order_id=None, 
+                                           price=placeholder_price)
+        print('oid=', order_id, '\n')
         if order_id is not None:
-            self._zero_admin(obj, obj.price_mkt_close, obj.placeholder_price, order_id)
-            obj.strat_on_close_data = False
+            obj.strat_on_close_data = False 
+            obj.active_base_price   = None
+            obj.active_order_price  = placeholder_price       
+            obj.order_id            = order_id  
+        
+            if self.print_orders:
+                self.print_order_message(buy_sell, size, obj.my_fi_name, placeholder_price, mkt_close, order_id)   
             
     
     def on_mkt_data(self, input_obj):
@@ -108,84 +125,109 @@ class PairsTrade(Strategy):
             return  # no need to update price 
 
         output_obj  = input_obj.opp_obj
-        input_price = getattr(input_obj, input_obj.input_price_attr)
-        
-        if output_obj.active_base_price is not None and abs(input_price - output_obj.active_base_price) < 1e-9:
+
+        if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
             return
 
-        output_price = output_obj.calc_price(input_price, output_obj, 0)  
+        input_price = getattr(input_obj, input_obj.input_price_attr)
+        active_base_price = output_obj.active_base_price
         
-        if output_obj.active_order_price is not None and abs(output_price - output_obj.active_order_price) < 1e-9:
+        if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
-            
-        order_id = self.place_limit_order(output_obj, output_price, input_price)
+
+        output_price = output_obj.calc_price(input_price, output_obj) #, 0)  
+        active_order_price = output_obj.active_order_price
         
+        if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
+            return     
+        
+        order_id = self.update_limit_order(obj=output_obj,   
+                                           size=output_obj.order_size,
+                                           buy_sell=output_obj.buy_sell,
+                                           order_id=output_obj.order_id,
+                                           price=output_price)
+
         if order_id is not None:
-            self._zero_admin(output_obj, input_price, output_price, order_id)
+            output_obj.active_base_price   = input_price
+            output_obj.active_order_price  = output_price        
+            output_obj.order_id            = order_id  
+        
+            if self.print_orders:
+                self.print_order_message(output_obj.buy_sell, 
+                                         output_obj.order_size, 
+                                         output_obj.my_fi_name, 
+                                         output_price, 
+                                         input_price, 
+                                         order_id)
 
           
-    async def on_trade_exec(self, filled_obj, filled_order):        
+    async def on_trade_exec(self, filled_obj, filled_order):  
+        remaining = filled_order.orderStatus.remaining
+        
+        if self.stage == "ZERO FILLED":
+            if remaining > 0:
+                return
+            self.stage   = "ONE FILLED" 
+            self._on_first_fill(filled_obj, filled_order)
+
+        elif self.stage == "ONE FILLED":
+            if remaining > 0:
+                return   
+            self.stage = "TWO FILLED"
+        
+        self._fill_obj_trade_attr(filled_obj, filled_order) 
+        self.play_fill_sound()    
+
+        if self.stage == "TWO FILLED":
+            self._finalize_results()
+                      
+            
+    def _on_first_fill(self, filled_obj, filled_order):     
+        unfilled_obj = filled_obj.opp_obj
+        order_id     = self.update_market_order(obj=unfilled_obj, 
+                                                size=unfilled_obj.order_size,
+                                                buy_sell=unfilled_obj.buy_sell,
+                                                order_id=unfilled_obj.order_id)
+
+        '''
+        update_limit_order alternative
+        
+        input_price  = filled_order.orderStatus.avgFillPrice * filled_obj.filled_scalar
+        output_price = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
+    
+        order_id = self.update_limit_order(obj=obj,                                      
+                                            price=output_price,    
+                                            order_id=order_id)   
+
+        if order_id is not None:
+            unfilled_obj.active_base_price   = input_price
+            unfilled_obj.active_order_price  = output_price        
+        '''
+ 
+        filled_obj.strat_on_mkt_data    = False
+        
+        unfilled_obj.strat_on_mkt_data  = False
+
+        unfilled_obj.active_order_price = None
+        unfilled_obj.active_base_price = None
+
+        
+    def _fill_obj_trade_attr(self, filled_obj, filled_order):      
         filled_obj.trade_status    = filled_order.orderStatus.status
         filled_obj.filled          = filled_order.orderStatus.filled
         filled_obj.remaining       = filled_order.orderStatus.remaining
         filled_obj.avg_fill_price  = filled_order.orderStatus.avgFillPrice
         filled_obj.last_fill_price = filled_order.orderStatus.lastFillPrice
-
-        if self.stage == "ZERO FILLED":
-            if filled_obj.remaining > 0:
-                return
-                
-            self.stage   = "ONE FILLED"        
-            
-            input_price  = filled_obj.avg_fill_price * filled_obj.filled_scalar
-            unfilled_obj = filled_obj.opp_obj
-            
-            output_price = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
-            order_id     = self.place_limit_order(unfilled_obj, output_price, input_price)
-
-            self.play_fill_sound()  
-            
-            if order_id is not None:
-                self._one_admin(filled_obj, unfilled_obj, input_price, output_price, order_id)
-
-            await asyncio.sleep(1000)  # wait a second before launching market order 
-
-            order_id = self.place_market_order(unfilled_obj)
-                               
-        elif self.stage == "ONE FILLED":
-            if filled_obj.remaining > 0:
-                return   
-                
-            self.stage = "TWO FILLED"
-            
-            self._two_admin(filled_obj)   
-
-
-    def _zero_admin(self, obj, input_price, output_price, order_id):        
-        obj.active_base_price   = input_price
-        obj.active_order_price  = output_price        
-        obj.order_id            = order_id  
-
-    
-    def _one_admin(self, filled_obj, unfilled_obj, input_price, output_price, order_id):             
-        self._zero_admin(unfilled_obj, input_price, output_price, order_id)
         
-        unfilled_obj.strat_on_mkt_data  = False
-            
-        filled_obj.strat_on_mkt_data    = False
-        filled_obj.strat_on_trade_exec  = False     
-
-        filled_obj.active_order_price = None
-        filled_obj.active_input_price = None
- 
-    
-    def _two_admin(self, filled_obj):
-        filled_obj.strat_on_trade_exec = False
+        filled_obj.strat_on_trade_exec = False     
         
-        filled_obj.active_price        = None
-        filled_obj.active_input_price  = None
+        filled_obj.active_order_price  = None
+        filled_obj.active_base_price   = None
 
-        final_spread = self.calc_final_outcome(self.obj1, self.obj2)
+
+    def _finalize_results(self):
+        final_spread = (self.obj2.avg_fill_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
+                        self.obj1.avg_fill_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
 
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
@@ -208,54 +250,10 @@ class PairsTrade(Strategy):
             self.done_event.set()
 
         
-    def calc_price(self, input_price, output_obj, epsilon_scalar):     
+    def _calc_price(self, input_price, output_obj, epsilon_scalar=0):     
         fair_value   = output_obj.adj_spread - (input_price * output_obj.spread_ratio)
         output_price = fair_value - (epsilon_scalar * self.epsilon)
         output_price = output_obj.round_price_to_tick(abs(output_price))                                             
         return output_price
 
     
-    def calc_final_outcome(self, obj1, obj2):    
-        final_spread = (obj2.avg_fill_price * obj2.spread_ratio * obj2.filled_scalar + 
-                        obj1.avg_fill_price * obj1.spread_ratio * obj1.filled_scalar)  
-        return final_spread
-    
-
-    def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
-        if obj.is_mkt_data_valid():
-            side         = obj.buy_sell
-            size         = abs(obj.order_size)
-            order_id     = obj.order_id
-            output_price = abs(output_price)
-            
-            order_id = self.update_limit_order(obj=obj,                                      
-                                               price=output_price, 
-                                               side=side, 
-                                               size=size, 
-                                               order_id=order_id)   
-            if self.print_orders:
-                self.print_order_message(side, size, obj.my_fi_name, output_price, input_price, order_id)
-
-            return order_id
-
-
-    def place_market_order(self, obj):  # very literal to improve speed
-        if obj.is_mkt_data_valid():
-            side         = obj.buy_sell
-            size         = abs(obj.order_size) 
-            order_id     = obj.order_id
-            # output_price = abs(obj.placeholder_price)  no need for price when placing market order
-            
-            order_id = self.update_market_order(obj=obj,                                      
-                                                #price=output_price, 
-                                                side=side, 
-                                                size=size, 
-                                                order_id=order_id)   
-            if self.print_orders:
-                self.print_order_message(side, size, obj.my_fi_name, "market", "backup", order_id)
-
-            return order_id
-
-
-            
-        
