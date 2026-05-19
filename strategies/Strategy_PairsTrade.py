@@ -32,8 +32,8 @@ class PairsTrade(Strategy):
 
         self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
 
-        print(vars(self.obj1), '\n')
-        print(vars(self.obj2), '\n')  
+        #print(vars(self.obj1), '\n')
+        #print(vars(self.obj2), '\n')  
 
                 
     def _attach_dict_attr(self, objs_list, objs_dict):
@@ -86,8 +86,7 @@ class PairsTrade(Strategy):
             
             if obj.active_passive.lower() == 'passive':
                 setattr(obj.opp_obj, 'strat_on_mkt_data', False)
-            #elif obj.active_passive.lower() == 'active':
-             #   setattr(obj, 'strat_on_close_data', False)
+            
 
         return self.obj1, self.obj2
                     
@@ -109,7 +108,7 @@ class PairsTrade(Strategy):
                                            buy_sell=buy_sell, 
                                            order_id=None, 
                                            price=placeholder_price)
-        print('oid=', order_id, '\n')
+        
         if order_id is not None:
             obj.strat_on_close_data = False 
             obj.active_base_price   = None

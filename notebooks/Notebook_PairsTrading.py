@@ -150,7 +150,7 @@ async def main():
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name
         
-    #strat.print_orders = False
+    strat.print_orders = False
     #'''    
       
     # Run all streams concurrently

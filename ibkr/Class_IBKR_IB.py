@@ -10,7 +10,7 @@ class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
 
 
-    def __init__(self, host='127.0.0.1', port=7497):
+    def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))
@@ -112,7 +112,7 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-        print(f'ticker: {ticker}\n')
+        #print(f'ticker: {ticker}\n')
 
         obj = self.ticker_dict.get(ticker)
         if obj is None:
@@ -140,7 +140,8 @@ class IBKR_IB:
            
 
     def order_handler(self, order):
-        print(f'order: {order}\n')
+        #print(f'order: {order}\n')
+
         key = (
             order.order.clientId,
             order.order.orderId

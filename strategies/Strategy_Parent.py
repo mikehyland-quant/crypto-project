@@ -130,7 +130,6 @@ class Strategy:
             
 
     def update_limit_order(self, obj=None, size=None, buy_sell=None, order_id=None, price=None):
-        print(order_id)
         if order_id is None:
             return obj.platform_obj.place_limit_order(obj=obj, size=size, buy_sell=buy_sell, price=price)
         else:
