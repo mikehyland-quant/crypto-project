@@ -163,6 +163,8 @@ class IBKR_IB:
             tif="DAY",
         )
 
+        #print(order, '\n')
+
         my_order = self.ib.placeOrder(obj.ibkr_contract, order)
         my_order.statusEvent += self.order_handler
 
@@ -184,6 +186,8 @@ class IBKR_IB:
             lmtPrice=price,
             tif="DAY",
         )
+
+        #print(order, '\n')
 
         my_order = self.ib.placeOrder(obj.ibkr_contract, order)
         my_order.statusEvent += self.order_handler
@@ -218,6 +222,8 @@ class IBKR_IB:
         trade.order.lmtPrice = None
     
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
+
+        #print(trade.order, '\n')
     
         return order_id 
     
@@ -238,6 +244,8 @@ class IBKR_IB:
         trade.order.action = buy_sell
 
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
+
+        #print(trade.order, '\n')
     
         return order_id
 

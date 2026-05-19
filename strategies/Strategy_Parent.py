@@ -28,18 +28,6 @@ class Strategy:
             obj.strat_on_close_data  = True
         
             
-    def on_mkt_data(self, obj):
-        pass
-        
-
-    def on_trade_exec(self, obj):
-        pass
-
-
-    def on_close_data(self, obj):
-        pass
-
-
     @classmethod
     def _attach_trading_helpers(cls, obj):
         obj.my_trading_rules = cls._extract_trading_rules(obj)
@@ -137,5 +125,43 @@ class Strategy:
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
     
 
-    def print_order_message(self, buy_sell, size, fi_name, price, mkt_price, order_id):
-        print(f"{buy_sell} {size} of {fi_name} at {price} (mkt: {mkt_price}) - order_id: {order_id}")
+    def print_order_message(self, buy_sell, size, fi_name, price, order_id):
+        print(f"{buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}")
+
+
+    def on_close_data(self, obj):
+        #creates a placeholder limit order to get trade opened and in system
+        mkt_close = obj.price_mkt_close
+        if obj.buy_sell == 'BUY':
+            placeholder_price = mkt_close * 0.5
+        elif obj.buy_sell == 'SELL':
+            placeholder_price = mkt_close * 2.0
+
+        placeholder_price = obj.round_price_to_tick(placeholder_price)
+
+        size=obj.order_size
+        buy_sell=obj.buy_sell
+        
+        order_id = obj.platform_obj.place_limit_order(obj=obj, 
+                                                      size=size, 
+                                                      buy_sell=buy_sell, 
+                                                      price=placeholder_price)
+        
+        if order_id is not None:
+            obj.strat_on_close_data = False 
+            
+            if self.print_orders:
+                self.print_order_message(buy_sell, size, obj.my_fi_name, placeholder_price, order_id)   
+
+            self._placed_order_admin(obj, order_id, placeholder_price, mkt_close)
+
+
+    def on_mkt_data(self, obj):
+        pass
+        
+
+    def on_trade_exec(self, obj):
+        pass
+
+
+
