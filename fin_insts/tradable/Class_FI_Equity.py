@@ -33,6 +33,10 @@ class Equity(FinancialInstrument):
         self.scalar_price_mkt_to_unit = self.get_scalar()
         self.scalar_size_mkt_to_unit  = self.scalar_price_mkt_to_unit
 
+        # the two lines below overwrite IBKR sizes of 0.0001
+        self.size_increment = 1
+        self.min_size       = 1
+
     def get_scalar(self):
         df = xlw.get_df('2026 BTC ETF Ratios.xlsx', 
                         'BTC RATIOS', 

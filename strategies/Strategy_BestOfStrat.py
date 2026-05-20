@@ -1,8 +1,8 @@
 
 import asyncio
 
-from datetime import datetime
-from unittest import result
+#from datetime import datetime
+#from unittest import result
 from strategies.Strategy_Parent import Strategy
 
 class BestOfStrat(Strategy):
@@ -23,16 +23,19 @@ class BestOfStrat(Strategy):
         obj.order_id_buy    = None  
         obj.order_id_sell   = None
 
-        obj.min_profit      = self.bo_obj.scalar_size_mkt_to_unit * safety_margin
+        obj.min_profit      = obj.scalar_size_mkt_to_unit * safety_margin
         obj.order_size      = obj.round_size_to_increment(abs(obj.scalar_size_mkt_to_unit) * unit_size)
+        print(obj.order_size)
         
         
     def on_close_data(self, obj):
         # from MktData.on_close_data()
         mkt_close = obj.price_mkt_close
+
+        price = obj.round_price_to_tick(0.5 *mkt_close)
         buy_order_id = self.update_limit_order(obj=obj, 
-                                               side="BUY", 
-                                               price=0.5 * mkt_close, 
+                                               buy_sell="BUY", 
+                                               price=price, 
                                                size=obj.order_size, 
                                                order_id=None)
         
@@ -42,12 +45,13 @@ class BestOfStrat(Strategy):
                 self.print_order_message("BUY", 
                                          obj.order_size, 
                                          obj.my_fi_name, 
-                                         0.5 * mkt_close, 
+                                         price, 
                                          buy_order_id)   
         
+        price = obj.round_price_to_tick(2.0 *mkt_close)
         sell_order_id = self.update_limit_order(obj=obj, 
-                                                side="SELL", 
-                                                price=2.0 * mkt_close, 
+                                                buy_sell="SELL", 
+                                                price=price, 
                                                 size=obj.order_size, 
                                                 order_id=None)  
         
@@ -64,8 +68,9 @@ class BestOfStrat(Strategy):
             obj.strat_on_close_data = False 
             
             
-    def on_mkt_data(self):
+    def on_mkt_data(self, x):
         # from MktData.on_mkt_data()
+        
         buy_obj  = self.bo_obj.cf_unit_lift_ask_net_obj
         sell_obj = self.bo_obj.cf_unit_hit_bid_net_obj
         
@@ -95,12 +100,14 @@ class BestOfStrat(Strategy):
         for obj in self.bo_obj.objs_list:
             obj.strat_on_mkt_data = False
             if obj.buy_order_id != buy_order_id:
-                cancel buy buy_order_id
+                #cancel buy buy_order_id
+                pass
             if obj.sell_order_id != sell_order_id:
-                cancel sell sell_order_id
+                #cancel sell sell_order_id
+                pass
             
     
-        def on_trade_exec(filled_obj, filled_order):
+        def on_trade_exec(self, filled_obj, filled_order):
             if filled_obj.order_id_buy in self.active_orders:
                 self.active_orders.pop(filled_order.orderId)
                 filled_obj.strat_on_trade_exec = False
@@ -114,9 +121,9 @@ class BestOfStrat(Strategy):
             filled_obj.avg_fill_price  = filled_order.orderStatus.avgFillPrice
             filled_obj.last_fill_price = filled_order.orderStatus.lastFillPrice
 
-            print fills
+            #print fills
 
-            print final result
+            #print final result
 
 
 
@@ -135,18 +142,18 @@ class BestOfStrat(Strategy):
 
     def place_limit_order(self, obj, output_price, input_price):  # very literal to improve speed
         if obj.is_mkt_data_valid():
-            side         = obj.buy_sell
+            buy_sell         = obj.buy_sell
             size         = abs(obj.order_size)
             order_id     = obj.order_id
             output_price = abs(output_price)
             
             order_id = self.update_limit_order(obj=obj,                                      
                                                price=output_price, 
-                                               side=side, 
+                                               buy_sell=buy_sell, 
                                                size=size, 
                                                order_id=order_id)   
             if self.print_orders:
-                self.print_order_message(side, size, obj.my_fi_name, output_price, input_price, order_id)
+                self.print_order_message(buy_sell, size, obj.my_fi_name, output_price, input_price, order_id)
 
             return order_id
         

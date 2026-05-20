@@ -17,7 +17,6 @@ class IBKR_IB:
 
         self.ib = IB()
         self.ticker_dict = {}  # created in stream_contract
-        #self.trades_by_order_id = {}  # created in place_limit_order
         self.obj_by_order_handler = {}  # created in place_limit_order
 
 
@@ -60,7 +59,11 @@ class IBKR_IB:
         obj.pf_symbol    = obj.ibkr_contract.localSymbol
         obj.pf_number    = obj.ibkr_contract.conId
         obj.pf_prod_type = obj.ibkr_contract.secType
-        
+
+        obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
+        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details, 'minSize'), 1.0)
+        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details, 'sizeIncrement'), 1.0)
+
         obj.numerator_currency   = obj.my_row.top_currency
         obj.denominator_currency = obj.my_row.base_currency
         obj.quote_currency       = None
@@ -100,7 +103,9 @@ class IBKR_IB:
             ticker = self.ib.reqMktData(obj.ibkr_contract, "", False, False)       
         
         ticker.updateEvent += handler
-        self.ticker_dict[ticker] = obj
+        self.ticker_dict[ticker.contract] = obj
+
+        #print(ticker, '\n')
         
         return ticker
          
@@ -112,23 +117,24 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-        #print(f'ticker: {ticker}\n')
+        print(f'ticker: {ticker.close}\n')
 
-        obj = self.ticker_dict.get(ticker)
+        obj = self.ticker_dict.get(ticker.contract)
         if obj is None:
             return
         
         if obj.need_close_data and ticker.close is not None:
-            changed = obj.update_mkt_data(
-                bid_price=ticker.bid,
-                ask_price=ticker.ask,
-                bid_size=ticker.bidSize,
-                ask_size=ticker.askSize
+            x = obj.update_mkt_data(
+                    bid_price=ticker.bid,
+                    ask_price=ticker.ask,
+                    bid_size=ticker.bidSize,
+                    ask_size=ticker.askSize
             )
             
             obj.on_close_data(
                 close_price=ticker.close
             )
+            #print(f"Close data for {obj.my_fi_name} updated: {ticker.close}\n" )
                 
         elif ticker.bid is not None and ticker.ask is not None:
             obj.on_mkt_data(

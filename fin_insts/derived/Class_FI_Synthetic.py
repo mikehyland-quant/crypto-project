@@ -62,7 +62,7 @@ class Synthetic(Subscriber):
         self.comm_unit_lift_ask = None
 
     
-    def update_subscriber_data(self):
+    def update_subscriber_data(self, obj):
         self.update_syn()
         for subscriber in self.subscribers:
             subscriber.update_subscriber_data()

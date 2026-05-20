@@ -7,12 +7,6 @@ import winsound
 from datetime import datetime
 
 class Strategy:
-    _RULE_FIELD_MAP = {
-        'min_tick'       : 'minTick',
-        'min_size'       : 'minSize',
-        'size_increment' : 'sizeIncrement',
-                    }
-
 
     def __init__(self, objs_list=None):
         self.done_event = asyncio.Event()  # needs to be awaited in main() and set at the end of each strategy
@@ -30,26 +24,12 @@ class Strategy:
             
     @classmethod
     def _attach_trading_helpers(cls, obj):
-        obj.my_trading_rules = cls._extract_trading_rules(obj)
+        #obj.my_trading_rules = cls._extract_trading_rules(obj)
 
         obj.round_price_to_tick = types.MethodType(cls.round_price_to_tick, obj)
         obj.round_size_to_increment = types.MethodType(cls.round_size_to_increment, obj)
         
-
-    @classmethod 
-    def _extract_trading_rules(cls, obj):
-        details = getattr(obj, 'ibkr_details', None)
-
-        for my_key, ibkr_key in cls._RULE_FIELD_MAP.items():
-            raw_val = getattr(details, ibkr_key, None) if details is not None else None
-            val = obj._safe_float(raw_val, default=1.0)
-
-            if val in (None, 0):
-                val = None
-
-            setattr(obj, my_key, val)
-
-    
+   
     @classmethod    
     def play_fill_sound(self):
         winsound.PlaySound(
@@ -59,16 +39,16 @@ class Strategy:
             winsound.SND_FILENAME | winsound.SND_ASYNC)
         
 
-    def round_price_to_tick(self, price):
+    def round_price_to_tick(self, price, buy_sell=None):
         # best to input price as abs(price) when calling function
         if price is None:
             return None
     
         price = self._safe_float(price, default=None)
         tick  = self._safe_float(self.min_tick, default=None)
-        buy_sell  = self.buy_sell.upper()
+        buy_sell = buy_sell.upper() if buy_sell else self.buy_sell.upper() if hasattr(self, 'buy_sell') else None
 
-        if price is None:
+        if price is None or buy_sell not in ('BUY', 'SELL'):
             return None
     
         if tick in (None, 0):
@@ -87,7 +67,7 @@ class Strategy:
         
 
     def round_size_to_increment(self, size):
-        # best to input size asabs(size) when calling function
+        # best to input size as abs(size) when calling function
         if size is None:
             return None
 

@@ -9,5 +9,5 @@ from .Strategy_PairsTrade_LimitLimit import PairsTrade_LimitLimit
 #from .Strategy_PairsTrade_HitLift import PairsTrade_HitLift 
 
 # --- Best Of Trading --- 
-#from .Strategy_BestOfStrat import BestOfStrat
+from .Strategy_BestOfStrat import BestOfStrat
 

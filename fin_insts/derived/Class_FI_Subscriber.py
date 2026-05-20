@@ -16,7 +16,7 @@ class Subscriber(ABC):
         self.subscribers = []
         
     @abstractmethod
-    def update_subscriber_data(self):
+    def update_subscriber_data(self, obj):
         # work
         # for subscriber in self.subscribers:
         #    subscriber.update_subscriber_data()

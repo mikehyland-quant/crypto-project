@@ -76,7 +76,7 @@ class BestOf(Subscriber):
     def stop_timer(self):  # if self.mode == 'timer'
         self._running = False
 
-    def update_subscriber_data(self):  # if self.mode == 'auto'
+    def update_subscriber_data(self, obj):  # if self.mode == 'auto'
         self.update_best_of()
         for subscriber in self.subscribers:
             subscriber.update_subscriber_data()
