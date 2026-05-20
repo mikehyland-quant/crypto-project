@@ -1,13 +1,11 @@
 
 import asyncio
 
-#from datetime import datetime
-#from unittest import result
 from strategies.Strategy_Parent import Strategy
 
 class BestOfStrat(Strategy):
 
-    def __init__(self, bo_obj, unit_size=1, safety_margin=0.01):
+    def __init__(self, bo_obj, unit_size=0.1, safety_margin=0.01):
         super().__init__(bo_obj.objs_list)  
            
         self.bo_obj = bo_obj
@@ -25,14 +23,13 @@ class BestOfStrat(Strategy):
 
         obj.min_profit      = obj.scalar_size_mkt_to_unit * safety_margin
         obj.order_size      = obj.round_size_to_increment(abs(obj.scalar_size_mkt_to_unit) * unit_size)
-        print(obj.order_size)
         
         
     def on_close_data(self, obj):
         # from MktData.on_close_data()
         mkt_close = obj.price_mkt_close
 
-        price = obj.round_price_to_tick(0.5 *mkt_close)
+        price = obj.round_price_to_tick(0.5 * mkt_close, "BUY")
         buy_order_id = self.update_limit_order(obj=obj, 
                                                buy_sell="BUY", 
                                                price=price, 
@@ -48,7 +45,7 @@ class BestOfStrat(Strategy):
                                          price, 
                                          buy_order_id)   
         
-        price = obj.round_price_to_tick(2.0 *mkt_close)
+        price = obj.round_price_to_tick(2.0 * mkt_close, "SELL")
         sell_order_id = self.update_limit_order(obj=obj, 
                                                 buy_sell="SELL", 
                                                 price=price, 
@@ -61,7 +58,7 @@ class BestOfStrat(Strategy):
                 self.print_order_message("SELL", 
                                          obj.order_size, 
                                          obj.my_fi_name, 
-                                         2.0 * mkt_close, 
+                                         price, 
                                          sell_order_id)   
                          
         if buy_order_id is not None and sell_order_id is not None:
@@ -107,23 +104,23 @@ class BestOfStrat(Strategy):
                 pass
             
     
-        def on_trade_exec(self, filled_obj, filled_order):
-            if filled_obj.order_id_buy in self.active_orders:
-                self.active_orders.pop(filled_order.orderId)
-                filled_obj.strat_on_trade_exec = False
-                
-                if not self.active_orders:
-                    self.on_trade_exec
+    async def on_trade_exec(self, filled_obj, filled_order):
+        if filled_obj.order_id_buy in self.active_orders:
+            self.active_orders.pop(filled_order.orderId)
+            filled_obj.strat_on_trade_exec = False
+            
+            if not self.active_orders:
+                self.on_trade_exec
 
-            filled_obj.trade_status    = filled_order.orderStatus.status
-            filled_obj.filled          = filled_order.orderStatus.filled
-            filled_obj.remaining       = filled_order.orderStatus.remaining
-            filled_obj.avg_fill_price  = filled_order.orderStatus.avgFillPrice
-            filled_obj.last_fill_price = filled_order.orderStatus.lastFillPrice
+        filled_obj.trade_status    = filled_order.orderStatus.status
+        filled_obj.filled          = filled_order.orderStatus.filled
+        filled_obj.remaining       = filled_order.orderStatus.remaining
+        filled_obj.avg_fill_price  = filled_order.orderStatus.avgFillPrice
+        filled_obj.last_fill_price = filled_order.orderStatus.lastFillPrice
 
-            #print fills
+        #print fills
 
-            #print final result
+        #print final result
 
 
 

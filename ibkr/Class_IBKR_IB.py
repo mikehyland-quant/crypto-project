@@ -1,7 +1,7 @@
 
 import asyncio
 
-from numpy import size
+import numpy as np
 
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
@@ -61,8 +61,8 @@ class IBKR_IB:
         obj.pf_prod_type = obj.ibkr_contract.secType
 
         obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
-        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details, 'minSize'), 1.0)
-        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details, 'sizeIncrement'), 1.0)
+        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
+        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details,  'sizeIncrement'), 1.0)
 
         obj.numerator_currency   = obj.my_row.top_currency
         obj.denominator_currency = obj.my_row.base_currency
@@ -117,13 +117,13 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-        print(f'ticker: {ticker.close}\n')
+        print(ticker.close, '\n')
 
         obj = self.ticker_dict.get(ticker.contract)
         if obj is None:
             return
         
-        if obj.need_close_data and ticker.close is not None:
+        if obj.need_close_data and ticker.close is not None and not np.isnan(ticker.close):
             x = obj.update_mkt_data(
                     bid_price=ticker.bid,
                     ask_price=ticker.ask,

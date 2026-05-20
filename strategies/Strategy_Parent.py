@@ -48,6 +48,8 @@ class Strategy:
         tick  = self._safe_float(self.min_tick, default=None)
         buy_sell = buy_sell.upper() if buy_sell else self.buy_sell.upper() if hasattr(self, 'buy_sell') else None
 
+        print(price, tick, buy_sell)
+
         if price is None or buy_sell not in ('BUY', 'SELL'):
             return None
     
@@ -58,7 +60,7 @@ class Strategy:
     
         if buy_sell == 'BUY':
             rounded = math.floor(scaled) * tick
-        elif buy_sell == 'SELL':
+        elif buy_sell == 'SELL':   
             rounded = math.ceil(scaled) * tick
         else:
             raise ValueError("buy_sell must be 'BUY' or 'SELL'")
@@ -117,7 +119,7 @@ class Strategy:
         pass
         
 
-    def on_trade_exec(self, obj):
+    def on_trade_exec(self, obj, trade):
         pass
 
 
