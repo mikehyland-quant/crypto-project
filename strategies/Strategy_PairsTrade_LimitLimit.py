@@ -1,9 +1,9 @@
 
 import asyncio
 
-from strategies.Strategy_Parent import Strategy
+from strategies.Strategy_PairsTrade_Parent import PairsTrade_Parent
 
-class PairsTrade_LimitLimit(Strategy):
+class PairsTrade_LimitLimit(PairsTrade_Parent):
     """
     Two-leg package strategy.
 
@@ -11,7 +11,7 @@ class PairsTrade_LimitLimit(Strategy):
     """
 
     def __init__(self, objs_list, df):
-        super().__init__(objs_list)  
+        super().__init__(objs_list, df)  
 
         #print(vars(self.obj1), '\n')
         #print(vars(self.obj2), '\n')  
@@ -33,19 +33,19 @@ class PairsTrade_LimitLimit(Strategy):
             return
 
         output_price = output_obj.calc_price(input_price, output_obj) #, 0)  
-        active_order_price = output_obj.active_order_price
+        active_order_price = output_obj.trade.order.lmtPrice if output_obj.trade is not None else None
         
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
         
-        order_id = output_obj.platform_obj.modify_limit_order(obj=output_obj, 
-                                                              size=output_obj.order_size, 
-                                                              buy_sell=output_obj.buy_sell, 
-                                                              order_id=output_obj.order_id, 
-                                                              price=output_price)
+        trade = output_obj.platform_obj.modify_limit_order(obj=output_obj, 
+                                                           size=output_obj.order_size, 
+                                                           buy_sell=output_obj.buy_sell, 
+                                                           trade=output_obj.trade, 
+                                                           price=output_price)
 
-        if order_id is not None:
-            self._placed_order_admin(output_obj, order_id, output_price, input_price)
+        if trade is not None:
+            self._placed_order_admin(output_obj, trade, input_price)
             
             if self.print_orders:
                 self.print_order_message(output_obj.buy_sell, 
@@ -53,11 +53,11 @@ class PairsTrade_LimitLimit(Strategy):
                                          output_obj.my_fi_name, 
                                          output_price, 
                                          input_price, 
-                                         order_id)
+                                         trade.order.orderId)
 
           
-    async def on_trade_exec(self, filled_obj, filled_order):  
-        remaining = filled_order.orderStatus.remaining
+    async def on_trade_exec(self, filled_obj, filled_trade):  
+        remaining = filled_trade.orderStatus.remaining
         
         if self.stage == "ZERO FILLED":
             if remaining > 0:
@@ -67,18 +67,18 @@ class PairsTrade_LimitLimit(Strategy):
 
             unfilled_obj = filled_obj.opp_obj  
 
-            avg_fill_price = filled_order.orderStatus.avgFillPrice
+            avg_fill_price = filled_trade.orderStatus.avgFillPrice
             input_price    = avg_fill_price * filled_obj.filled_scalar
             output_price   = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
 
-            order_id = unfilled_obj.platform_obj.modify_limit_order(obj=unfilled_obj, 
-                                                                    size=unfilled_obj.order_size, 
-                                                                    buy_sell=unfilled_obj.buy_sell, 
-                                                                    order_id=unfilled_obj.order_id,
-                                                                    price=output_price)
+            trade = unfilled_obj.platform_obj.modify_limit_order(obj=unfilled_obj, 
+                                                                 size=unfilled_obj.order_size, 
+                                                                 buy_sell=unfilled_obj.buy_sell, 
+                                                                 trade=unfilled_obj.trade,
+                                                                 price=output_price)
             
-            if order_id is not None:
-                self._placed_order_admin(unfilled_obj, order_id, output_price, input_price)
+            if trade is not None:
+                self._placed_order_admin(unfilled_obj, trade, input_price)
 
                 if self.print_orders:
                     self.print_order_message(unfilled_obj.buy_sell, 
@@ -86,9 +86,9 @@ class PairsTrade_LimitLimit(Strategy):
                                              unfilled_obj.my_fi_name, 
                                              output_price, 
                                              input_price, 
-                                             order_id)
+                                             trade.order.orderId)
 
-            #filled_obj_trade_attr is called below
+            #_filled_obj_admin is called below
 
             filled_obj.strat_on_mkt_data    = False
             unfilled_obj.strat_on_mkt_data  = False           
@@ -99,9 +99,9 @@ class PairsTrade_LimitLimit(Strategy):
 
             self.stage = "TWO FILLED"
             
-            #filled_obj_trade_attr is called below
+            #_filled_obj_admin is called below
         
-        self._filled_obj_trade_attr(filled_obj, filled_order) 
+        self._filled_order_admin(filled_obj) 
         self.play_fill_sound()    
 
         if self.stage == "TWO FILLED":

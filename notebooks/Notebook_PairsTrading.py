@@ -51,7 +51,7 @@ xlw = xlWings()
 
 # %%
 # --- trading strategy ---
-from strategies import Strategy, PairsTrade
+from strategies import Strategy, PairsTrade_Parent, PairsTrade_LimitMarket, PairsTrade_LimitLimit #, PairsTrade_HitLift, BestOfStrat
 
 # %%
 # CONSTANTS
@@ -145,7 +145,7 @@ async def main():
     #insert trading and analysis scripts here
     strat_df = xlw.get_df(INPUT_WB_NAME, INPUT_WS_NAME, STRAT_TBL_NAME, table=True).set_index('Keys')
     strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-    strat = PairsTrade(strat_objs_list, strat_df)
+    strat = PairsTrade_LimitMarket(strat_objs_list, strat_df)
         
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name

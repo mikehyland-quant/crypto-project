@@ -88,7 +88,7 @@ class MktData:
             if getattr(self, "strat_on_close_data", False):  
                 strategy.on_close_data(self)
 
-
+ 
     def on_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None): 
         changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
             #self.update_mkt_data() is overwritten in strategy classes to update additional attributes when necessary
@@ -120,29 +120,32 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_bid = ts
                     
-            self.price_raw_bid       =  bid_price     
+            self.price_raw_bid        =  bid_price     
             
-            self.price_order_bid     =  self.price_raw_bid   * self.scalar_price_raw_to_order
-            self.price_mkt_bid       =  self.price_order_bid * self.scalar_price_order_to_mkt
-            self.price_unit_bid      =  self.price_mkt_bid   * self.scalar_price_mkt_to_unit
+            self.price_order_bid      =  self.price_raw_bid   * self.scalar_price_raw_to_order
+            self.price_mkt_bid        =  self.price_order_bid * self.scalar_price_order_to_mkt
+            self.price_unit_bid       =  self.price_mkt_bid   * self.scalar_price_mkt_to_unit
     
-            self.cf_order_join_bid   = -self.price_order_bid * self.scalar_order_size
-            self.cf_order_hit_bid    =  self.price_order_bid * self.scalar_order_size
+            self.cf_order_join_bid    = -self.price_order_bid * self.scalar_order_size
+            self.cf_order_hit_bid     =  self.price_order_bid * self.scalar_order_size
 
-            self.cf_mkt_join_bid     = -self.price_mkt_bid 
-            self.cf_mkt_hit_bid      =  self.price_mkt_bid 
+            self.cf_mkt_join_bid      = -self.price_mkt_bid 
+            self.cf_mkt_hit_bid       =  self.price_mkt_bid 
     
-            self.cf_unit_join_bid    = -self.price_unit_bid 
-            self.cf_unit_hit_bid     =  self.price_unit_bid 
+            self.cf_unit_join_bid     = -self.price_unit_bid 
+            self.cf_unit_hit_bid      =  self.price_unit_bid 
     
-            self.comm_order_join_bid =  self.calc_comm(self.price_order_bid, 'maker')
-            self.comm_order_hit_bid  =  self.calc_comm(self.price_order_bid, 'taker')
+            self.comm_order_join_bid  =  self.calc_comm(self.price_order_bid, 'maker')
+            self.comm_order_hit_bid   =  self.calc_comm(self.price_order_bid, 'taker')
             
-            self.comm_mkt_join_bid   =  self.comm_order_join_bid * self.scalar_size_order_to_mkt
-            self.comm_mkt_hit_bid    =  self.comm_order_hit_bid  * self.scalar_size_order_to_mkt
+            self.comm_mkt_join_bid    =  self.comm_order_join_bid * self.scalar_size_order_to_mkt
+            self.comm_mkt_hit_bid     =  self.comm_order_hit_bid  * self.scalar_size_order_to_mkt
     
-            self.comm_unit_join_bid  =  self.comm_mkt_join_bid   * self.scalar_size_mkt_to_unit 
-            self.comm_unit_hit_bid   =  self.comm_mkt_hit_bid    * self.scalar_size_mkt_to_unit 
+            self.comm_unit_join_bid   =  self.comm_mkt_join_bid   * self.scalar_size_mkt_to_unit 
+            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid    * self.scalar_size_mkt_to_unit 
+
+            self.cf_unit_join_bid_net =  self.cf_unit_join_bid - self.comm_unit_join_bid
+            self.cf_unit_hit_bid_net  =  self.cf_unit_hit_bid  - self.comm_unit_hit_bid    
     
         if ask_price is not None and ask_price != self.price_raw_ask:
             changed = True
@@ -151,29 +154,33 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_ask = ts
                     
-            self.price_raw_ask       =  ask_price     
+            self.price_raw_ask        =  ask_price     
             
-            self.price_order_ask     =  self.price_raw_ask   * self.scalar_price_raw_to_order
-            self.price_mkt_ask       =  self.price_order_ask * self.scalar_price_order_to_mkt
-            self.price_unit_ask      =  self.price_mkt_ask   * self.scalar_price_mkt_to_unit
+            self.price_order_ask      =  self.price_raw_ask   * self.scalar_price_raw_to_order
+            self.price_mkt_ask        =  self.price_order_ask * self.scalar_price_order_to_mkt
+            self.price_unit_ask       =  self.price_mkt_ask   * self.scalar_price_mkt_to_unit
     
-            self.cf_order_join_ask   =  self.price_order_ask * self.scalar_order_size
-            self.cf_order_lift_ask   = -self.price_order_ask * self.scalar_order_size
+            self.cf_order_join_ask    =  self.price_order_ask * self.scalar_order_size
+            self.cf_order_lift_ask    = -self.price_order_ask * self.scalar_order_size
     
-            self.cf_mkt_join_ask     =  self.price_mkt_ask 
-            self.cf_mkt_lift_ask     = -self.price_mkt_ask 
+            self.cf_mkt_join_ask      =  self.price_mkt_ask 
+            self.cf_mkt_lift_ask      = -self.price_mkt_ask 
     
-            self.cf_unit_join_ask    =  self.price_unit_ask 
-            self.cf_unit_lift_ask    = -self.price_unit_ask 
+            self.cf_unit_join_ask     =  self.price_unit_ask 
+            self.cf_unit_lift_ask     = -self.price_unit_ask 
     
-            self.comm_order_join_ask =  self.calc_comm(self.price_order_ask, 'maker')
-            self.comm_order_lift_ask =  self.calc_comm(self.price_order_ask, 'taker')
+            self.comm_order_join_ask  =  self.calc_comm(self.price_order_ask, 'maker')
+            self.comm_order_lift_ask  =  self.calc_comm(self.price_order_ask, 'taker')
             
-            self.comm_mkt_join_ask   =  self.comm_order_join_ask * self.scalar_size_order_to_mkt
-            self.comm_mkt_lift_ask   =  self.comm_order_lift_ask * self.scalar_size_order_to_mkt
+            self.comm_mkt_join_ask    =  self.comm_order_join_ask * self.scalar_size_order_to_mkt
+            self.comm_mkt_lift_ask    =  self.comm_order_lift_ask * self.scalar_size_order_to_mkt
     
-            self.comm_unit_join_ask  =  self.comm_mkt_join_ask   * self.scalar_size_mkt_to_unit 
-            self.comm_unit_lift_ask  =  self.comm_mkt_lift_ask   * self.scalar_size_mkt_to_unit 
+            self.comm_unit_join_ask   =  self.comm_mkt_join_ask   * self.scalar_size_mkt_to_unit 
+            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask   * self.scalar_size_mkt_to_unit 
+
+            self.cf_unit_join_ask_net =  self.cf_unit_join_ask - self.comm_unit_join_ask
+            self.cf_unit_lift_ask_net =  self.cf_unit_lift_ask - self.comm_unit_lift_ask   
+       
             
         if bid_size is not None and bid_size != self.size_raw_bid:
             changed = True

@@ -2,6 +2,7 @@
 import asyncio
 
 from datetime import datetime
+from unittest import result
 from strategies.Strategy_Parent import Strategy
 
 class BestOfStrat(Strategy):
@@ -13,28 +14,18 @@ class BestOfStrat(Strategy):
         
         # attach attributes to objs in bo_obj 
         for obj in bo_obj.objs_list:
-            self._prep_obj_for_strat(obj, unit_size, safety_margin)
+            self._attach_attr(obj, unit_size, safety_margin)
                 
   
-    def _prep_obj_for_strat(self, obj, unit_size, safety_margin):
+    def _attach_attr(self, obj, unit_size, safety_margin):
         obj.cf_unit_bid_net = None
         obj.cf_unit_ask_net = None
-        obj.order_id_buy    = None
+        obj.order_id_buy    = None  
         obj.order_id_sell   = None
 
-        obj.min_profit      = bo_obj.scalar_size_mkt_to_unit * safety_margin
+        obj.min_profit      = self.bo_obj.scalar_size_mkt_to_unit * safety_margin
         obj.order_size      = obj.round_size_to_increment(abs(obj.scalar_size_mkt_to_unit) * unit_size)
-        obj.update_mkt_data = self.update_mkt_data  # override the method in parent class so that it can be called by bo_obj at end of mkt_data_update() in subscriber.update_unit_data()
-
-
-    def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):       
-        changed = super().update_mkt_data(bid_price, ask_price, bid_size, ask_size)  
-        if changed:
-            self.cf_unit_bid_net = self.cf_unit_bid - self.comm_unit_hit_bid
-            self.cf_unit_ask_net = self.cf_unit_ask - self.comm_unit_lift_ask
-
-        return changed
-
+        
         
     def on_close_data(self, obj):
         # from MktData.on_close_data()
@@ -45,45 +36,87 @@ class BestOfStrat(Strategy):
                                                size=obj.order_size, 
                                                order_id=None)
         
+        if buy_order_id is not None:
+            obj.order_id_buy  = buy_order_id
+            if self.print_orders:
+                self.print_order_message("BUY", 
+                                         obj.order_size, 
+                                         obj.my_fi_name, 
+                                         0.5 * mkt_close, 
+                                         buy_order_id)   
+        
         sell_order_id = self.update_limit_order(obj=obj, 
                                                 side="SELL", 
                                                 price=2.0 * mkt_close, 
                                                 size=obj.order_size, 
                                                 order_id=None)  
         
-        obj.order_id_buy  = buy_order_id
-        obj.order_id_sell = sell_order_id
-
-
+        if sell_order_id is not None:
+            obj.order_id_sell = sell_order_id
+            if self.print_orders:
+                self.print_order_message("SELL", 
+                                         obj.order_size, 
+                                         obj.my_fi_name, 
+                                         2.0 * mkt_close, 
+                                         sell_order_id)   
+                         
+        if buy_order_id is not None and sell_order_id is not None:
+            obj.strat_on_close_data = False 
+            
+            
     def on_mkt_data(self):
         # from MktData.on_mkt_data()
-        buy_obj  = self.bo_obj.cf_unit_ask_net_obj
-        sell_obj = self.bo_obj.cf_unit_bid_net_obj
+        buy_obj  = self.bo_obj.cf_unit_lift_ask_net_obj
+        sell_obj = self.bo_obj.cf_unit_hit_bid_net_obj
         
-        net_amt    = self.bo_obj.cf_unit_ask_net + self.bo_obj.cf_unit_bid_net
+        net_amt    = self.bo_obj.cf_unit_lift_ask_net + self.bo_obj.cf_unit_hit_bid_net
         min_profit = buy_obj.min_profit + sell_obj.min_profit
 
         if net_amt < min_profit:
             return
+        
+        buy_order_id = buy_obj.platform_obj.modify_limit_order(obj=buy_obj,
+                                                               size=buy_obj.order_size,
+                                                               buy_sell="BUY",
+                                                               order_id=buy_obj.order_id_buy,
+                                                               price=buy_obj.price_mkt_lift_ask)
+        
+        sell_order_id = sell_obj.platform_obj.modify_limit_order(obj=sell_obj,
+                                                                size=sell_obj.order_size,
+                                                                buy_sell="SELL",
+                                                                order_id=sell_obj.order_id_sell,
+                                                                price=sell_obj.price_mkt_hit_bid)       
 
-        buy_order_id = self.update_limit_order(obj=buy_obj,                  
-                                               price=buy_obj.price_mkt_lift_ask,
-                                               order_id=buy_obj.order_id_buy)
-        
-        sell_order_id = self.update_limit_order(obj=sell_obj,           
-                                                price=sell_obj.price_mkt_hit_bid,       
-                                                order_id=sell_obj.order_id_sell)
-        
-        #record order ids
-        #turn off on mkt data updates until trade exec
-        
+        buy_obj.order_id_buy   = buy_order_id
+        sell_obj.order_id_sell = sell_order_id
 
+        self.active_orders = [buy_order_id, sell_order_id]
+
+        for obj in self.bo_obj.objs_list:
+            obj.strat_on_mkt_data = False
+            if obj.buy_order_id != buy_order_id:
+                cancel buy buy_order_id
+            if obj.sell_order_id != sell_order_id:
+                cancel sell sell_order_id
+            
+    
         def on_trade_exec(filled_obj, filled_order):
+            if filled_obj.order_id_buy in self.active_orders:
+                self.active_orders.pop(filled_order.orderId)
+                filled_obj.strat_on_trade_exec = False
+                
+                if not self.active_orders:
+                    self.on_trade_exec
 
-            # from TradeExec.on_trade_exec()
-            pass  # to be implemented
-            #cancel all remaining orders
+            filled_obj.trade_status    = filled_order.orderStatus.status
+            filled_obj.filled          = filled_order.orderStatus.filled
+            filled_obj.remaining       = filled_order.orderStatus.remaining
+            filled_obj.avg_fill_price  = filled_order.orderStatus.avgFillPrice
+            filled_obj.last_fill_price = filled_order.orderStatus.lastFillPrice
 
+            print fills
+
+            print final result
 
 
 

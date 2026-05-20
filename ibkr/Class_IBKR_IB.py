@@ -10,15 +10,15 @@ class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
 
 
-    def __init__(self, host='127.0.0.1', port=7496):
+    def __init__(self, host='127.0.0.1', port=7497):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))
 
         self.ib = IB()
         self.ticker_dict = {}  # created in stream_contract
-        self.trades_by_order_id = {}  # created in place_limit_order
-        self.obj_by_order_id = {}  # created in place_limit_order
+        #self.trades_by_order_id = {}  # created in place_limit_order
+        self.obj_by_order_handler = {}  # created in place_limit_order
 
 
     async def create_simple_contract(self, obj):
@@ -139,21 +139,16 @@ class IBKR_IB:
             )
            
 
-    def order_handler(self, order):
-        #print(f'order: {order}\n')
-
-        key = (
-            order.order.clientId,
-            order.order.orderId
-            )
+    def order_handler(self, trade):
+        #print(f'order_handler returned: {trade}\n')
         
-        obj = self.obj_by_order_id.get(key)
+        obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:
             return
 
         strategy = getattr(obj, "strategy", None)
         if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
-            asyncio.create_task(strategy.on_trade_exec(obj, order))
+            asyncio.create_task(strategy.on_trade_exec(obj, trade))
 
 
     def place_market_order(self, obj=None, size=None, buy_sell=None):
@@ -165,18 +160,14 @@ class IBKR_IB:
 
         #print(order, '\n')
 
-        my_order = self.ib.placeOrder(obj.ibkr_contract, order)
-        my_order.statusEvent += self.order_handler
+        trade = self.ib.placeOrder(obj.ibkr_contract, order)
+        trade.statusEvent += self.order_handler
 
-        key = (
-            my_order.order.clientId,
-            my_order.order.orderId
-        )
+        self.obj_by_order_handler[order] = obj
+        
+        #print(trade, '\n')
 
-        self.trades_by_order_id[key] = my_order
-        self.obj_by_order_id[key] = obj
-
-        return my_order.order.orderId
+        return trade
     
 
     def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None):
@@ -189,54 +180,45 @@ class IBKR_IB:
 
         #print(order, '\n')
 
-        my_order = self.ib.placeOrder(obj.ibkr_contract, order)
-        my_order.statusEvent += self.order_handler
+        trade = self.ib.placeOrder(obj.ibkr_contract, order)
+        trade.statusEvent += self.order_handler
 
-        key = (
-            my_order.order.clientId,
-            my_order.order.orderId
-        )
+        self.obj_by_order_handler[order] = obj
 
-        self.trades_by_order_id[key] = my_order
-        self.obj_by_order_id[key] = obj
+        #print(trade, '\n')
 
-        return my_order.order.orderId
+        return trade
  
 
-    def modify_to_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
-        key = (self.clientId, order_id)
-        trade = self.trades_by_order_id.get(key)
-
+    def modify_to_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
         if trade is None:
-            raise ValueError(f"Order {order_id} not found")
+            raise ValueError(f"Trade not found")
 
         if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
-            #raise ValueError(f"Order {order_id} is not in a modifiable state")
+            #raise ValueError(f"Order {trade.order.orderId} is not in a modifiable state")
             return
 
         trade.order.orderType = "MKT"
-        trade.order.totalQuantity = size
-        trade.order.action = buy_sell
 
         # Important: market orders should not keep a limit price
         trade.order.lmtPrice = None
+
+        trade.order.totalQuantity = size
+        trade.order.action = buy_sell
     
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
 
         #print(trade.order, '\n')
     
-        return order_id 
+        return trade 
     
 
-    def modify_limit_order(self, obj=None, size=None, buy_sell=None, order_id=None, price=None):
-        key = (self.clientId, order_id)
-        trade = self.trades_by_order_id.get(key)
-
+    def modify_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None):
         if trade is None:
-            raise ValueError(f"Order {order_id} not found")
+            raise ValueError(f"Trade not found")
     
         if trade.orderStatus.status not in self.SAFE_TO_MODIFY:
-            #raise ValueError(f"Order {order_id} is not in a modifiable state")
+            #raise ValueError(f"Order {trade.order.orderId} is not in a modifiable state")
             return
 
         trade.order.lmtPrice = price
@@ -247,7 +229,18 @@ class IBKR_IB:
 
         #print(trade.order, '\n')
     
-        return order_id
+        return trade
 
+
+    def cancel_trade(self, trade):
+        if trade is None:
+            return
+
+        status = trade.orderStatus.status
+
+        if status in {"Cancelled", "Filled", "Inactive"}:
+            return
+
+        self.ib.cancelOrder(trade.order)
     
 

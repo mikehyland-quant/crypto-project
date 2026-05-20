@@ -4,7 +4,7 @@ import asyncio
 from strategies.Strategy_Parent import Strategy
 
 class PairsTrade_Parent(Strategy):
-    """
+    """ 
     Two-leg package strategy.
 
     This is for shared code between different pairs trade strategies. Try to keep this to non-hot path code, and put any hot path code in the child class.
@@ -63,21 +63,15 @@ class PairsTrade_Parent(Strategy):
         min_ratio_size = min(self.obj1.ratio_size, self.obj2.ratio_size)
         
         for obj in objs_list:
-            obj.active_base_price  = None
-            obj.active_order_price = None  
-
-            obj.order_id           = None
-            obj.trade_status       = None
-            obj.filled             = 0
-            obj.remaining          = None
-            obj.avg_fill_price     = None
-            obj.last_fill_price    = None
+            obj.active_base_price = None
+    
+            obj.trade             = None
             
-            obj.buy_sell           = obj.buy_sell.upper()
-            obj.order_size         = abs(obj.order_size)
-            obj.calc_price         = self._calc_price   # assigns function below 
-            obj.spread_ratio       = obj.opp_obj.ratio_size / min_ratio_size
-            obj.adj_spread         = self.target_spread / obj.spread_ratio
+            obj.buy_sell          = obj.buy_sell.upper()
+            obj.order_size        = abs(obj.order_size)
+            obj.calc_price        = self._calc_price   # assigns function below 
+            obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
+            obj.adj_spread        = self.target_spread / obj.spread_ratio
             
             obj.input_price_attr, obj.filled_scalar = buy_sell_dict[obj.buy_sell]  
             
@@ -88,28 +82,46 @@ class PairsTrade_Parent(Strategy):
         return self.obj1, self.obj2
                     
 
-     def _placed_order_admin(self, obj, order_id, order_price, base_price):   
-        obj.order_id            = order_id
-        obj.active_base_price   = base_price
-        obj.active_order_price  = order_price       
+    def on_close_data(self, obj):
+        #creates a placeholder limit order to get trade opened and in system
+        mkt_close = obj.price_mkt_close
+        if obj.buy_sell == 'BUY':
+            placeholder_price = mkt_close * 0.5
+        elif obj.buy_sell == 'SELL':
+            placeholder_price = mkt_close * 2.0
+
+        placeholder_price = obj.round_price_to_tick(placeholder_price)
+
+        size=obj.order_size
+        buy_sell=obj.buy_sell
+        
+        trade = obj.platform_obj.place_limit_order(obj=obj, 
+                                                   size=size, 
+                                                   buy_sell=buy_sell, 
+                                                   price=placeholder_price)
+        
+        if trade is not None:
+            obj.strat_on_close_data = False 
+            
+            if self.print_orders:
+                self.print_order_message(buy_sell, size, obj.my_fi_name, placeholder_price, trade.order.orderId)
+
+            self._placed_order_admin(obj, trade, mkt_close)
+
+
+    def _placed_order_admin(self, obj, trade, base_price):   
+        obj.trade               = trade
+        obj.active_base_price   = base_price     
     
 
-    def _filled_order_admin(self, filled_obj, filled_order):      
-        filled_obj.trade_status        = filled_order.orderStatus.status
-        filled_obj.filled              = filled_order.orderStatus.filled
-        filled_obj.remaining           = filled_order.orderStatus.remaining
-        filled_obj.avg_fill_price      = filled_order.orderStatus.avgFillPrice
-        filled_obj.last_fill_price     = filled_order.orderStatus.lastFillPrice
-        
-        filled_obj.strat_on_trade_exec = False     
-        
-        filled_obj.active_order_price  = None
-        filled_obj.active_base_price   = None
+    def _filled_order_admin(self, obj):      
+        obj.strat_on_trade_exec = False     
+        obj.active_base_price   = None
 
 
     def _finalize_results(self):
-        final_spread = (self.obj2.avg_fill_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
-                        self.obj1.avg_fill_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
+        final_spread = (self.obj2.trade.orderStatus.avgFillPrice * self.obj2.spread_ratio * self.obj2.filled_scalar + 
+                        self.obj1.trade.orderStatus.avgFillPrice * self.obj1.spread_ratio * self.obj1.filled_scalar)  
 
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
@@ -118,11 +130,11 @@ class PairsTrade_Parent(Strategy):
             print(
                 obj.my_fi_name,
                 obj.buy_sell,
-                ", order_id:", obj.order_id,
-                ", status:", obj.trade_status,
-                ", filled:", obj.filled,
-                ", avg_price:", obj.avg_fill_price,
-                ", last_price:", obj.last_fill_price,
+                ", order_id:", obj.trade.order.orderId,
+                ", status:", obj.trade.orderStatus.status,
+                ", filled:", obj.trade.orderStatus.filled,
+                ", avg_price:", obj.trade.orderStatus.avgFillPrice,
+                ", last_price:", obj.trade.orderStatus.lastFillPrice,
             )
 
         print('Final spread: ', final_spread, '\n')
