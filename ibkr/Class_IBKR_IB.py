@@ -61,10 +61,6 @@ class IBKR_IB:
         obj.pf_number    = obj.ibkr_contract.conId
         obj.pf_prod_type = obj.ibkr_contract.secType
 
-        obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
-        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
-        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details,  'sizeIncrement'), 1.0)
-
         obj.numerator_currency   = obj.my_row.top_currency
         obj.denominator_currency = obj.my_row.base_currency
         obj.quote_currency       = None
@@ -72,6 +68,10 @@ class IBKR_IB:
 
         obj.scalar_order_size         = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
         obj.scalar_price_raw_to_order = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
+
+        obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
+        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
+        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details,  'sizeIncrement'), 1.0)
         
         obj.complete_obj()
         
@@ -104,7 +104,7 @@ class IBKR_IB:
             ticker = self.ib.reqMktData(obj.ibkr_contract, "", False, False)       
         
         ticker.updateEvent += handler
-        self.ticker_dict[ticker.contract] = obj
+        self.ticker_dict[ticker] = obj
 
         #print(ticker, '\n')
         
@@ -120,7 +120,7 @@ class IBKR_IB:
         '''
         #print(ticker, '\n')
 
-        obj = self.ticker_dict.get(ticker.contract)
+        obj = self.ticker_dict.get(ticker)
         if obj is None:
             return
         

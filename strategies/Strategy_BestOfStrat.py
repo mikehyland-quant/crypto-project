@@ -1,6 +1,8 @@
 
 import asyncio
 
+from numpy import rint
+
 from strategies.Strategy_Parent import Strategy
 
 class BestOfStrat(Strategy):
@@ -70,7 +72,7 @@ class BestOfStrat(Strategy):
         net_amt    = self.bo_obj.cf_unit_lift_ask_net + self.bo_obj.cf_unit_hit_bid_net
         min_profit = buy_obj.min_profit + sell_obj.min_profit
 
-        print(net_amt, min_profit)
+        #print(min_profit, net_amt)
 
         if net_amt < min_profit:
             return
@@ -87,7 +89,9 @@ class BestOfStrat(Strategy):
                                                               trade=sell_obj.trade_sell,
                                                               price=sell_obj.price_mkt_bid)   
 
-        print(buy_obj.price_mkt_ask, sell_obj.price_mkt_bid)    
+        print(min_profit, net_amt,'\n')
+        print("BUY", buy_obj.my_fi_name, buy_obj.price_mkt_ask, '\n')
+        print("SELL", sell_obj.my_fi_name, sell_obj.price_mkt_bid, '\n')
 
         buy_obj.trade_buy   = buy_trade
         sell_obj.trade_sell = sell_trade
