@@ -48,8 +48,6 @@ class Strategy:
         tick  = self._safe_float(self.min_tick, default=None)
         buy_sell = buy_sell.upper() if buy_sell else self.buy_sell.upper() if hasattr(self, 'buy_sell') else None
 
-        print(price, tick, buy_sell)
-
         if price is None or buy_sell not in ('BUY', 'SELL'):
             return None
     
@@ -83,7 +81,7 @@ class Strategy:
         if inc in (None, 0):
             rounded = size
         else:
-            rounded = math.floor(size / inc) * inc
+            rounded = round(size / inc) * inc
 
         if min_size not in (None, 0) and rounded < min_size:
             return 0.0

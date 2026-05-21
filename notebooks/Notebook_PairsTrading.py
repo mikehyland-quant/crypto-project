@@ -22,15 +22,10 @@ sys.path.append(os.path.abspath(".."))
 # %%
 import asyncio
 from collections import defaultdict
-from datetime import datetime
-import numpy as np
-import pandas as pd
-from zoneinfo import ZoneInfo
-from IPython.display import display, clear_output
 
 # %%
 # --- builders ---
-from fin_insts import make_single_leg_fin_insts, FutureSpread #, BestOf, Synthetic
+from fin_insts import make_single_leg_fin_insts#, FutureSpread #, BestOf, Synthetic
 
 # %%
 # --- IBKR ---
@@ -51,7 +46,7 @@ xlw = xlWings()
 
 # %%
 # --- trading strategy ---
-from strategies import Strategy, PairsTrade_Parent, PairsTrade_LimitMarket, PairsTrade_LimitLimit #, PairsTrade_HitLift, BestOfStrat
+from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
 
 # %%
 # CONSTANTS
@@ -145,7 +140,7 @@ async def main():
     #insert trading and analysis scripts here
     strat_df = xlw.get_df(INPUT_WB_NAME, INPUT_WS_NAME, STRAT_TBL_NAME, table=True).set_index('Keys')
     strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-    strat = PairsTrade_LimitMarket(strat_objs_list, strat_df)
+    strat = PairsTrade_LimitLimit(strat_objs_list, strat_df)
         
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name

@@ -180,8 +180,7 @@ class MktData:
 
             self.cf_unit_join_ask_net =  self.cf_unit_join_ask - self.comm_unit_join_ask
             self.cf_unit_lift_ask_net =  self.cf_unit_lift_ask - self.comm_unit_lift_ask   
-       
-            
+         
         if bid_size is not None and bid_size != self.size_raw_bid:
             changed = True
             

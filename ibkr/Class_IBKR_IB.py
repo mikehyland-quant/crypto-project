@@ -3,8 +3,9 @@ import asyncio
 
 import numpy as np
 
-from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from datetime import datetime
+
+from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 
 class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
@@ -117,7 +118,7 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-        print(ticker.close, '\n')
+        #print(ticker, '\n')
 
         obj = self.ticker_dict.get(ticker.contract)
         if obj is None:
@@ -134,8 +135,7 @@ class IBKR_IB:
             obj.on_close_data(
                 close_price=ticker.close
             )
-            #print(f"Close data for {obj.my_fi_name} updated: {ticker.close}\n" )
-                
+            
         elif ticker.bid is not None and ticker.ask is not None:
             obj.on_mkt_data(
                 bid_price=ticker.bid,
@@ -146,7 +146,7 @@ class IBKR_IB:
            
 
     def order_handler(self, trade):
-        #print(f'order_handler returned: {trade}\n')
+        #print(trade, \n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:
