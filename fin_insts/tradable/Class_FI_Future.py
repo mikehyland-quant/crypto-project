@@ -27,10 +27,10 @@ class Future(FinancialInstrument):
     def __init__(self, row):
         super().__init__(row)
         
-        self.settlement_days_trade  = 0
-        self.settlement_days_comm   = 0
-        self.settlement_days_expiry = 0
-
+        self.biz_days_to_comm_pmt  = 0
+        self.biz_days_to_trade_pmt = 0
+        self.biz_days_to_expiry_pmt  = 0
+    
     def complete_obj(self):
         super().complete_obj() 
         
@@ -40,9 +40,9 @@ class Future(FinancialInstrument):
             tz_exch          = ZoneInfo(self.ibkr_details.timeZoneId or "US/Central")
                 
         self.date_expiry              = expiration_date
-        date_expiry_pmt               = expiration_date + timedelta(days=self.settlement_days_expiry)
-        self.date_expiry_settle       = Dates.next_nyse_trading_day(date_expiry_pmt)
-        self.days_expiry_settle       = (self.date_expiry_settle - self.date_trade).days
+        date_expiry_pmt               = expiration_date + timedelta(days=self.biz_days_to_expiry_pmt)
+        self.date_settle_expiry       = Dates.next_nyse_trading_day(date_expiry_pmt)
+        self.days_settle_expiry       = (self.date_settle_expiry - self.date_trade).days
 
         if last_trade_time is None:
             last_trade_time           = Dates.time_from_string('16:00')

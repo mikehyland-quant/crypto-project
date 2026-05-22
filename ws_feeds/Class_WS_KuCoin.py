@@ -157,6 +157,8 @@ class KuCoinSpotFeed(WSFeedBase):
         obj.settlement_currency = None
         obj.fee_currency = obj.fi_row.get("feeCurrency")      # unique
 
+        obj.complete_obj()
+
         '''
         # KuCoin spot symbol metadata
         obj.tick_size         = row.get("priceIncrement")

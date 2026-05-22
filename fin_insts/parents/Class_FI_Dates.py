@@ -24,12 +24,13 @@ class Dates():
 
     @staticmethod
     def calc(obj):  
+
         trade_date            = date.today()
 
-        date_comm_pmt         = trade_date + timedelta(days=obj.settlement_days_comm)
+        date_comm_pmt         = trade_date + timedelta(days=obj.biz_days_to_comm_pmt)
         settlement_date_comm  = Dates.next_nyse_trading_day(date_comm_pmt)
 
-        time_diff             = obj.settlement_days_comm - obj.settlement_days_comm
+        time_diff             = obj.biz_days_to_trade_pmt - obj.biz_days_to_comm_pmt
         date_trade_pmt        = settlement_date_comm + timedelta(days=time_diff)
         settlement_date_trade = Dates.next_nyse_trading_day(date_trade_pmt)
 

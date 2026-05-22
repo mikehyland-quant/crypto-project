@@ -91,6 +91,8 @@ class KrakenSpotFeed(WSFeedBase):
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
+        obj.complete_obj()
+
         '''
         # Kraken instrument metadata
         obj.tick_size            = row.get("price_increment")

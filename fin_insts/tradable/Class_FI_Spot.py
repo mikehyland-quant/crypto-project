@@ -19,8 +19,9 @@ class Spot(FinancialInstrument):
     def __init__(self, row):
         super().__init__(row)
         
-        self.settlement_days_trade = 0
-        self.settlement_days_comm  = 0
+        self.biz_days_to_comm_pmt  = 0
+        self.biz_days_to_trade_pmt = 0
+        
 
 
         

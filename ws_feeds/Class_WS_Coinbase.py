@@ -82,6 +82,8 @@ class CoinbaseSpotFeed(WSFeedBase):
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
+        obj.complete_obj()
+
         '''
         #obj.fi_row.base_increment & price_increent
         #obj.fi_row.quote_increment

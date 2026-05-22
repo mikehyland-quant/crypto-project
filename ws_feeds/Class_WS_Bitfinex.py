@@ -159,6 +159,8 @@ class BitfinexFeed(WSFeedBase):
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
+        obj.complete_obj()
+
     @classmethod
     def get_product_info(cls, product_ids=None, pair_type="exchange"):
         url = f"https://api-pub.bitfinex.com/v2/conf/pub:info:pair"

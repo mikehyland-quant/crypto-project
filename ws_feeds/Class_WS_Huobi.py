@@ -99,6 +99,8 @@ class HuobiFeed(WSFeedBase):
         obj.quote_currency = None
         obj.settlement_currency = None
 
+        obj.complete_obj()
+
     @classmethod
     def get_product_info(cls, product_ids=None):
         """

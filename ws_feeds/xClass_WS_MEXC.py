@@ -116,6 +116,8 @@ class MEXCFeed(WSFeedBase):
         obj.pf_number = None
         obj.pf_prod_type = None
 
+        obj.complete_obj()
+
     @classmethod
     def get_product_info(cls, product_ids=None):
         r = requests.get(cls.rest_url, timeout=10)

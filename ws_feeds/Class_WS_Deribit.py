@@ -89,6 +89,8 @@ class DeribitFeed(WSFeedBase):
         obj.quote_currency = obj.fi_row.quote_currency
         obj.settlement_currency = (getattr(obj.fi_row, "settlement_currency", None))
 
+        obj.complete_obj()
+
         '''
         #obj.fi_row.tick_size
         #obj.fi_row.contract_size

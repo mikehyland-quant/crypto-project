@@ -16,9 +16,9 @@ class Option(Future):
     def __init__(self, row):
         super().__init__(row)
         
-        self.settlement_days_trade  = None
-        self.settlement_days_comm   = None
-        self.settlement_days_expiry = None
+        self.biz_days_to_comm_pmt  = None
+        self.biz_days_to_trade_pmt = None
+        self.biz_days_to_expiry_pmt  = None
 
     def complete_obj(self):
         super().complete_obj()   

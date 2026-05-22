@@ -105,6 +105,8 @@ class OKXFeed(WSFeedBase):
         obj.quote_currency = None
         obj.settlement_currency = getattr(obj.fi_row, "settleCcy", None)
 
+        obj.complete_obj()
+
         '''
         obj.underlying_symbol = getattr(row, "uly", None)
         obj.instrument_family = getattr(row, "instFamily", None)

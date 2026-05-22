@@ -65,6 +65,8 @@ class BinanceSpotFeed(WSFeedBase):
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
+        obj.complete_obj()
+
         '''
         # Exchange-specific metadata
         obj.tick_size     = row.get("tickSize")

@@ -66,13 +66,13 @@ class FutureSpread(MktData):
         self.comm_misc_amount  = self.near_obj.comm_misc_amount  + self.far_obj.comm_misc_amount 
                        
         self.date_expiry_near              = self.near_obj.date_expiry
-        self.date_expiry_settle_near       = self.near_obj.date_expiry_settle
-        self.days_expiry_settle_near       = self.near_obj.days_expiry_settle
+        self.date_settle_expiry_near       = self.near_obj.date_settle_expiry
+        self.days_settle_expiry_near       = self.near_obj.days_settle_expiry
         self.last_trade_date_time_nyc_near = self.near_obj.last_trade_date_time_nyc
 
         self.date_expiry_far               = self.far_obj.date_expiry
-        self.date_expiry_settle_far        = self.far_obj.date_expiry_settle
-        self.days_expiry_settle_far        = self.far_obj.days_expiry_settle
+        self.date_settle_expiry_far        = self.far_obj.date_settle_expiry
+        self.days_settle_settle_far        = self.far_obj.days_settle_expiry
         self.last_trade_date_time_nyc_far  = self.far_obj.last_trade_date_time_nyc
 
         if self.my_pf_name == "IBKR":        

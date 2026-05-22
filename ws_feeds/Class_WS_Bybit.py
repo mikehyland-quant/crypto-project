@@ -84,6 +84,8 @@ class BybitFeed(WSFeedBase):
         obj.quote_currency = None
         obj.settlement_currency = getattr(obj.fi_row, "settleCoin", None)
 
+        obj.complete_obj()
+
     '''
     # raw exchange metadata you probably care about
             obj.tick_size        = row.get("tickSize")

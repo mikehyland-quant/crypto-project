@@ -24,8 +24,8 @@ class Equity(FinancialInstrument):
     def __init__(self, row):
         super().__init__(row)
         
-        self.settlement_days_trade  = 1
-        self.settlement_days_comm   = 1
+        self.biz_days_to_comm_pmt  = 1
+        self.biz_days_to_trade_pmt = 1
         
     def complete_obj(self):
         super().complete_obj() 
