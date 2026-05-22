@@ -19,7 +19,7 @@ class FinancialInstrument(MktData):
     """
     Parent class for all financial instruments.
     """
-
+ 
     def __init__(self, my_row):
         super().__init__()
 

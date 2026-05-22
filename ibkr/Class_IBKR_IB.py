@@ -11,7 +11,7 @@ class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
 
 
-    def __init__(self, host='127.0.0.1', port=7497):
+    def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
         self.clientId = int(datetime.now().strftime("%H%M%S"))
@@ -22,6 +22,7 @@ class IBKR_IB:
 
 
     async def create_simple_contract(self, obj):
+        #print(obj.my_fi_name)
         obj.ibkr_contract = await self.contract_by_conId(int(obj.pf_locator))
         obj.ibkr_details = (await self.ib.reqContractDetailsAsync(obj.ibkr_contract))[0]
 
@@ -66,9 +67,9 @@ class IBKR_IB:
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
-        obj.scalar_order_size         = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
-        obj.scalar_price_raw_to_order = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
-
+        obj.scalar_price_raw_to_mkt = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
+        obj.scalar_size_mkt_to_unit = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
+        
         obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
         obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
         obj.size_increment = obj._safe_float(getattr(obj.ibkr_details,  'sizeIncrement'), 1.0)

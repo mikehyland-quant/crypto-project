@@ -6,10 +6,10 @@
 '''
 This class assigns a number of attributes to each object.  The attribute names are organized as follows:
     first  - cf / comm / price / size
-    second - mkt / order / raw / unit
+    second - mkt / raw / unit
     third  - ask / bid / hit_bid / join_ask / join_bid / lift_ask 
 
-For scalars, the first is always "scalar".  Then price / size / order.  Then raw_to_order / order_to_mkt / mkt_to_unit.
+For scalars, the first is always "scalar".  Then price / size.  Then raw_to_mkt / mkt_to_unit.
 '''
 
 
@@ -27,36 +27,28 @@ class MktData:
         self.price_unit_close  = None
                        
         for bid_ask in ['bid', 'ask']:
-             
+              
             setattr(self, 'price_raw_'   + bid_ask, None)       
-            setattr(self, 'price_order_' + bid_ask, None)        
             setattr(self, 'price_mkt_'   + bid_ask, None)        
             setattr(self, 'price_unit_'  + bid_ask, None)    
 
-            setattr(self, 'size_raw_'    + bid_ask, None) 
-            setattr(self, 'size_order_'  + bid_ask, None)        
+            setattr(self, 'size_raw_'    + bid_ask, None)   
             setattr(self, 'size_mkt_'    + bid_ask, None)        
             setattr(self, 'size_unit_'   + bid_ask, None)    
 
-        for bid_ask in ['hit_bid', 'join_bid', 'join_ask', 'lift_ask']: 
-            setattr(self, 'cf_order_'    + bid_ask, None)        
+        for bid_ask in ['hit_bid', 'join_bid', 'join_ask', 'lift_ask']:   
             setattr(self, 'cf_mkt_'      + bid_ask, None)        
             setattr(self, 'cf_unit_'     + bid_ask, None)  
-           
-            setattr(self, 'comm_order_'  + bid_ask, None)        
+            
             setattr(self, 'comm_mkt_'    + bid_ask, None)        
             setattr(self, 'comm_unit_'   + bid_ask, None)
             
         # the settings below are initial; they may get overwritten later in complete object phase
-        self.scalar_price_raw_to_order = 1
-        self.scalar_price_order_to_mkt = 1
+        self.scalar_price_raw_to_mkt   = 1
         self.scalar_price_mkt_to_unit  = 1
         
-        self.scalar_size_raw_to_order = 1
-        self.scalar_size_order_to_mkt = 1
-        self.scalar_size_mkt_to_unit  = 1
-        
-        self.scalar_order_size = 1
+        self.scalar_size_raw_to_mkt    = 1
+        self.scalar_size_mkt_to_unit   = 1
 
                     
     @staticmethod
@@ -81,7 +73,7 @@ class MktData:
 
             self.price_raw_close  = self._safe_float(close_price, default=None)
         
-            self.price_mkt_close  = self.price_raw_close * self.scalar_price_order_to_mkt
+            self.price_mkt_close  = self.price_raw_close * self.scalar_price_raw_to_mkt
             self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
 
             strategy = getattr(self, "strategy", None)
@@ -120,32 +112,24 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_bid = ts
                     
+            # calc at the instrument level
             self.price_raw_bid        =  bid_price     
-            
-            self.price_order_bid      =  self.price_raw_bid   * self.scalar_price_raw_to_order
-            self.price_mkt_bid        =  self.price_order_bid * self.scalar_price_order_to_mkt
-            self.price_unit_bid       =  self.price_mkt_bid   * self.scalar_price_mkt_to_unit
-    
-            self.cf_order_join_bid    = -self.price_order_bid * self.scalar_order_size
-            self.cf_order_hit_bid     =  self.price_order_bid * self.scalar_order_size
+            self.price_mkt_bid        =  self.price_raw_bid * self.scalar_price_raw_to_mkt
 
             self.cf_mkt_join_bid      = -self.price_mkt_bid 
             self.cf_mkt_hit_bid       =  self.price_mkt_bid 
-    
+
+            self.comm_mkt_join_bid    =  self.calc_comm(self.price_mkt_bid, 'maker')
+            self.comm_mkt_hit_bid     =  self.calc_comm(self.price_mkt_bid, 'taker')
+
+            # calc at the unit level
+            self.price_unit_bid       =  self.price_mkt_bid * self.scalar_price_mkt_to_unit
+
             self.cf_unit_join_bid     = -self.price_unit_bid 
             self.cf_unit_hit_bid      =  self.price_unit_bid 
     
-            self.comm_order_join_bid  =  self.calc_comm(self.price_order_bid, 'maker')
-            self.comm_order_hit_bid   =  self.calc_comm(self.price_order_bid, 'taker')
-            
-            self.comm_mkt_join_bid    =  self.comm_order_join_bid * self.scalar_size_order_to_mkt
-            self.comm_mkt_hit_bid     =  self.comm_order_hit_bid  * self.scalar_size_order_to_mkt
-    
-            self.comm_unit_join_bid   =  self.comm_mkt_join_bid   * self.scalar_size_mkt_to_unit 
-            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid    * self.scalar_size_mkt_to_unit 
-
-            self.cf_unit_join_bid_net =  self.cf_unit_join_bid - self.comm_unit_join_bid
-            self.cf_unit_hit_bid_net  =  self.cf_unit_hit_bid  - self.comm_unit_hit_bid    
+            self.comm_unit_join_bid   =  self.comm_mkt_join_bid / self.scalar_size_mkt_to_unit 
+            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  / self.scalar_size_mkt_to_unit 
     
         if ask_price is not None and ask_price != self.price_raw_ask:
             changed = True
@@ -154,32 +138,24 @@ class MktData:
                 ts = time.time_ns()
             self.ts_price_ask = ts
                     
+            # calc at the instrument level
             self.price_raw_ask        =  ask_price     
-            
-            self.price_order_ask      =  self.price_raw_ask   * self.scalar_price_raw_to_order
-            self.price_mkt_ask        =  self.price_order_ask * self.scalar_price_order_to_mkt
-            self.price_unit_ask       =  self.price_mkt_ask   * self.scalar_price_mkt_to_unit
-    
-            self.cf_order_join_ask    =  self.price_order_ask * self.scalar_order_size
-            self.cf_order_lift_ask    = -self.price_order_ask * self.scalar_order_size
-    
+            self.price_mkt_ask        =  self.price_raw_ask * self.scalar_price_raw_to_mkt
+
             self.cf_mkt_join_ask      =  self.price_mkt_ask 
             self.cf_mkt_lift_ask      = -self.price_mkt_ask 
+
+            self.comm_mkt_join_ask    =  self.calc_comm(self.price_mkt_ask, 'maker')
+            self.comm_mkt_lift_ask    =  self.calc_comm(self.price_mkt_ask, 'taker')
+
+            # calc at the unit level
+            self.price_unit_ask       =  self.price_mkt_ask * self.scalar_price_mkt_to_unit
     
             self.cf_unit_join_ask     =  self.price_unit_ask 
             self.cf_unit_lift_ask     = -self.price_unit_ask 
     
-            self.comm_order_join_ask  =  self.calc_comm(self.price_order_ask, 'maker')
-            self.comm_order_lift_ask  =  self.calc_comm(self.price_order_ask, 'taker')
-            
-            self.comm_mkt_join_ask    =  self.comm_order_join_ask * self.scalar_size_order_to_mkt
-            self.comm_mkt_lift_ask    =  self.comm_order_lift_ask * self.scalar_size_order_to_mkt
-    
-            self.comm_unit_join_ask   =  self.comm_mkt_join_ask   * self.scalar_size_mkt_to_unit 
-            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask   * self.scalar_size_mkt_to_unit 
-
-            self.cf_unit_join_ask_net =  self.cf_unit_join_ask - self.comm_unit_join_ask
-            self.cf_unit_lift_ask_net =  self.cf_unit_lift_ask - self.comm_unit_lift_ask   
+            self.comm_unit_join_ask   =  self.comm_mkt_join_ask / self.scalar_size_mkt_to_unit 
+            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask / self.scalar_size_mkt_to_unit 
          
         if bid_size is not None and bid_size != self.size_raw_bid:
             changed = True
@@ -188,12 +164,10 @@ class MktData:
                 ts = time.time_ns()
             self.ts_size_bid = ts
                     
-            self.size_raw_bid       =  bid_size     
-            
-            self.size_order_bid     =  self.size_raw_bid   * self.scalar_size_raw_to_order
-            self.size_mkt_bid       =  self.size_order_bid * self.scalar_size_order_to_mkt
-            self.size_unit_bid      =  self.size_mkt_bid   * self.scalar_size_mkt_to_unit
-               
+            self.size_raw_bid   =  bid_size     
+            self.size_mkt_bid   =  self.size_raw_bid * self.scalar_size_raw_to_mkt
+            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_to_unit
+              
         if ask_size is not None and ask_size != self.size_raw_ask:
             changed = True
             
@@ -201,11 +175,9 @@ class MktData:
                 ts = time.time_ns()
             self.ts_size_ask = ts
             
-            self.size_raw_ask       =  ask_size     
-            
-            self.size_order_ask     =  self.size_raw_ask   * self.scalar_size_raw_to_order
-            self.size_mkt_ask       =  self.size_order_ask * self.scalar_size_order_to_mkt
-            self.size_unit_ask      =  self.size_mkt_ask   * self.scalar_size_mkt_to_unit
+            self.size_raw_ask   =  ask_size     
+            self.size_mkt_ask   =  self.size_raw_ask * self.scalar_size_raw_to_mkt
+            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_to_unit
     
         return changed
         

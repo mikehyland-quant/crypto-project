@@ -37,7 +37,7 @@ class Dates():
         calendar_days_trade   = (settlement_date_trade - trade_date).days
         
         return {
-            'trade_date': trade_date,
+            'trade_date'            : trade_date,
             'settlement_date_comm'  : settlement_date_comm,
             'settlement_date_trade' : settlement_date_trade,
             'calendar_days_comm'    : calendar_days_comm,
