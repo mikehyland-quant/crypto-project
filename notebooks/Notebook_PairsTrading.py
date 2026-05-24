@@ -40,8 +40,8 @@ ibkr = IBKR_IB()
 # %%
 # --- utils ---
 # from other.Graph_Theory import find_all_node_permutations, connect_nodes_with_edges
-from output.Output_Methods import create_output
-from output.Class_xlWings import xlWings
+from input_output.Standard_Output import create_output
+from input_output.Class_InputOutput import xlWings
 xlw = xlWings()
 
 # %%

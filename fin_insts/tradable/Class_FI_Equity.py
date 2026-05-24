@@ -10,7 +10,7 @@ from fin_insts.parents.Class_FI import FinancialInstrument
 from fin_insts.parents.Class_FI_Dates import Dates
 from fin_insts.parents.Class_FI_MktData import MktData
 
-from output.Class_xlWings import xlWings
+from input_output.Class_InputOutput import xlWings
 xlw = xlWings()
 
 

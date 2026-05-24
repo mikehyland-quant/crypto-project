@@ -35,7 +35,7 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 #self-written shortcuts
-from output.Class_xlWings import xlWings
+from input_output.Class_InputOutput import xlWings
 xlw  = xlWings()
 
 ##########################################
