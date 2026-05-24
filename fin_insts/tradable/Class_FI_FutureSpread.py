@@ -72,7 +72,7 @@ class FutureSpread(MktData):
 
         self.date_expiry_far               = self.far_obj.date_expiry
         self.date_settle_expiry_far        = self.far_obj.date_settle_expiry
-        self.days_settle_settle_far        = self.far_obj.days_settle_expiry
+        self.days_settle_expiry_far        = self.far_obj.days_settle_expiry
         self.last_trade_date_time_nyc_far  = self.far_obj.last_trade_date_time_nyc
 
         if self.my_pf_name == "IBKR":        

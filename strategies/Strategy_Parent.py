@@ -53,7 +53,7 @@ class Strategy:
     
         if tick in (None, 0):
             return price
-    
+     
         scaled = price / tick
     
         if buy_sell == 'BUY':

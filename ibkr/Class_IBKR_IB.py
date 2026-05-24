@@ -249,5 +249,17 @@ class IBKR_IB:
             return
 
         self.ib.cancelOrder(trade.order)
+
+
+    '''
+    this is the old code.  needs to be updatedd.
     
+    def get_position_size(self, account, contract, position, avgCost):
+        super().position(account, contract, position, avgCost)
+
+        objList = [obj for key, obj in self.ibkrDictID.items() if obj.ibkr_contractID == contract.conId]
+        if len(objList) == 1:
+            obj = objList[0]
+            obj.current_position = position
+    '''
 
