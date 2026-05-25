@@ -17,8 +17,9 @@ class BestOf(Subscriber):
         )
 
     for timer mode:
-        for obj in bo_obj_list:
+        for obj in bo_obj_list:     #these are the bestOf objects
             tasks.append(asyncio.create_task(obj.run_timer())) 
+            
 
     for auto mode:
         will be triggered by underlying objects at subscriber.update_unit_data() at end of mkt_data_update()
