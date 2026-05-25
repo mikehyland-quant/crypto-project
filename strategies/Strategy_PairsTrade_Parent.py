@@ -139,10 +139,6 @@ class PairsTrade_Parent(Strategy):
 
         print('Final spread: ', final_spread, '\n')
 
-        # if using event:
-        if self.done_event is not None:
-            self.done_event.set()
-
         
     def _calc_price(self, input_price, output_obj, epsilon_scalar=0):     
         fair_value   = output_obj.adj_spread - (input_price * output_obj.spread_ratio)

@@ -107,4 +107,6 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
         if self.stage == "TWO FILLED":
             self._finalize_results()
 
-     
+            # if using event:
+            if self.done_event is not None:
+                self.done_event.set()

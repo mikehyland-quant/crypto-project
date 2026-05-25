@@ -7,9 +7,11 @@ from zoneinfo import ZoneInfo
 from IPython.display import display, clear_output
 
 import xlwings as xw
+
+from input_output.Class_InputOutput import InputOutput
+io = InputOutput()
  
 async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[]):
-#    print('create_output')
     
     refresh      = input_dict.get('timer interval', 10)
     display_mode = input_dict.get('display df onscreen', False)
@@ -26,13 +28,15 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
         directory = input_dict['output directory']
         filename  = input_dict['output workbook name']
         path      = os.path.normpath(os.path.join(directory, filename))
-
+    
     if xl_mode != False:
-        wb   = xw.Book(input_dict['output workbook name'])
-        ws   = wb.sheets[input_dict['output worksheet name']]
-        cell = ws.range(input_dict['output cell name'])
-
+        wb, ws, cell = io.set_xw_book_sheet_and_range(input_dict['output workbook name'],
+                                                      input_dict['output worksheet name'],
+                                                      input_dict['output cell name'])
+    print('create_output')
     await asyncio.sleep(1)
+
+
 
     while True:
         ts = datetime.now(ZoneInfo("US/Eastern")).strftime("%Y-%m-%d_%H-%M-%S")
@@ -40,7 +44,8 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
         if print_ts:
             print(ts)
         
-        current_df = convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
+        current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
+        print(current_df)
         
         if add_ts:
             current_df['time'] = ts

@@ -16,8 +16,8 @@ class InputOutput():
         return xw.Book(wb)
     
     def set_xw_book_and_sheet(self, wb, ws):
-        wbook = self.set_book(wb)
-        wsheet = wb.sheets[ws]
+        wbook = self.set_xw_book(wb)
+        wsheet = wbook.sheets[ws]
         return wbook, wsheet
     
     def set_xw_book_sheet_and_range(self, wb, ws, cell):

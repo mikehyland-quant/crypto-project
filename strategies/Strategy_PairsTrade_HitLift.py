@@ -83,8 +83,12 @@ class PairsTrade_LimitLimit(Strategy):
 
         if self.stage == "TWO FILLED":
             self._finalize_results()
-                      
-            
+
+            # if using event:
+            if self.done_event is not None:
+                self.done_event.set()
+
+
     def _on_first_fill(self, filled_obj, filled_order):     
         unfilled_obj = filled_obj.opp_obj
         order_id     = self.update_market_order(obj=unfilled_obj, 

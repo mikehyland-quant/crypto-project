@@ -110,7 +110,38 @@ class BestOfStrat(Strategy):
         if filled_trade in self.active_orders:
             self.active_orders.pop(filled_trade)
             filled_obj.strat_on_trade_exec = False
+
+            if filled_trade.action == 'BUY':
+                buy_obj = filled_obj
+            elif filled_trade.action == 'SELL':
+                sell_obj = filled_obj
             
             if not self.active_orders:
-                pass
+                self._finalize_results(buy_obj, sell_obj)
+
+                # if using event:
+                if self.done_event is not None:
+                    self.done_event.set()
+
+
+    def _finalize_results(self, buy_obj, sell_obj):
+        final_spread = (buy_obj.trade.orderStatus.avgFillPrice * buy_obj.spread_ratio * buy_obj.filled_scalar + 
+                        sell_obj.trade.orderStatus.avgFillPrice * sell_obj.spread_ratio * sell_obj.filled_scalar)  
+
+        print("\nTRADE PACKAGE FINISHED")
+        print("----------------------")
+    
+        for obj in [sell_obj, buy_obj]:
+            print(
+                obj.my_fi_name,
+                obj.buy_sell,
+                ", order_id:", obj.trade.order.orderId,
+                ", status:", obj.trade.orderStatus.status,
+                ", filled:", obj.trade.orderStatus.filled,
+                ", avg_price:", obj.trade.orderStatus.avgFillPrice,
+                ", last_price:", obj.trade.orderStatus.lastFillPrice,
+            )
+
+        print('Final spread: ', final_spread, '\n')
+
 
