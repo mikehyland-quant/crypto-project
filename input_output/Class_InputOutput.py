@@ -21,7 +21,7 @@ class InputOutput():
         return wbook, wsheet
     
     def set_xw_book_sheet_and_range(self, wb, ws, cell):
-        wbook, wsheet = self.set_book_and_sheet(wb, ws)
+        wbook, wsheet = self.set_xw_book_and_sheet(wb, ws)
         range = wsheet.range(cell)
         return wbook, wsheet, range
 
@@ -51,9 +51,9 @@ class InputOutput():
     # additional shortcuts  
 
     def convert_objs_to_printable_df(self, list_, OUTPUT_COLS, FLATTEN_COLS=[]):
-        df = objs_list_to_df(list_)
+        df = self.objs_list_to_df(list_)
         for col in FLATTEN_COLS:
-            df = flatten_df_columns(df, col, sep='_')
+            df = self.flatten_df_columns(df, col, sep='_')
         df = df.reindex(columns=OUTPUT_COLS)
         return df
         

@@ -33,9 +33,8 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
         wb, ws, cell = io.set_xw_book_sheet_and_range(input_dict['output workbook name'],
                                                       input_dict['output worksheet name'],
                                                       input_dict['output cell name'])
-    print('create_output')
-    await asyncio.sleep(1)
 
+    await asyncio.sleep(1)
 
 
     while True:
@@ -45,7 +44,6 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
             print(ts)
         
         current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
-        print(current_df)
         
         if add_ts:
             current_df['time'] = ts

@@ -1,4 +1,4 @@
-# %%
+
 INPUT_WB_NAME  = "2026 Inputs for Apps.xlsx"
 
 ####
@@ -9,7 +9,6 @@ STRAT_TBL_NAME = "ACTIVE_STRAT"
 ####
 
 
-# %%
 # --- system setup ---
 import sys
 import os
@@ -19,36 +18,29 @@ sys.path.append(os.path.abspath(".."))
 #%load_ext autoreload
 #%autoreload 2
 
-# %%
 import asyncio
 from collections import defaultdict
 
-# %%
 # --- builders ---
-from fin_insts import make_single_leg_fin_insts#, FutureSpread #, BestOf, Synthetic
+from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Synthetic
 
-# %%
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 #from ibkr.Class_IBKR_TWS import IBKR_TWS
 ibkr = IBKR_IB()
 
-# %%
 # --- feeds ---
 #from ws_feeds import WSFeedManager
 
-# %%
 # --- utils ---
 # from other.Graph_Theory import find_all_node_permutations, connect_nodes_with_edges
-from input_output.Standard_Output import create_output
-from input_output.Class_InputOutput import xlWings
-xlw = xlWings()
+from input_output.Standard_Output import standard_output
+from input_output.Class_InputOutput import InputOutput
+io = InputOutput()
 
-# %%
 # --- trading strategy ---
 from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
 
-# %%
 # CONSTANTS
 
 DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
@@ -69,29 +61,23 @@ OUTPUT_COLS = [
                'unit_data_dict_ask_price'
         ]
 
-# %%
 async def standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
-    df = xlw.get_df(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME, table=True)
+    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
+    df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
     input_dict = df.set_index('Keys')['Values'].to_dict()
-
-    wb  = input_dict['input workbook name']
-    ws  = input_dict['true/false sheet name']
-    tbl = input_dict['true/false table name']
-    true_false_df = xlw.get_df(wb, ws, tbl, table=True)
-
+    
+    wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
+    true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
+    
     if 'TRUE/FALSE' not in true_false_df.columns:
         true_false_df = true_false_df.set_index('Keys').T
-        
+
     true_false_df = true_false_df[true_false_df['TRUE/FALSE'] == True]
     
-    wb  = DB_WB_NAME
-####    
-    ws  = input_dict['crypto long name']
+    wb, ws = io.set_xw_book_and_sheet(DB_WB_NAME, input_dict['crypto long name'])
     tbl = input_dict['crypto abbrev'] + "_static_data_table"
-####
-    
-    db_df = xlw.get_df(wb, ws, tbl, table=True)
+    db_df = io.get_xw_df(ws, tbl, table=True)
     
     merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
 
@@ -99,7 +85,6 @@ async def standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
     return input_dict, fin_inst_objs_list
 
-# %%
 async def main():
 
     input_dict, objs_list = await standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
@@ -170,13 +155,11 @@ async def main():
     
     print("Program finished cleanly.", '\n')
 
-# %%
 #await main()
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# %%
 
 
 
