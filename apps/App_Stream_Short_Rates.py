@@ -1,7 +1,7 @@
 
 
 def WorkbookDetails():
-
+ 
     #create dictionary to hold other info    
     WorkbookDetailsDict = {    
 
@@ -35,8 +35,8 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 #self-written shortcuts
-from input_output.Class_InputOutput import xlWings
-xlw  = xlWings()
+from input_output.Class_InputOutput import InputOutput
+io  = InputOutput()
 
 ##########################################
 
@@ -87,9 +87,8 @@ def updateLivePriceDF(self, tickerId, field, amount):
 
 
 def printBidAsk(inst, InstructionsDict):    
-    wb = xw.Book(InstructionsDict["Workbook Name"])
-    ws = wb.sheets[InstructionsDict["Output Worksheet"]]    
-    ws.range(InstructionsDict["Output Cell"]).options(index = False, header=1).value = \
+    wbook, wsheet = io.set_xw_book_and_sheet(InstructionsDict["Workbook Name"], InstructionsDict["Output Worksheet"])  
+    wsheet.range(InstructionsDict["Output Cell"]).options(index = False, header=1).value = \
                                         inst.FinInstDF[['BID PRICE','ASK PRICE','LAST PRICE']]
 
     print(datetime.now())
@@ -108,18 +107,18 @@ def main():
     WorkbookDetailsDict = WorkbookDetails()
 
 #Step 2 - get instructions
-    FixedInputsDict = xlw.get_dict(WorkbookDetailsDict["Workbook Name"], 
-                                  WorkbookDetailsDict["Instruction Worksheet Name"], 
-                                  'Table1', True, int)
+    wbook, wsheet = io.set_xw_book_and_sheet(WorkbookDetailsDict["Workbook Name"], 
+                                             WorkbookDetailsDict["Instruction Worksheet Name"])  
+    FixedInputsDict = io.get_xw_dict(wsheet, 'Table1', True, int)
 
 #Step 3 - create instances of necessary classes
     IBKR = IBKRLightOW() 
 
 #Step 4 - create Financial Instrument dataframe
-    IBKR.FinInstDF = xlw.get_df(FixedInputsDict["Workbook Name"],
-                               FixedInputsDict["Input Worksheet"],
-                               FixedInputsDict["Input Range"], True,
-                               FixedInputsDict["Header Rows"], int)
+    wbook, wsheet = io.set_xw_book_and_sheet(FixedInputsDict["Workbook Name"],
+                                             FixedInputsDict["Input Worksheet"])
+    IBKR.FinInstDF = io.get_xw_df(wsheet, FixedInputsDict["Input Range"], True,
+                                  FixedInputsDict["Header Rows"], int)
     IBKR.FinInstDF['MONTH'] = IBKR.FinInstDF['MONTH'].astype(int)
     IBKR.FinInstDF['BID PRICE'] = "-"
     IBKR.FinInstDF['ASK PRICE'] = "-"
