@@ -1,6 +1,8 @@
 
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
 import asyncio
+import numpy as np
+import pandas as pd
 
 
 class BestOf(Subscriber):
@@ -88,9 +90,9 @@ class BestOf(Subscriber):
             candidates = []
 
             for obj in self.objs_list:
-                val = getattr(obj, attr, None)
+                val = getattr(obj, attr, np.nan)
 
-                if val is not None:
+                if not pd.isna(val):                    
                     candidates.append((val, obj))
 
             if not candidates:
