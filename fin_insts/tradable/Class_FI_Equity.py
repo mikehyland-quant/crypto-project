@@ -36,7 +36,7 @@ class Equity(FinancialInstrument):
         # the two lines below overwrite IBKR sizes of 0.0001
         self.size_increment = 1
         self.min_size       = 1
-
+ 
         # the line below overwrites MktData assignment of 1
         self.scalar_size_raw_to_mkt = 100
 

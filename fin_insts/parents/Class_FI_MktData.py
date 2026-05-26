@@ -194,7 +194,7 @@ class MktData:
             initial_estimate = price * amount
             return max(initial_estimate, self.comm_misc_amount)
         else:
-            return 0
+            return 0 
 
 
     
