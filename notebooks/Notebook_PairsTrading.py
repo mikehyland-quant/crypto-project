@@ -1,4 +1,6 @@
 
+# CONSTANTS
+
 INPUT_WB_NAME  = "2026 Inputs for Apps.xlsx"
 
 ####
@@ -8,6 +10,7 @@ INPUT_TBL_NAME = "PAIRS_TRADING_INPUTS"
 STRAT_TBL_NAME = "ACTIVE_STRAT"
 ####
 
+DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
 
 # --- system setup ---
 import sys
@@ -33,7 +36,6 @@ ibkr = IBKR_IB()
 #from ws_feeds import WSFeedManager
 
 # --- utils ---
-# from other.Graph_Theory import find_all_node_permutations, connect_nodes_with_edges
 from input_output.Standard_Output import standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
@@ -41,25 +43,7 @@ io = InputOutput()
 # --- trading strategy ---
 from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
 
-# CONSTANTS
-
-DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
-
-OUTPUT_COLS = [
-           #    'time',
-               'my_prod_type',
-               'my_fi_name',
-               'my_pf_name',
-               'numerator_currency',
-               'denominator_currency',
-               
-          #     'mkt_to_unit_scalar_dict_price',
-               'mkt_data_dict_bid_price',
-               'mkt_data_dict_ask_price',
-          #     'mkt_comm_dict_join_bid',
-               'unit_data_dict_bid_price',
-               'unit_data_dict_ask_price'
-        ]
+OUTPUT_COLS = []
 
 async def standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
