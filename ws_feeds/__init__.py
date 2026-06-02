@@ -18,6 +18,7 @@ __all__ = [
 #    "KrakenDerivsFeed",
     "KuCoinSpotFeed",
 #    "KuCoinDerivsFeed",
+#    "NinjaDataFeed",
 #    "OKXFeed",
     "WSFeedBase",
     "WSFeedManager",
