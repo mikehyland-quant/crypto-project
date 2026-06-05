@@ -30,7 +30,7 @@ from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Syntheti
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 #from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB()
+ibkr = IBKR_IB(port=7497)
 
 # --- feeds ---
 #from ws_feeds import WSFeedManager
@@ -119,6 +119,7 @@ async def main():
       
     # Run all streams concurrently
     tasks = []
+
 #    tasks.append(asyncio.create_task(ws_feed.run()))
 #    tasks.append(asyncio.create_task(create_output(input_dict, output_list, OUTPUT_COLS)))
     if ibkr_objs_list:

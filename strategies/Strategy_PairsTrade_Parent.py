@@ -140,10 +140,11 @@ class PairsTrade_Parent(Strategy):
         print('Final spread: ', final_spread, '\n')
 
         
-    def _calc_price(self, input_price, output_obj, epsilon_scalar=0):     
-        fair_value   = output_obj.adj_spread - (input_price * output_obj.spread_ratio)
-        output_price = fair_value - (epsilon_scalar * self.epsilon)
-        output_price = output_obj.round_price_to_tick(abs(output_price))                                             
-        return output_price
+    def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):     
+        unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
+        unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
+        mkt_output_price = unit_output_price * output_obj.scalar_price_unit_to_mkt
+        mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))                                             
+        return mkt_output_price
 
     

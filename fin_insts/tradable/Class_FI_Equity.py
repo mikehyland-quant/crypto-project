@@ -31,6 +31,8 @@ class Equity(FinancialInstrument):
         super().complete_obj() 
         
         self.scalar_price_mkt_to_unit = self.get_scalar()
+        self.scalar_price_unit_to_mkt = 1 / self.scalar_price_mkt_to_unit
+
         self.scalar_size_mkt_per_unit = self.scalar_price_mkt_to_unit
         self.scalar_size_unit_per_mkt = 1 / self.scalar_size_mkt_per_unit
 

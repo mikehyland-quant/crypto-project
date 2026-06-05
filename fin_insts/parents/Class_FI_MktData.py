@@ -45,8 +45,9 @@ class MktData:
             setattr(self, 'comm_unit_'   + bid_ask, np.nan)
             
         # the settings below are initial; they may get overwritten later in complete object phase
-        self.scalar_price_raw_to_mkt   = 1
-        self.scalar_price_mkt_to_unit  = 1
+        self.scalar_price_raw_to_mkt  = 1
+        self.scalar_price_mkt_to_unit = 1
+        self.scalar_price_unit_to_mkt = 1
         
         self.scalar_size_raw_to_mkt   = 1
         self.scalar_size_mkt_per_unit = 1
@@ -130,8 +131,8 @@ class MktData:
             self.cf_unit_join_bid     = -self.price_unit_bid 
             self.cf_unit_hit_bid      =  self.price_unit_bid 
     
-            self.comm_unit_join_bid   =  self.comm_mkt_join_bid / self.scalar_size_unit_per_mkt
-            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  / self.scalar_size_unit_per_mkt 
+            self.comm_unit_join_bid   =  self.comm_mkt_join_bid * self.scalar_size_mkt_per_unit
+            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  * self.scalar_size_mkt_per_unit
     
         if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
@@ -156,8 +157,8 @@ class MktData:
             self.cf_unit_join_ask     =  self.price_unit_ask 
             self.cf_unit_lift_ask     = -self.price_unit_ask 
     
-            self.comm_unit_join_ask   =  self.comm_mkt_join_ask / self.scalar_size_unit_per_mkt
-            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask / self.scalar_size_unit_per_mkt
+            self.comm_unit_join_ask   =  self.comm_mkt_join_ask * self.scalar_size_mkt_per_unit
+            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask * self.scalar_size_mkt_per_unit
  
         if pd.notna(bid_size) and bid_size != self.size_raw_bid:
             changed = True
