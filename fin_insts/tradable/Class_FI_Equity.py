@@ -31,7 +31,8 @@ class Equity(FinancialInstrument):
         super().complete_obj() 
         
         self.scalar_price_mkt_to_unit = self.get_scalar()
-        self.scalar_size_mkt_to_unit  = 1 / self.scalar_price_mkt_to_unit
+        self.scalar_size_mkt_per_unit = self.scalar_price_mkt_to_unit
+        self.scalar_size_unit_per_mkt = 1 / self.scalar_size_mkt_per_unit
 
         # the two lines below overwrite IBKR sizes of 0.0001
         self.size_increment = 1

@@ -48,8 +48,9 @@ class MktData:
         self.scalar_price_raw_to_mkt   = 1
         self.scalar_price_mkt_to_unit  = 1
         
-        self.scalar_size_raw_to_mkt    = 1
-        self.scalar_size_mkt_to_unit   = 1
+        self.scalar_size_raw_to_mkt   = 1
+        self.scalar_size_mkt_per_unit = 1
+        self.scalar_size_unit_per_mkt = 1
 
                     
     @staticmethod
@@ -129,8 +130,8 @@ class MktData:
             self.cf_unit_join_bid     = -self.price_unit_bid 
             self.cf_unit_hit_bid      =  self.price_unit_bid 
     
-            self.comm_unit_join_bid   =  self.comm_mkt_join_bid / self.scalar_size_mkt_to_unit 
-            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  / self.scalar_size_mkt_to_unit 
+            self.comm_unit_join_bid   =  self.comm_mkt_join_bid / self.scalar_size_unit_per_mkt
+            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  / self.scalar_size_unit_per_mkt 
     
         if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
@@ -155,9 +156,9 @@ class MktData:
             self.cf_unit_join_ask     =  self.price_unit_ask 
             self.cf_unit_lift_ask     = -self.price_unit_ask 
     
-            self.comm_unit_join_ask   =  self.comm_mkt_join_ask / self.scalar_size_mkt_to_unit 
-            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask / self.scalar_size_mkt_to_unit 
-         
+            self.comm_unit_join_ask   =  self.comm_mkt_join_ask / self.scalar_size_unit_per_mkt
+            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask / self.scalar_size_unit_per_mkt
+ 
         if pd.notna(bid_size) and bid_size != self.size_raw_bid:
             changed = True
             
@@ -167,7 +168,7 @@ class MktData:
                     
             self.size_raw_bid   =  bid_size     
             self.size_mkt_bid   =  self.size_raw_bid * self.scalar_size_raw_to_mkt
-            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_to_unit
+            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_per_unit
               
         if pd.notna(ask_size) and ask_size != self.size_raw_ask:
             changed = True
@@ -178,7 +179,7 @@ class MktData:
             
             self.size_raw_ask   =  ask_size     
             self.size_mkt_ask   =  self.size_raw_ask * self.scalar_size_raw_to_mkt
-            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_to_unit
+            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_per_unit
     
         return changed
         

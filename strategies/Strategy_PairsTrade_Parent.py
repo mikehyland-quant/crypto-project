@@ -16,10 +16,10 @@ class PairsTrade_Parent(Strategy):
         # create self attributes
         self.stage = 'ZERO FILLED'
         
-        self.target_spread = df.loc['target_spread'].sum()
+        self.target_spread = df.loc['target_spread_per_unit'].sum()
         self.epsilon       = df.loc['epsilon'].sum()
         
-        df = df.drop(index=['target_spread'])
+        df = df.drop(index=['target_spread_per_unit'])
         df = df.drop(index=['epsilon'])
 
         objs_dict = df.to_dict()
@@ -68,7 +68,7 @@ class PairsTrade_Parent(Strategy):
             obj.trade             = None
             
             obj.buy_sell          = obj.buy_sell.upper()
-            obj.order_size        = abs(obj.order_size)
+            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_size_mkt_per_unit))
             obj.calc_price        = self._calc_price   # assigns function below 
             obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread        = self.target_spread / obj.spread_ratio
