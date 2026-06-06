@@ -1,5 +1,5 @@
 
-
+import numpy as np
 
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
 from other.Graph_Theory import find_all_node_permutations, create_list_of_edges, prepend_edge
@@ -46,20 +46,20 @@ class Synthetic(Subscriber):
 
 
     def _set_invalid_prices(self):
-        self.price_unit_bid = None
-        self.price_unit_ask = None
+        self.price_unit_bid = np.nan
+        self.price_unit_ask = np.nan
     
-        self.cf_unit_join_bid = None
-        self.cf_unit_hit_bid = None
+        self.cf_unit_join_bid = np.nan
+        self.cf_unit_hit_bid  = np.nan
     
-        self.cf_unit_join_ask = None
-        self.cf_unit_lift_ask = None
+        self.cf_unit_join_ask = np.nan
+        self.cf_unit_lift_ask = np.nan
     
-        self.comm_unit_join_bid = None
-        self.comm_unit_hit_bid = None
+        self.comm_unit_join_bid = np.nan
+        self.comm_unit_hit_bid  = np.nan
     
-        self.comm_unit_join_ask = None
-        self.comm_unit_lift_ask = None
+        self.comm_unit_join_ask = np.nan
+        self.comm_unit_lift_ask = np.nan
 
     
     def update_subscriber_data(self, obj):

@@ -15,6 +15,7 @@ from ws_feeds.Class_WS_Gemini        import GeminiFeed
 from ws_feeds.Class_WS_Huobi         import HuobiFeed
 from ws_feeds.Class_WS_Kraken        import KrakenSpotFeed
 from ws_feeds.Class_WS_KuCoin        import KuCoinSpotFeed
+#from ws_feeds.Class_WS_NinjaData     import NinjaDataFeed
 from ws_feeds.Class_WS_OKX           import OKXFeed
 from ws_feeds.Class_WS_Phemex        import PhemexFeed
 #from ws_feeds.Class_WS_MEXC          import MEXCFeed
@@ -51,6 +52,7 @@ class WSFeedManager:
         #"KuCoin-Derivs"   : KuCoinDerivsFeed,
         "KuCoinSpot"      : KuCoinSpotFeed,
 #        "MEXC"            : MEXCFeed,
+#         "NT8-Data"       : NinjaDataFeed,
         "OKX"             : OKXFeed,
         "Phemex"          : PhemexFeed
 

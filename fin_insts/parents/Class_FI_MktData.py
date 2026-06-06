@@ -13,7 +13,8 @@ For scalars, the first is always "scalar".  Then price / size.  Then raw_to_mkt 
 '''
 
 
-from datetime import datetime, timezone
+import numpy as np
+import pandas as pd
 import time
 
 class MktData:
@@ -22,37 +23,39 @@ class MktData:
         self.subscribers = []
         
         self.need_close_data   = True
-        self.price_raw_close   = None
-        self.price_mkt_close   = None
-        self.price_unit_close  = None
-                       
+        self.price_raw_close   = np.nan
+        self.price_mkt_close   = np.nan
+        self.price_unit_close  = np.nan
+               
         for bid_ask in ['bid', 'ask']:
               
-            setattr(self, 'price_raw_'   + bid_ask, None)       
-            setattr(self, 'price_mkt_'   + bid_ask, None)        
-            setattr(self, 'price_unit_'  + bid_ask, None)    
+            setattr(self, 'price_raw_'   + bid_ask, np.nan)       
+            setattr(self, 'price_mkt_'   + bid_ask, np.nan)        
+            setattr(self, 'price_unit_'  + bid_ask, np.nan)    
 
-            setattr(self, 'size_raw_'    + bid_ask, None)   
-            setattr(self, 'size_mkt_'    + bid_ask, None)        
-            setattr(self, 'size_unit_'   + bid_ask, None)    
+            setattr(self, 'size_raw_'    + bid_ask, np.nan)   
+            setattr(self, 'size_mkt_'    + bid_ask, np.nan)        
+            setattr(self, 'size_unit_'   + bid_ask, np.nan)    
 
         for bid_ask in ['hit_bid', 'join_bid', 'join_ask', 'lift_ask']:   
-            setattr(self, 'cf_mkt_'      + bid_ask, None)        
-            setattr(self, 'cf_unit_'     + bid_ask, None)  
+            setattr(self, 'cf_mkt_'      + bid_ask, np.nan)        
+            setattr(self, 'cf_unit_'     + bid_ask, np.nan)  
             
-            setattr(self, 'comm_mkt_'    + bid_ask, None)        
-            setattr(self, 'comm_unit_'   + bid_ask, None)
+            setattr(self, 'comm_mkt_'    + bid_ask, np.nan)        
+            setattr(self, 'comm_unit_'   + bid_ask, np.nan)
             
         # the settings below are initial; they may get overwritten later in complete object phase
-        self.scalar_price_raw_to_mkt   = 1
-        self.scalar_price_mkt_to_unit  = 1
+        self.scalar_price_raw_to_mkt  = 1
+        self.scalar_price_mkt_to_unit = 1
+        self.scalar_price_unit_to_mkt = 1
         
-        self.scalar_size_raw_to_mkt    = 1
-        self.scalar_size_mkt_to_unit   = 1
+        self.scalar_size_raw_to_mkt   = 1
+        self.scalar_size_mkt_per_unit = 1
+        self.scalar_size_unit_per_mkt = 1
 
                     
     @staticmethod
-    def _safe_float(x, default=None):
+    def _safe_float(x, default=np.nan):
         try:
             return float(x)
         except (TypeError, ValueError):
@@ -64,24 +67,24 @@ class MktData:
         ask = self.price_mkt_ask
         b_sz = self.size_mkt_bid
         a_sz = self.size_mkt_ask
-        return (bid is not None) and (ask is not None) and (bid < ask) and (b_sz is not None) and (a_sz is not None)
+        return (pd.notna(bid) and pd.notna(ask) and pd.notna(b_sz) and pd.notna(a_sz) and bid < ask)
+       
         
-        
-    def on_close_data(self, close_price=None):
-        if close_price is not None:
+    def on_close_data(self, close_price=np.nan):
+        if close_price is not np.nan:
             self.need_close_data  = False
 
-            self.price_raw_close  = self._safe_float(close_price, default=None)
+            self.price_raw_close  = self._safe_float(close_price, default=np.nan)
         
             self.price_mkt_close  = self.price_raw_close * self.scalar_price_raw_to_mkt
             self.price_unit_close = self.price_mkt_close * self.scalar_price_mkt_to_unit
 
-            strategy = getattr(self, "strategy", None)
+            strategy = getattr(self, "strategy", np.nan)
             if getattr(self, "strat_on_close_data", False):  
                 strategy.on_close_data(self)
 
  
-    def on_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None): 
+    def on_mkt_data(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan): 
         changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
             #self.update_mkt_data() is overwritten in strategy classes to update additional attributes when necessary
 
@@ -96,19 +99,19 @@ class MktData:
             strategy.on_mkt_data(self)
 
 
-    def update_mkt_data(self, bid_price=None, ask_price=None, bid_size=None, ask_size=None):        
+    def update_mkt_data(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan):        
         changed = False
-        ts = None
+        ts = np.nan
     
-        bid_price = self._safe_float(bid_price, default=None)
-        ask_price = self._safe_float(ask_price, default=None)
-        bid_size  = self._safe_float(bid_size,  default=None)
-        ask_size  = self._safe_float(ask_size,  default=None)
+        bid_price = self._safe_float(bid_price, default=np.nan)
+        ask_price = self._safe_float(ask_price, default=np.nan)
+        bid_size  = self._safe_float(bid_size,  default=np.nan)
+        ask_size  = self._safe_float(ask_size,  default=np.nan)
         
-        if bid_price is not None and bid_price != self.price_raw_bid:
+        if pd.notna(bid_price) and bid_price != self.price_raw_bid:
             changed = True
             
-            if ts is None:
+            if pd.isna(ts):
                 ts = time.time_ns()
             self.ts_price_bid = ts
                     
@@ -128,13 +131,13 @@ class MktData:
             self.cf_unit_join_bid     = -self.price_unit_bid 
             self.cf_unit_hit_bid      =  self.price_unit_bid 
     
-            self.comm_unit_join_bid   =  self.comm_mkt_join_bid / self.scalar_size_mkt_to_unit 
-            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  / self.scalar_size_mkt_to_unit 
+            self.comm_unit_join_bid   =  self.comm_mkt_join_bid * self.scalar_size_mkt_per_unit
+            self.comm_unit_hit_bid    =  self.comm_mkt_hit_bid  * self.scalar_size_mkt_per_unit
     
-        if ask_price is not None and ask_price != self.price_raw_ask:
+        if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
             
-            if ts is None:
+            if pd.isna(ts):
                 ts = time.time_ns()
             self.ts_price_ask = ts
                     
@@ -154,30 +157,30 @@ class MktData:
             self.cf_unit_join_ask     =  self.price_unit_ask 
             self.cf_unit_lift_ask     = -self.price_unit_ask 
     
-            self.comm_unit_join_ask   =  self.comm_mkt_join_ask / self.scalar_size_mkt_to_unit 
-            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask / self.scalar_size_mkt_to_unit 
-         
-        if bid_size is not None and bid_size != self.size_raw_bid:
+            self.comm_unit_join_ask   =  self.comm_mkt_join_ask * self.scalar_size_mkt_per_unit
+            self.comm_unit_lift_ask   =  self.comm_mkt_lift_ask * self.scalar_size_mkt_per_unit
+ 
+        if pd.notna(bid_size) and bid_size != self.size_raw_bid:
             changed = True
             
-            if ts is None:
+            if pd.isna(ts):
                 ts = time.time_ns()
             self.ts_size_bid = ts
                     
             self.size_raw_bid   =  bid_size     
             self.size_mkt_bid   =  self.size_raw_bid * self.scalar_size_raw_to_mkt
-            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_to_unit
+            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_per_unit
               
-        if ask_size is not None and ask_size != self.size_raw_ask:
+        if pd.notna(ask_size) and ask_size != self.size_raw_ask:
             changed = True
             
-            if ts is None:
+            if pd.isna(ts):
                 ts = time.time_ns()
             self.ts_size_ask = ts
             
             self.size_raw_ask   =  ask_size     
             self.size_mkt_ask   =  self.size_raw_ask * self.scalar_size_raw_to_mkt
-            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_to_unit
+            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_per_unit
     
         return changed
         
@@ -194,7 +197,7 @@ class MktData:
             initial_estimate = price * amount
             return max(initial_estimate, self.comm_misc_amount)
         else:
-            return 0
+            return 0 
 
 
     

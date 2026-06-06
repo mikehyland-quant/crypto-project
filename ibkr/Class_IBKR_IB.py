@@ -67,8 +67,10 @@ class IBKR_IB:
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
-        obj.scalar_price_raw_to_mkt = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
-        obj.scalar_size_mkt_to_unit = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
+        obj.scalar_price_raw_to_mkt  = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
+
+        obj.scalar_size_unit_per_mkt = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
+        obj.scalar_size_mkt_per_unit = 1 / obj.scalar_size_unit_per_mkt
         
         obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
         obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
@@ -147,7 +149,7 @@ class IBKR_IB:
            
 
     def order_handler(self, trade):
-        #print(trade, \n')
+        #print(trade, '\n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:

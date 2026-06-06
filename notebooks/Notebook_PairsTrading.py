@@ -1,4 +1,6 @@
 
+# CONSTANTS
+
 INPUT_WB_NAME  = "2026 Inputs for Apps.xlsx"
 
 ####
@@ -8,6 +10,7 @@ INPUT_TBL_NAME = "PAIRS_TRADING_INPUTS"
 STRAT_TBL_NAME = "ACTIVE_STRAT"
 ####
 
+DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
 
 # --- system setup ---
 import sys
@@ -27,13 +30,12 @@ from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Syntheti
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 #from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB()
+ibkr = IBKR_IB(port=7497)
 
 # --- feeds ---
 #from ws_feeds import WSFeedManager
 
 # --- utils ---
-# from other.Graph_Theory import find_all_node_permutations, connect_nodes_with_edges
 from input_output.Standard_Output import standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
@@ -41,27 +43,9 @@ io = InputOutput()
 # --- trading strategy ---
 from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
 
-# CONSTANTS
+OUTPUT_COLS = []
 
-DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
-
-OUTPUT_COLS = [
-           #    'time',
-               'my_prod_type',
-               'my_fi_name',
-               'my_pf_name',
-               'numerator_currency',
-               'denominator_currency',
-               
-          #     'mkt_to_unit_scalar_dict_price',
-               'mkt_data_dict_bid_price',
-               'mkt_data_dict_ask_price',
-          #     'mkt_comm_dict_join_bid',
-               'unit_data_dict_bid_price',
-               'unit_data_dict_ask_price'
-        ]
-
-async def standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
+async def standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
     wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
     df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
@@ -87,10 +71,9 @@ async def standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
 async def main():
 
-    input_dict, objs_list = await standard_startup(xlw, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
-
-    ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
+    input_dict, objs_list = await standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
     '''
+    ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
     ws_feed      = WSFeedManager(ws_objs_list)
 
     await ws_feed.complete_fi_objects()   
@@ -123,9 +106,10 @@ async def main():
 
     #''' 
     #insert trading and analysis scripts here
-    strat_df = xlw.get_df(INPUT_WB_NAME, INPUT_WS_NAME, STRAT_TBL_NAME, table=True).set_index('Keys')
+    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
+    strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
     strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-    strat = PairsTrade_LimitMarket(strat_objs_list, strat_df)
+    strat = PairsTrade_LimitLimit(strat_objs_list, strat_df)
         
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name
@@ -135,6 +119,7 @@ async def main():
       
     # Run all streams concurrently
     tasks = []
+
 #    tasks.append(asyncio.create_task(ws_feed.run()))
 #    tasks.append(asyncio.create_task(create_output(input_dict, output_list, OUTPUT_COLS)))
     if ibkr_objs_list:

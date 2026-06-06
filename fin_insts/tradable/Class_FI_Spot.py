@@ -11,7 +11,7 @@ from fin_insts.parents.Class_FI_MktData import MktData
 
 # In[ ]:
 
-
+ 
 class Spot(FinancialInstrument):
     """
     Spot instrument class (child of FinancialInstrument).
@@ -21,6 +21,8 @@ class Spot(FinancialInstrument):
         
         self.biz_days_to_comm_pmt  = 0
         self.biz_days_to_trade_pmt = 0
+        
+
         
 
 

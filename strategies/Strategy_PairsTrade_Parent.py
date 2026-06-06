@@ -16,10 +16,10 @@ class PairsTrade_Parent(Strategy):
         # create self attributes
         self.stage = 'ZERO FILLED'
         
-        self.target_spread = df.loc['target_spread'].sum()
+        self.target_spread = df.loc['target_spread_per_unit'].sum()
         self.epsilon       = df.loc['epsilon'].sum()
         
-        df = df.drop(index=['target_spread'])
+        df = df.drop(index=['target_spread_per_unit'])
         df = df.drop(index=['epsilon'])
 
         objs_dict = df.to_dict()
@@ -68,7 +68,7 @@ class PairsTrade_Parent(Strategy):
             obj.trade             = None
             
             obj.buy_sell          = obj.buy_sell.upper()
-            obj.order_size        = abs(obj.order_size)
+            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_size_mkt_per_unit))
             obj.calc_price        = self._calc_price   # assigns function below 
             obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread        = self.target_spread / obj.spread_ratio
@@ -140,10 +140,11 @@ class PairsTrade_Parent(Strategy):
         print('Final spread: ', final_spread, '\n')
 
         
-    def _calc_price(self, input_price, output_obj, epsilon_scalar=0):     
-        fair_value   = output_obj.adj_spread - (input_price * output_obj.spread_ratio)
-        output_price = fair_value - (epsilon_scalar * self.epsilon)
-        output_price = output_obj.round_price_to_tick(abs(output_price))                                             
-        return output_price
+    def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):     
+        unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
+        unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
+        mkt_output_price = unit_output_price * output_obj.scalar_price_unit_to_mkt
+        mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))                                             
+        return mkt_output_price
 
     

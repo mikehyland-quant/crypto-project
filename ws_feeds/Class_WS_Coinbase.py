@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 from datetime import datetime
 import json
@@ -11,8 +6,8 @@ import requests
 
 from ws_feeds.Class_WS_FeedBase import WSFeedBase
 
-
-# In[ ]:
+from input_output.Class_InputOutput import InputOutput
+io = InputOutput()
 
 
 class CoinbaseSpotFeed(WSFeedBase):
@@ -175,7 +170,7 @@ class CoinbaseSpotFeed(WSFeedBase):
 # In[ ]:
 
 
-class CoinbaseDerivsFeed(WSFeedBase):
+class CoinbaseDerivsFeed(CoinbaseSpotFeed):
     """
     Coinbase Derivatives / FCM futures feed.
 
@@ -213,6 +208,8 @@ class CoinbaseDerivsFeed(WSFeedBase):
             product_ids=locators_list,
         )
 
+        df = io.flatten_df_columns(df, 'future_product_details', sep='_')
+
         row_map = {
             row.product_id.upper(): row
             for row in df.itertuples(index=False)
@@ -228,18 +225,16 @@ class CoinbaseDerivsFeed(WSFeedBase):
 
     @classmethod
     def complete_obj(cls, obj):
-        row = obj.fi_row
-
-        obj.pf_symbol    = row.product_id
+        obj.pf_symbol    = obj.fi_row.product_id
         obj.pf_number    = None
-        obj.pf_prod_type = row.product_type
+        obj.pf_prod_type = obj.fi_row.product_type
 
-        obj.numerator_currency   = row.base_currency_id
-        obj.denominator_currency = row.quote_currency_id
-        obj.quote_currency       = row.quote_currency_id
-        obj.settlement_currency  = getattr(row, "settlement_currency_id", None)
+        obj.numerator_currency   = obj.my_row.top_currency 
+        obj.denominator_currency = obj.my_row.base_currency
+        obj.quote_currency       = None
+        obj.settlement_currency  = None
 
-        obj.expiration_date = getattr(row, "future_product_details", None)
+        obj.complete_obj()
 
     @classmethod
     def get_product_info(
