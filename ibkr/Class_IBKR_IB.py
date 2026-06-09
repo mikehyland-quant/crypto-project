@@ -21,18 +21,18 @@ class IBKR_IB:
         self.obj_by_order_handler = {}  # created in place_limit_order
 
 
+    async def contract_by_conId(self, conid):
+        contract = Contract(conId=int(conid))
+        await self.ib.qualifyContractsAsync(contract)
+        return contract
+    
+    
     async def create_simple_contract(self, obj):
         #print(obj.my_fi_name)
         obj.ibkr_contract = await self.contract_by_conId(int(obj.pf_locator))
         obj.ibkr_details = (await self.ib.reqContractDetailsAsync(obj.ibkr_contract))[0]
 
-
-    async def contract_by_conId(self, conid):
-        contract = Contract(conId=int(conid))
-        await self.ib.qualifyContractsAsync(contract)
-        return contract
-
-
+ 
     async def create_bag_contract(self, spread_obj):
         leg1 = ComboLeg()
         leg1.conId = int(spread_obj.far_obj.ibkr_contract.conId)
