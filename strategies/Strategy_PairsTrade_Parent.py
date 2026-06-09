@@ -57,7 +57,7 @@ class PairsTrade_Parent(Strategy):
     
         return self.obj1, self.obj2
 
-
+ 
     def _attach_strat_attr(self, objs_list):
         buy_sell_dict  = {'BUY': ('cf_unit_lift_ask', -1), 'SELL': ('cf_unit_hit_bid', 1)}
         min_ratio_size = min(self.obj1.ratio_size, self.obj2.ratio_size)

@@ -1,7 +1,7 @@
 
 # CONSTANTS
 
-INPUT_WB_NAME  = "2026 Inputs for Apps.xlsx"
+INPUT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
 
 ####
 INPUT_WS_NAME  = "PAIRS TRADING INPUTS"
@@ -30,7 +30,7 @@ from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Syntheti
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 #from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7497)
+ibkr = IBKR_IB(port=7496)
 
 # --- feeds ---
 #from ws_feeds import WSFeedManager

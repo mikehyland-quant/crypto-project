@@ -162,14 +162,14 @@ class MktData:
  
         if pd.notna(bid_size) and bid_size != self.size_raw_bid:
             changed = True
-            
+             
             if pd.isna(ts):
                 ts = time.time_ns()
             self.ts_size_bid = ts
                     
             self.size_raw_bid   =  bid_size     
             self.size_mkt_bid   =  self.size_raw_bid * self.scalar_size_raw_to_mkt
-            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_mkt_per_unit
+            self.size_unit_bid  =  self.size_mkt_bid * self.scalar_size_unit_per_mkt
               
         if pd.notna(ask_size) and ask_size != self.size_raw_ask:
             changed = True
@@ -180,7 +180,7 @@ class MktData:
             
             self.size_raw_ask   =  ask_size     
             self.size_mkt_ask   =  self.size_raw_ask * self.scalar_size_raw_to_mkt
-            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_mkt_per_unit
+            self.size_unit_ask  =  self.size_mkt_ask * self.scalar_size_unit_per_mkt
     
         return changed
         

@@ -26,7 +26,7 @@ class Equity(FinancialInstrument):
         
         self.biz_days_to_comm_pmt  = 1
         self.biz_days_to_trade_pmt = 1
-        
+         
     def complete_obj(self):
         super().complete_obj() 
         
