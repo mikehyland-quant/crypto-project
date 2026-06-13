@@ -149,7 +149,7 @@ class IBKR_IB:
            
 
     def order_handler(self, trade):
-        #print(trade, '\n')
+        # print(trade, '\n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:
@@ -160,41 +160,43 @@ class IBKR_IB:
             asyncio.create_task(strategy.on_trade_exec(obj, trade))
 
 
-    def place_market_order(self, obj=None, size=None, buy_sell=None):
+    def place_market_order(self, obj=None, size=None, buy_sell=None, tif='DAY'):
+        tif = 'Minutes' if obj.pf_prod_type == 'CRYPTO' else 'DAY'
         order = MarketOrder(
             action=buy_sell,
             totalQuantity=size,
-            tif="DAY",
+            tif=tif,
         )
 
-        #print(order, '\n')
+        print(order, '\n')
 
         trade = self.ib.placeOrder(obj.ibkr_contract, order)
         trade.statusEvent += self.order_handler
 
         self.obj_by_order_handler[order] = obj
         
-        #print(trade, '\n')
+        print(trade, '\n')
 
         return trade
     
 
-    def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None):
+    def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None, tif='DAY'):
+        tif = 'Minutes' if obj.pf_prod_type == 'CRYPTO' else 'DAY'
         order = LimitOrder(
             action=buy_sell,
             totalQuantity=size,
             lmtPrice=price,
-            tif="DAY",
+            tif=tif,
         )
 
-        #print(order, '\n')
+        print(order, '\n')
 
         trade = self.ib.placeOrder(obj.ibkr_contract, order)
         trade.statusEvent += self.order_handler
 
         self.obj_by_order_handler[order] = obj
 
-        #print(trade, '\n')
+        print(trade, '\n')
 
         return trade
  
@@ -236,7 +238,7 @@ class IBKR_IB:
 
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
 
-        #print(trade.order, '\n')
+        # print(trade.order, '\n')
     
         return trade
 
