@@ -1,61 +1,51 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 from fin_insts.parents.Class_FI import Future
 
 # In[ ]:
 
 
-class Option(Future):
+class Option(Future):  
     """
     Option instrument class (child of FinancialInstrument).
     """
     def __init__(self, row):
         super().__init__(row)
-        
-        self.biz_days_to_comm_pmt  = None
-        self.biz_days_to_trade_pmt = None
-        self.biz_days_to_expiry_pmt  = None
 
     def complete_obj(self):
         super().complete_obj()   
 
-        self.underlying_asset = self.contract_dict['symbol']
+        self.opt_values = {'mkt_intrinsic' : None,
+                            'mkt_bid_tv'    : None, 
+                            'mkt_ask_tv'    : None,
+                            'unit_intrinsic': None,
+                            'unit_bid_tv'   : None,
+                            'unit_ask_tv'   : None}
         
-        self.p_or_c = self.contract_dict['right']
-        
-        self.mkt_data_dict['strike']               = self.contract_dict['strike']
-        self.unit_data_dict['unit_strike']         = self.contract_dict['strike'] * self.unit_scalar_dict['price']
+        self.opt_vols   = {'mkt_bid'       : None, 
+                            'mkt_ask'       : None}
 
-        self.opt_values                            = {'mkt_intrinsic' : None,
-                                                      'mkt_bid_tv'    : None, 
-                                                      'mkt_ask_tv'    : None,
-                                                      'unit_intrinsic': None,
-                                                      'unit_bid_tv'   : None,
-                                                      'unit_ask_tv'   : None}
+        # overwrite previous entries and reattach scalars
+        self.mkt_to_unit_price_scalar = self.get_scalar()
         
-        self.opt_vols                              = {'mkt_bid'       : None,
-                                                      'mkt_ask'       : None}
+        self.attach_scalars(self.raw_to_screen_price_scalar, 
+                            self.screen_to_mkt_price_scalar, 
+                            self.mkt_to_unit_price_scalar,
 
-    def complete_obj(self):
-        super().complete_obj() 
-        
-        self.mkt_to_unit_scalar_dict['price'] = self.get_scalar()
-        self.mkt_to_unit_scalar_dict['size']  = self.mkt_to_unit_scalar_dict['price'] 
+                            self.raw_to_screen_size_scalar,
+                            self.screen_to_mkt_size_scalar,
+                            self.mkt_to_unit_size_scalar)
+
+        self.unit_strike_price = self.strike_price * self.scalar_size_mkt_to_unit
 
     def get_scalar(self):
-        df = xlw.get_df('2026 Crypto ETF Ratios.xlsx', 
-                        'BTC RATIOS', 
-                        'btc_ratios', table=True)
+
+        wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
+        df = io.get_xw_df(ws, 'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
-        exp_date = pd.to_datetime(self.settlement_dates_dict['trade']).date()
-        scalar = self._safe_float(df.loc[df['Date'] == exp_date, self.my_fi_name].to_list()[0])
+        exp_date = self.date_settle_trade
+        scalar = self._safe_float(df.loc[df['Date'] == exp_date, self.ibkr_contract.symbol].to_list()[0])
         return scalar
-        
-        
+             
     def calc_iv_tv (self, underlyingPrice):
         tempValue = underlyingPrice - self.contract['strike']
         if   self.contract['right'].upper() == 'C':
@@ -68,7 +58,7 @@ class Option(Future):
         self.opt_values["mkt_bid_tv"] = self.mkt_data['bid_price'] - self.opt_values["intrinsic"]
         self.opt_values['mkt_ask_tv'] = self.mkt_data['ask_price'] - self.opt_values["intrinsic"]
         
-    
+    '''
     def calc_imp_vol(self, bidAsk, underlyingPrice, intRate):
         bidAskList = getBidAskList(bidAsk)
         for action in bidAskList: 
@@ -89,7 +79,7 @@ class Option(Future):
             else:
                 raise ValueError("Invalid secType.")
 
-
+    '''
     
 
 

@@ -7,6 +7,8 @@ from datetime import datetime
 
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 
+from fin_insts.parents.Class_FI_Dates import Dates
+
 class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
 
@@ -53,7 +55,8 @@ class IBKR_IB:
         bag.exchange = 'SMART'#near_obj.ibkr_contract.exchange
         bag.comboLegs = [leg1, leg2]
 
-        spread_obj.ibkr_contract = bag        
+        spread_obj.ibkr_contract = bag         
+        # spread_obj.ibkr_details - this doesn't exist for BAG contracts
 
 
     @classmethod
@@ -67,15 +70,23 @@ class IBKR_IB:
         obj.quote_currency       = None
         obj.settlement_currency  = None
 
-        obj.scalar_price_raw_to_mkt  = obj._safe_float(getattr(obj.ibkr_details, 'priceMagnifier'), 1.0)
-
-        obj.scalar_size_unit_per_mkt = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier'), 1.0)
-        obj.scalar_size_mkt_per_unit = 1 / obj.scalar_size_unit_per_mkt
-        
         obj.min_tick       = obj._safe_float(getattr(obj.ibkr_details, 'minTick'), 1.0)
-        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details,  'minSize'), 1.0)
-        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details,  'sizeIncrement'), 1.0)
+        obj.min_size       = obj._safe_float(getattr(obj.ibkr_details, 'minSize'), 1.0)
+        obj.size_increment = obj._safe_float(getattr(obj.ibkr_details, 'sizeIncrement'), 1.0)
+
+        obj.screen_to_mkt_price_scalar = obj._safe_float(getattr(obj.ibkr_details,  'priceMagnifier'), 1.0)
+        obj.screen_to_mkt_size_scalar  = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
         
+        if obj.pf_prod_type in ['FUT']:
+            obj.date_expiry      = Dates.date_from_string(obj.ibkr_details.realExpirationDate)         
+            obj.last_trade_time  = Dates.time_from_number(obj.ibkr_details.lastTradeTime, 24)
+            obj.tz_exch          = ZoneInfo(obj.ibkr_details.timeZoneId or "US/Central")
+
+        if obj.pf_prod_type in ['OPT', 'FOP']:
+            obj.underlying_symbol = obj.ibkr_contract.symbol
+            obj.p_or_c            = obj.ibkr_contract.right
+            obj.strike_price      = obj.ibkr_contract.strike
+
         obj.complete_obj()
         
 

@@ -8,7 +8,7 @@ creation process for a financial instrument
     6. complete_obj in Class_WS_FeedBase leads to the objects own complete_obj function below
     7. obj.complete_obj calls Dates
 '''
-
+ 
 
 from fin_insts.parents.Class_FI_Dates import Dates
 from fin_insts.parents.Class_FI_MktData import MktData
@@ -60,5 +60,14 @@ class FinancialInstrument(MktData):
 
     def complete_obj(self):
         Dates.calc_and_attach(self)
+
+        self.attach_scalars(self.raw_to_screen_price_scalar, 
+                            self.screen_to_mkt_price_scalar, 
+                            self.mkt_to_unit_price_scalar,
+
+                            self.raw_to_screen_size_scalar,
+                            self.screen_to_mkt_size_scalar,
+                            self.mkt_to_unit_size_scalar)
+        
         
         

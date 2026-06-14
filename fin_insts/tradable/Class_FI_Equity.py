@@ -27,21 +27,26 @@ class Equity(FinancialInstrument):
         self.biz_days_to_comm_pmt  = 1
         self.biz_days_to_trade_pmt = 1
          
-    def complete_obj(self):
+    def complete_obj(self): 
         super().complete_obj() 
-        
-        self.scalar_price_mkt_to_unit = self.get_scalar()
-        self.scalar_price_unit_to_mkt = 1 / self.scalar_price_mkt_to_unit
-
-        self.scalar_size_mkt_per_unit = self.scalar_price_mkt_to_unit
-        self.scalar_size_unit_per_mkt = 1 / self.scalar_size_mkt_per_unit
 
         # the two lines below overwrite IBKR sizes of 0.0001
         self.size_increment = 1
-        self.min_size       = 1
- 
-        # the line below overwrites MktData assignment of 1
-        self.scalar_size_raw_to_mkt = 100
+        self.min_size       = 
+        
+        # overwrite previous entries and reattach scalars
+        self.mkt_to_unit_price_scalar = self.get_scalar()
+        self.mkt_to_unit_size_scalar = self.mkt_to_unit_price_scalar
+        self.raw_to_screen_size_scalar = 100
+        
+        self.attach_scalars(self.raw_to_screen_price_scalar, 
+                            self.screen_to_mkt_price_scalar, 
+                            self.mkt_to_unit_price_scalar,
+
+                            self.raw_to_screen_size_scalar,
+                            self.screen_to_mkt_size_scalar,
+                            self.mkt_to_unit_size_scalar)
+
 
     def get_scalar(self):
 

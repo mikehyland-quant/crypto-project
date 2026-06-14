@@ -49,14 +49,13 @@ class FutureSpread(MktData):
                         ]
 
     def __init__(self, obj1, obj2):
-        super().__init__()
+        super().__init__() 
         
         self.near_obj, self.far_obj = self.determine_near_far(obj1, obj2)
         self.objs_list = [self.near_obj, self.far_obj]
         
         self.my_prod_type = 'future_spread'
         self.my_fi_name = f"{self.near_obj.my_fi_name}/{self.far_obj.my_fi_name}"
-#        self.pl_locator = 
 
         for attr in self.consensus_attr_list:
             setattr(self, attr, self._consensus_attr(attr))
@@ -75,6 +74,7 @@ class FutureSpread(MktData):
         self.days_settle_expiry_far        = self.far_obj.days_settle_expiry
         self.last_trade_date_time_nyc_far  = self.far_obj.last_trade_date_time_nyc
 
+        # assigned later
         if self.my_pf_name == "IBKR":        
             self.ibkr_contract = None
             self.ibkr_details  = None 
