@@ -1,8 +1,6 @@
 
 from fin_insts.parents.Class_FI import Future
 
-# In[ ]:
-
 
 class Option(Future):  
     """
@@ -14,20 +12,23 @@ class Option(Future):
     def complete_obj(self):
         super().complete_obj()   
 
+        '''
         self.opt_values = {'mkt_intrinsic' : None,
-                            'mkt_bid_tv'    : None, 
-                            'mkt_ask_tv'    : None,
-                            'unit_intrinsic': None,
-                            'unit_bid_tv'   : None,
-                            'unit_ask_tv'   : None}
+                           'mkt_bid_tv'    : None, 
+                           'mkt_ask_tv'    : None,
+                           'unit_intrinsic': None,
+                           'unit_bid_tv'   : None,
+                           'unit_ask_tv'   : None}
         
         self.opt_vols   = {'mkt_bid'       : None, 
                             'mkt_ask'       : None}
+        '''
 
         # overwrite previous entries and reattach scalars
         self.scalar_self_per_unit = self.get_scalar()
-        self.scalar_orders_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
-        self.scalar_units_per_order = self.scalar_order_multiplier / self.scalar_self_per_unit
+        
+        self.scalar_screens_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_self_per_unit
 
         self.unit_strike_price = self.strike_price * self.scalar_self_per_unit
 
@@ -38,7 +39,8 @@ class Option(Future):
         exp_date = self.date_settle_trade
         scalar = self._safe_float(df.loc[df['Date'] == exp_date, self.ibkr_contract.symbol].to_list()[0])
         return scalar
-             
+
+    '''         
     def calc_iv_tv (self, underlyingPrice):
         tempValue = underlyingPrice - self.contract['strike']
         if   self.contract['right'].upper() == 'C':
@@ -51,7 +53,7 @@ class Option(Future):
         self.opt_values["mkt_bid_tv"] = self.mkt_data['bid_price'] - self.opt_values["intrinsic"]
         self.opt_values['mkt_ask_tv'] = self.mkt_data['ask_price'] - self.opt_values["intrinsic"]
         
-    '''
+    
     def calc_imp_vol(self, bidAsk, underlyingPrice, intRate):
         bidAskList = getBidAskList(bidAsk)
         for action in bidAskList: 
@@ -74,7 +76,3 @@ class Option(Future):
 
     '''
     
-
-
-
-        

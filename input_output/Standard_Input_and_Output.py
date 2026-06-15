@@ -6,11 +6,44 @@ import pandas as pd
 from zoneinfo import ZoneInfo
 from IPython.display import display, clear_output
 
-import xlwings as xw
+# import xlwings as xw
+
+from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
 
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
  
+
+database_wb  = '2026 Crypto Products Database.xlsx'
+database_ws  = 'Crypto'
+database_tbl = 'crypto_static_data_table'
+
+
+async def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
+
+    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
+    df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
+    input_dict = df.set_index('Keys')['Values'].to_dict()
+    
+    wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
+    true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
+    
+    if 'TRUE/FALSE' not in true_false_df.columns:
+        true_false_df = true_false_df.set_index('Keys').T
+
+    true_false_df = true_false_df[true_false_df['TRUE/FALSE'] == True]
+    
+    wb, ws = io.set_xw_book_and_sheet(database_wb, database_ws)
+    tbl = database_tbl
+    db_df = io.get_xw_df(ws, tbl, table=True)
+    
+    merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
+
+    fin_inst_objs_list = make_single_leg_fin_insts(merged_df)
+
+    return input_dict, fin_inst_objs_list
+
+
 async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[]):
     
     refresh      = input_dict.get('timer interval', 10)
@@ -47,6 +80,8 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
         
         if add_ts:
             current_df['time'] = ts
+
+        # print(current_df)
             
         if need_history:
             if current_df is None or current_df.empty:

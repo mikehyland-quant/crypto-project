@@ -1,15 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# In[ ]:
-
+from fin_insts.parents.Class_FI_MktData import MktData
 
 from itertools import combinations
-from fin_insts.parents.Class_FI_MktData import MktData
-from ibkr.Class_IBKR_IB import IBKR_IB
-
-
-# In[ ]:
 
 
 class FutureSpread(MktData):
@@ -28,8 +20,8 @@ class FutureSpread(MktData):
         'scalar_self_per_unit', 
         'scalar_order_multiplier',
 
-        'scalar_orders_per_unit',  
-        'scalar_units_per_order',         
+        'scalar_screens_per_unit',  
+        'scalar_units_per_screen',         
             
         'pf_symbol',
         'pf_number',
@@ -47,7 +39,7 @@ class FutureSpread(MktData):
         'days_settle_comm',   
         'days_settle_trade', 
                         ]
-
+ 
     def __init__(self, obj1, obj2):
         super().__init__() 
         
@@ -90,8 +82,12 @@ class FutureSpread(MktData):
     def _consensus_attr(self, attr_name):
         values = {getattr(obj, attr_name, None) for obj in self.objs_list}
         return values.pop() if len(values) == 1 else "multi"
-
     
+
+    async def make_ibkr_spread_contract(self, ibkr):
+        self.ibkr_contract = await ibkr.create_bag_contract(self.far_obj, "BUY", 1, self.near_obj, "SELL", 1)
+
+  
     @staticmethod
     def make_spreads(list_):
         futures_list = [obj for obj in list_ if obj.my_prod_type == 'future']

@@ -41,7 +41,7 @@ from ws_feeds import WSFeedManager
 
 # %%
 # --- utils ---
-from input_output.Standard_Output   import standard_output
+from input_output.Standard_Input_and_Output   import standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
@@ -78,9 +78,13 @@ def create_bo_objs_list(ws_objs_list, ibkr_objs_list, futures_list, syn_objs_lis
 
 
 def calc_best_of(bo_objs_list):
+    
     for obj in bo_objs_list:
+
         for obj_ in obj.objs_list:
-            #print(obj_.my_fi_name, obj_.cf_unit_hit_bid, obj_.comm_unit_hit_bid, obj_.cf_unit_lift_ask, obj_.comm_unit_lift_ask)
+            
+            # print(obj_.my_fi_name, obj_.cf_unit_hit_bid, obj_.comm_unit_hit_bid, obj_.cf_unit_lift_ask, obj_.comm_unit_lift_ask)
+            
             cf = getattr(obj_, 'cf_unit_hit_bid', np.nan)
             comm = getattr(obj_, 'comm_unit_hit_bid', np.nan)
             setattr(obj_, 'cf_unit_hit_bid_all_in',  cf  - comm)
@@ -88,6 +92,8 @@ def calc_best_of(bo_objs_list):
             cf = getattr(obj_, 'cf_unit_lift_ask', np.nan)
             comm = getattr(obj_, 'comm_unit_lift_ask', np.nan)
             setattr(obj_, 'cf_unit_lift_ask_all_in', cf  - comm)
+
+            # print(obj_.my_fi_name, obj_.cf_unit_hit_bid_all_in, obj_.cf_unit_lift_ask_all_in)
         
         obj.update_best_of()
         
@@ -134,10 +140,10 @@ OUTPUT_COLS = [
               'numerator_currency',
               'denominator_currency',
 
-              'size_mkt_bid',
-              'price_mkt_bid',
-              'price_mkt_ask',
-              'size_mkt_ask',
+              'size_screen_bid',
+              'price_screen_bid',
+              'price_screen_ask',
+              'size_screen_ask',
 
               'size_unit_bid',
               'price_unit_bid',
@@ -187,7 +193,6 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
 
     await asyncio.sleep(1)
 
-
     while True:
 
         ts = datetime.now(ZoneInfo("US/Eastern")).strftime("%Y-%m-%d_%H-%M-%S")
@@ -196,11 +201,13 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
             print(ts)
 
         bo_objs_list = calc_best_of(bo_objs_list)
-        
+      
         current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
         
         if add_ts:
             current_df['time'] = ts
+
+        # print(current_df)
             
         if need_history:
             if current_df is None or current_df.empty:
@@ -230,8 +237,8 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
 
 # %%
 ETF_COLS = ['my_fi_name',
-            'price_mkt_bid',
-            'price_mkt_ask']
+            'price_screen_bid',
+            'price_screen_ask']
 
 
 async def make_etf_inputs(input_dict):
@@ -240,7 +247,7 @@ async def make_etf_inputs(input_dict):
     today = datetime.today().strftime("%Y-%m-%d")
 
     etf_input_dict['output workbook name']       = 'ETF_' + today + '.csv'
-    etf_input_dict['timer interval']             = 60 * input_dict['timer interval']
+    etf_input_dict['timer interval']             = input_dict['timer interval'] * 60
     
     etf_input_dict['save df to csv']             = 'append'
     etf_input_dict['add timestamp to output df'] = True
@@ -325,7 +332,7 @@ async def main():
     #insert bestOf instruments here
     bo_objs_list = create_bo_objs_list(ws_objs_list, ibkr_objs_list, ibkr_futs_list, syn_objs_list)
     #''' 
-    
+
     ws_spot_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'spot']
     ibkr_spot_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'spot']
     ibkr_etf_list  = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'equity']
@@ -339,7 +346,7 @@ async def main():
                    *ibkr_futs_list,
                    *bag_objs_list,
                    *syn_objs_list]
-    
+
     # Run all streams concurrently
     tasks = []
     tasks.append(asyncio.create_task(ws_feed.run()))

@@ -36,28 +36,31 @@ class IBKR_IB:
         obj.ibkr_details = (await self.ib.reqContractDetailsAsync(obj.ibkr_contract))[0]
 
  
-    async def create_bag_contract(self, spread_obj):
+    async def create_bag_contract(self, obj1, action1, size1, obj2, action2, size2):
+        # for futures spreads obj1 should be far obj and obj2 should be near obj
+        # for options combos obj1 should be the call and obj2 should be the put
+
         leg1 = ComboLeg()
-        leg1.conId = int(spread_obj.far_obj.ibkr_contract.conId)
-        leg1.ratio = 1
-        leg1.action = 'BUY'
-        leg1.exchange = spread_obj.far_obj.ibkr_contract.exchange
+        leg1.conId = int(obj1.ibkr_contract.conId)
+        leg1.ratio = size1
+        leg1.action = action1.upper()
+        leg1.exchange = obj1.ibkr_contract.exchange
 
         leg2 = ComboLeg()
-        leg2.conId = int(spread_obj.near_obj.ibkr_contract.conId)
-        leg2.ratio = 1
-        leg2.action = 'SELL'
-        leg2.exchange = spread_obj.near_obj.ibkr_contract.exchange
+        leg2.conId = int(obj2.ibkr_contract.conId)
+        leg2.ratio = size2
+        leg2.action = action2.upper()
+        leg2.exchange = obj2.ibkr_contract.exchange
 
         bag = Contract()
-        bag.symbol = spread_obj.far_obj.ibkr_contract.symbol
+        bag.symbol = obj1.ibkr_contract.symbol
         bag.secType = 'BAG'
-        bag.currency = spread_obj.far_obj.ibkr_contract.currency
-        bag.exchange = 'SMART'#near_obj.ibkr_contract.exchange
+        bag.currency = obj1.ibkr_contract.currency
+        bag.exchange = 'SMART' # or obj2.ibkr_contract.exchange
         bag.comboLegs = [leg1, leg2]
 
-        spread_obj.ibkr_contract = bag         
-        # spread_obj.ibkr_details - this doesn't exist for BAG contracts
+        return bag         
+        # no need to return ibkr_details as this doesn't exist for BAG contracts
 
  
     @classmethod
@@ -78,15 +81,15 @@ class IBKR_IB:
         obj.scalar_price_raw_to_screen = obj._safe_float(getattr(obj.ibkr_details,  'priceMagnifier'), 1.0)
         obj.scalar_order_multiplier    = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
         
-        if obj.pf_prod_type in ['FUT']:
+        if obj.pf_prod_type in ['FUT', "FOP", "OPT"]:
             obj.date_expiry      = Dates.date_from_string(obj.ibkr_details.realExpirationDate)         
             obj.last_trade_time  = Dates.time_from_number(obj.ibkr_details.lastTradeTime, 24)
             obj.tz_exch          = ZoneInfo(obj.ibkr_details.timeZoneId or "US/Central")
 
-        if obj.pf_prod_type in ['OPT', 'FOP']:
-            obj.underlying_symbol = obj.ibkr_contract.symbol
-            obj.p_or_c            = obj.ibkr_contract.right
-            obj.strike_price      = obj.ibkr_contract.strike
+            if obj.pf_prod_type in ['FOP', 'OPT']:
+                obj.underlying_symbol = obj.ibkr_contract.symbol
+                obj.p_or_c            = obj.ibkr_contract.right
+                obj.strike_price      = obj.ibkr_contract.strike
 
         obj.complete_obj()
         
@@ -133,7 +136,7 @@ class IBKR_IB:
         if you ever add latency-sensitive logic there it needs to stay non-blocking.
 
         '''
-        #print(ticker, '\n')
+        # print(ticker, '\n')
 
         obj = self.ticker_dict.get(ticker)
         if obj is None:

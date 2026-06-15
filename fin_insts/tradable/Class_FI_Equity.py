@@ -1,20 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
-import pandas as pd
 
 from fin_insts.parents.Class_FI import FinancialInstrument
-from fin_insts.parents.Class_FI_Dates import Dates
-from fin_insts.parents.Class_FI_MktData import MktData
 
-from input_output.Class_InputOutput import InputOutput
-io = InputOutput()
-
-
-# In[ ]:
+import pandas as pd
 
 
 class Equity(FinancialInstrument):
@@ -37,11 +24,14 @@ class Equity(FinancialInstrument):
         # overwrite previous entries and reattach scalars
         self.scalar_size_raw_to_screen = 100
         self.scalar_self_per_unit = self.get_scalar()
-        self.scalar_orders_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
-        self.scalar_units_per_order = self.scalar_order_multiplier / self.scalar_self_per_unit
+        self.scalar_screens_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_self_per_unit
 
 
     def get_scalar(self):
+        from input_output.Class_InputOutput import InputOutput
+        io = InputOutput()
+
         wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
         df = io.get_xw_df(ws, 'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date

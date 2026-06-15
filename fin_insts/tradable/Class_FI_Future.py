@@ -1,7 +1,6 @@
 
 from fin_insts.parents.Class_FI import FinancialInstrument
 from fin_insts.parents.Class_FI_Dates import Dates
-#from fin_insts.parents.Class_FI_MktData import MktData
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -13,6 +12,7 @@ _NYSE = mcal.get_calendar("NYSE")   # module-level, built once
 '''
 Adds the following attributes: self.date_expire / self.date_expiry_settle / self.days_expiry_settle / self.last_trade_date_time_nyc
 '''
+
 
 class Future(FinancialInstrument):
     """
