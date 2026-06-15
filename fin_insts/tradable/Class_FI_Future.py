@@ -37,15 +37,12 @@ class Future(FinancialInstrument):
             self.date_expiry = expiration_dt_exch.date()
             self.last_trade_time = expiration_dt_exch.time()
 
-        date_expiry_pmt               = self.expiration_date + timedelta(days=self.biz_days_to_expiry_pmt)
+        date_expiry_pmt               = self.date_expiry + timedelta(days=self.biz_days_to_expiry_pmt)
         self.date_settle_expiry       = Dates.next_nyse_trading_day(date_expiry_pmt)
         self.days_settle_expiry       = (self.date_settle_expiry - self.date_trade).days
 
         if self.last_trade_time is None:
             self.last_trade_time      = Dates.time_from_string('16:00')
-        last_trade_date_time_exch     = datetime.combine(self.expiration_date, self.last_trade_time, tzinfo=self.tz_exch)   
+        last_trade_date_time_exch     = datetime.combine(self.date_expiry, self.last_trade_time, tzinfo=self.tz_exch)   
         tz_nyc                        = ZoneInfo("America/New_York")
         self.last_trade_date_time_nyc = last_trade_date_time_exch.astimezone(tz_nyc)
-
-
-        

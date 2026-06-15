@@ -22,13 +22,14 @@ class FutureSpread(MktData):
 
         'comm_type',
         
-        'scalar_price_raw_to_order',
-        'scalar_price_order_to_mkt',
-        'scalar_price_mkt_to_unit',        
-        'scalar_size_raw_to_order',
-        'scalar_size_order_to_mkt',
-        'scalar_size_mkt_to_unit',
-        'scalar_order_size',
+        'scalar_price_raw_to_screen',
+        'scalar_size_raw_to_screen',
+
+        'scalar_self_per_unit', 
+        'scalar_order_multiplier',
+
+        'scalar_orders_per_unit',  
+        'scalar_units_per_order',         
             
         'pf_symbol',
         'pf_number',
@@ -45,7 +46,6 @@ class FutureSpread(MktData):
         
         'days_settle_comm',   
         'days_settle_trade', 
-        
                         ]
 
     def __init__(self, obj1, obj2):

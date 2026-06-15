@@ -61,13 +61,10 @@ class FinancialInstrument(MktData):
     def complete_obj(self):
         Dates.calc_and_attach(self)
 
-        self.attach_scalars(self.raw_to_screen_price_scalar, 
-                            self.screen_to_mkt_price_scalar, 
-                            self.mkt_to_unit_price_scalar,
+        self.scalar_orders_per_unit  = self.scalar_self_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_order  = self.scalar_order_multiplier / self.scalar_self_per_unit
 
-                            self.raw_to_screen_size_scalar,
-                            self.screen_to_mkt_size_scalar,
-                            self.mkt_to_unit_size_scalar)
+        
         
         
         

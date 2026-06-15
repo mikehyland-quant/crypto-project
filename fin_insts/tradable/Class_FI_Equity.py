@@ -32,24 +32,16 @@ class Equity(FinancialInstrument):
 
         # the two lines below overwrite IBKR sizes of 0.0001
         self.size_increment = 1
-        self.min_size       = 
+        self.min_size       = 1
         
         # overwrite previous entries and reattach scalars
-        self.mkt_to_unit_price_scalar = self.get_scalar()
-        self.mkt_to_unit_size_scalar = self.mkt_to_unit_price_scalar
-        self.raw_to_screen_size_scalar = 100
-        
-        self.attach_scalars(self.raw_to_screen_price_scalar, 
-                            self.screen_to_mkt_price_scalar, 
-                            self.mkt_to_unit_price_scalar,
-
-                            self.raw_to_screen_size_scalar,
-                            self.screen_to_mkt_size_scalar,
-                            self.mkt_to_unit_size_scalar)
+        self.scalar_size_raw_to_screen = 100
+        self.scalar_self_per_unit = self.get_scalar()
+        self.scalar_orders_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_order = self.scalar_order_multiplier / self.scalar_self_per_unit
 
 
     def get_scalar(self):
-
         wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
         df = io.get_xw_df(ws, 'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date

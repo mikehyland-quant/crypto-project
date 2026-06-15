@@ -26,11 +26,5 @@ class Spot(FinancialInstrument):
     def complete_obj(self):
         super().complete_obj()  
 
-        
-
-        
-
-        
-
 
         

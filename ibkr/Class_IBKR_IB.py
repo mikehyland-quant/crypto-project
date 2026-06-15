@@ -4,6 +4,7 @@ import asyncio
 import numpy as np
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 
@@ -58,7 +59,7 @@ class IBKR_IB:
         spread_obj.ibkr_contract = bag         
         # spread_obj.ibkr_details - this doesn't exist for BAG contracts
 
-
+ 
     @classmethod
     async def complete_obj(cls, obj):
         obj.pf_symbol    = obj.ibkr_contract.localSymbol
@@ -74,8 +75,8 @@ class IBKR_IB:
         obj.min_size       = obj._safe_float(getattr(obj.ibkr_details, 'minSize'), 1.0)
         obj.size_increment = obj._safe_float(getattr(obj.ibkr_details, 'sizeIncrement'), 1.0)
 
-        obj.screen_to_mkt_price_scalar = obj._safe_float(getattr(obj.ibkr_details,  'priceMagnifier'), 1.0)
-        obj.screen_to_mkt_size_scalar  = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
+        obj.scalar_price_raw_to_screen = obj._safe_float(getattr(obj.ibkr_details,  'priceMagnifier'), 1.0)
+        obj.scalar_order_multiplier    = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
         
         if obj.pf_prod_type in ['FUT']:
             obj.date_expiry      = Dates.date_from_string(obj.ibkr_details.realExpirationDate)         

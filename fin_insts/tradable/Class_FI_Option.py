@@ -25,20 +25,13 @@ class Option(Future):
                             'mkt_ask'       : None}
 
         # overwrite previous entries and reattach scalars
-        self.mkt_to_unit_price_scalar = self.get_scalar()
-        
-        self.attach_scalars(self.raw_to_screen_price_scalar, 
-                            self.screen_to_mkt_price_scalar, 
-                            self.mkt_to_unit_price_scalar,
+        self.scalar_self_per_unit = self.get_scalar()
+        self.scalar_orders_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_order = self.scalar_order_multiplier / self.scalar_self_per_unit
 
-                            self.raw_to_screen_size_scalar,
-                            self.screen_to_mkt_size_scalar,
-                            self.mkt_to_unit_size_scalar)
-
-        self.unit_strike_price = self.strike_price * self.scalar_size_mkt_to_unit
+        self.unit_strike_price = self.strike_price * self.scalar_self_per_unit
 
     def get_scalar(self):
-
         wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
         df = io.get_xw_df(ws, 'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
