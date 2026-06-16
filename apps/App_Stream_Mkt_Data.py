@@ -238,7 +238,7 @@ async def make_etf_inputs(input_dict):
     today = datetime.today().strftime("%Y-%m-%d")
 
     etf_input_dict['output workbook name']       = 'ETF_' + today + '.csv'
-    etf_input_dict['timer interval']             = input_dict['timer interval'] #* 60
+    etf_input_dict['timer interval']             = input_dict['timer interval'] * 60
     
     etf_input_dict['save df to csv']             = 'append'
     etf_input_dict['add timestamp to output df'] = True
@@ -330,16 +330,16 @@ async def main():
     tasks.append(asyncio.create_task(edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_COLS)))
     tasks.append(asyncio.create_task(standard_output(etf_input_dict, ibkr_etf_list, ETF_COLS)))
 
-    #await asyncio.gather(*tasks)  # expose this for .py usage
+    await asyncio.gather(*tasks)  # expose this for .py usage
 
 
 # %%
 # for ipynb usage
-await main()
+# await main()
 
 # for .py usage and remember to expose await at end of main and comment out the two autoreload lines
-# if __name__ == "__main__":
-#    asyncio.run(main())
+if __name__ == "__main__":
+   asyncio.run(main())
 
 # %%
 
