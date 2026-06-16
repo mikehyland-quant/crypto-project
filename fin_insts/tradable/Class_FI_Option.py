@@ -1,5 +1,7 @@
 
-from fin_insts.parents.Class_FI import Future
+from fin_insts.tradable.Class_FI_Future import Future
+
+import pandas as pd
 
 
 class Option(Future):  
@@ -33,6 +35,9 @@ class Option(Future):
         self.unit_strike_price = self.strike_price * self.scalar_self_per_unit
 
     def get_scalar(self):
+        from input_output.Class_InputOutput import InputOutput
+        io = InputOutput()
+
         wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
         df = io.get_xw_df(ws, 'btc_ratios', table=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date

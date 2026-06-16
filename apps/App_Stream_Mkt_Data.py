@@ -2,23 +2,14 @@
 # CONSTANTS
 
 INPUT_WB_NAME  = "2026 Market Data.xlsx"
-
-####
 INPUT_WS_NAME  = "MKT DATA INPUTS"
 INPUT_TBL_NAME = "MKT_DATA_INPUTS"
-####
-
-DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
 
 # %%
 # --- system setup ---
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
-
-# --- autoreload ---
-# %load_ext autoreload
-# %autoreload 2
 
 # %%
 import asyncio
@@ -41,7 +32,7 @@ from ws_feeds import WSFeedManager
 
 # %%
 # --- utils ---
-from input_output.Standard_Input_and_Output   import standard_output
+from input_output.Standard_Input_and_Output import standard_input, standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
@@ -123,8 +114,6 @@ def calc_best_of(bo_objs_list):
               
     return bo_objs_list
 
-
-
 # %%
 from datetime import datetime
 import pandas as pd
@@ -177,6 +166,8 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
     print_ts     = input_dict.get('print timestamp onscreen', False)
     add_ts       = input_dict.get('add timestamp to output df', False)
 
+    # print(refresh, display_mode, csv_mode, xl_mode, print_ts, add_ts)
+
     need_history = any(mode == 'append' for mode in [display_mode, csv_mode, xl_mode])
     history_chunks = []
     history_df = None
@@ -201,9 +192,9 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
             print(ts)
 
         bo_objs_list = calc_best_of(bo_objs_list)
-      
-        current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
         
+        current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
+    
         if add_ts:
             current_df['time'] = ts
 
@@ -247,7 +238,7 @@ async def make_etf_inputs(input_dict):
     today = datetime.today().strftime("%Y-%m-%d")
 
     etf_input_dict['output workbook name']       = 'ETF_' + today + '.csv'
-    etf_input_dict['timer interval']             = input_dict['timer interval'] * 60
+    etf_input_dict['timer interval']             = input_dict['timer interval'] #* 60
     
     etf_input_dict['save df to csv']             = 'append'
     etf_input_dict['add timestamp to output df'] = True
@@ -256,38 +247,13 @@ async def make_etf_inputs(input_dict):
     etf_input_dict['send df to xl']              = False
     etf_input_dict['print timestamp onscreen']   = False
     
-    return etf_input_dict
+    return etf_input_dict 
 
-
-# %%
-async def standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
-
-    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
-    df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
-    input_dict = df.set_index('Keys')['Values'].to_dict()
-    
-    wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
-    true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
-    
-    if 'TRUE/FALSE' not in true_false_df.columns:
-        true_false_df = true_false_df.set_index('Keys').T
-
-    true_false_df = true_false_df[true_false_df['TRUE/FALSE'] == True]
-    
-    wb, ws = io.set_xw_book_and_sheet(DB_WB_NAME, input_dict['crypto long name'])
-    tbl = input_dict['crypto abbrev'] + "_static_data_table"
-    db_df = io.get_xw_df(ws, tbl, table=True)
-    
-    merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
-
-    fin_inst_objs_list = make_single_leg_fin_insts(merged_df)
-
-    return input_dict, fin_inst_objs_list
 
 # %%
 async def main():
 
-    input_dict, objs_list = await standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
+    input_dict, objs_list = await standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
     etf_input_dict = await make_etf_inputs(input_dict)
 
     ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
@@ -309,23 +275,29 @@ async def main():
 
 #rarely change anything above here
     
+    ws_spot_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'spot']
+    ws_futs_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'future']
     
+    ibkr_spot_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'spot']
+    ibkr_etf_list  = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'equity']
+    ibkr_futs_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'future']
+    ibkr_opts_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'option']
+
+    ibkr_futs_list_btc = [obj for obj in ibkr_futs_list if "BTC" in obj.my_fi_name]
+    ibkr_futs_list_eth = [obj for obj in ibkr_futs_list if "ETH" in obj.my_fi_name]
+
     #''' 
-    # insert ibkr BAG instruments here (future_spread, option_spread, option_combo, etc.)
-    ibkr_btc_futs_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'future' and "BTC" in obj.my_fi_name]
-    btc_bag_objs_list  = FutureSpread.make_spreads(ibkr_btc_futs_list)                                    
+    # insert ibkr BAG instruments here (future_spread, option_spread, option_combo, etc.
+    ibkr_fut_spds_objs_list_btc = FutureSpread.make_spreads(ibkr_futs_list_btc)                                    
+    ibkr_fut_spds_objs_list_eth = FutureSpread.make_spreads(ibkr_futs_list_eth)  
 
-    ibkr_eth_futs_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'future' and "ETH" in obj.my_fi_name]
-    eth_bag_objs_list  = FutureSpread.make_spreads(ibkr_eth_futs_list)  
-
-    ibkr_futs_list = [*ibkr_btc_futs_list, *ibkr_eth_futs_list]
-    bag_objs_list  = [*btc_bag_objs_list, *eth_bag_objs_list]
-    await asyncio.gather(*(ibkr.create_bag_contract(obj) for obj in bag_objs_list))
+    ibkr_fut_spds_objs_list  = [*ibkr_fut_spds_objs_list_btc, *ibkr_fut_spds_objs_list_eth]
+    await asyncio.gather(*(obj.make_ibkr_spread_contract(ibkr) for obj in ibkr_fut_spds_objs_list))
     #'''                
  
     #''' 
     #insert synthetic instruments here 
-    syn_objs_list = Synthetic.make_syn_futures_list(ibkr_btc_futs_list, btc_bag_objs_list)
+    syn_objs_list = Synthetic.make_syn_futures_list(ibkr_futs_list_btc, ibkr_fut_spds_objs_list_btc)
     #''' 
 
     #''' 
@@ -333,41 +305,43 @@ async def main():
     bo_objs_list = create_bo_objs_list(ws_objs_list, ibkr_objs_list, ibkr_futs_list, syn_objs_list)
     #''' 
 
-    ws_spot_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'spot']
-    ibkr_spot_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'spot']
-    ibkr_etf_list  = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'equity']
-    ws_futs_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'future']
-
-    output_list = [*bo_objs_list,
-                   *ws_spot_list,
-                   *ibkr_spot_list, 
-                   *ibkr_etf_list,
-                   *ws_futs_list,
-                   *ibkr_futs_list,
-                   *bag_objs_list,
-                   *syn_objs_list]
-
+    output_list = [
+        *bo_objs_list,
+        *ws_spot_list,
+        *ibkr_spot_list, 
+        *ibkr_etf_list,
+        *ws_futs_list,
+        *ibkr_futs_list,
+        *ibkr_opts_list,
+        *ibkr_fut_spds_objs_list_btc,                                   
+        *ibkr_fut_spds_objs_list_eth,
+        *syn_objs_list
+                   ]
+    
     # Run all streams concurrently
     tasks = []
     tasks.append(asyncio.create_task(ws_feed.run()))
     if ibkr_objs_list:
         tasks.append(asyncio.create_task(ibkr.start_streams(ibkr_objs_list)))
-        tasks.append(asyncio.create_task(ibkr.start_streams(bag_objs_list)))
+        tasks.append(asyncio.create_task(ibkr.start_streams(ibkr_fut_spds_objs_list)))
 
     await asyncio.sleep(input_dict.get('timer interval', 10))
 
     tasks.append(asyncio.create_task(edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_COLS)))
     tasks.append(asyncio.create_task(standard_output(etf_input_dict, ibkr_etf_list, ETF_COLS)))
 
-    await asyncio.gather(*tasks)  # expose this for .py usage
+    #await asyncio.gather(*tasks)  # expose this for .py usage
 
 
 # %%
 # for ipynb usage
-# await main()
+await main()
 
-# for .py usage 
-if __name__ == "__main__":
-    asyncio.run(main())
+# for .py usage and remember to expose await at end of main and comment out the two autoreload lines
+# if __name__ == "__main__":
+#    asyncio.run(main())
+
+# %%
+
 
 
