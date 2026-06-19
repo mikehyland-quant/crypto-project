@@ -61,8 +61,10 @@ class FinancialInstrument(MktData):
     def complete_obj(self):
         Dates.calc_and_attach(self)
 
-        self.scalar_screens_per_unit  = self.scalar_self_per_unit / self.scalar_order_multiplier
-        self.scalar_units_per_screen  = self.scalar_order_multiplier / self.scalar_self_per_unit
+        self.scalar_units_per_self = 1 / self.scalar_selfs_per_unit
+        
+        self.scalar_screens_per_unit  = self.scalar_selfs_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_screen  = self.scalar_order_multiplier / self.scalar_selfs_per_unit
 
         
         

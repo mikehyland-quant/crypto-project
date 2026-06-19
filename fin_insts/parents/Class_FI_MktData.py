@@ -12,7 +12,7 @@ This class assigns a number of attributes to each object.  The attribute names a
 For scalars, the first is always "scalar".  Then price / size.  Then raw_to_mkt / mkt_to_unit.
 '''
 
-
+ 
 import numpy as np
 import pandas as pd
 import time
@@ -25,12 +25,12 @@ class MktData:
         self.scalar_price_raw_to_screen = 1 
         self.scalar_size_raw_to_screen  = 1  
 
-        self.scalar_self_per_unit    = 1 
+        self.scalar_selfs_per_unit   = 1 
         self.scalar_order_multiplier = 1 
 
         # the next two lines are calculated as part of complete object
-        # self.scalar_screens_per_unit  = self.scalar_self_per_unit / self.scalar_order_multiplier
-        # self.scalar_units_per_screen  = self.scalar_order_multiplier / self.scalar_self_per_unit
+        # self.scalar_screens_per_unit  = self.scalar_selfs_per_unit / self.scalar_order_multiplier
+        # self.scalar_units_per_screen  = self.scalar_order_multiplier / self.scalar_selfs_per_unit
 
         self.need_close_data    = True
         self.price_raw_close    = np.nan
@@ -199,6 +199,7 @@ class MktData:
             return max(initial_estimate, self.comm_misc_amount)
         else:
             return 0 
+        
 
 
     

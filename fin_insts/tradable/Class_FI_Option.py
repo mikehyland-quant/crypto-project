@@ -27,12 +27,13 @@ class Option(Future):
         '''
 
         # overwrite previous entries and reattach scalars
-        self.scalar_self_per_unit = self.get_scalar()
+        self.scalar_selfs_per_unit = self.get_scalar()
+        self.scalar_units_per_self = 1 / self.scalar_selfs_per_unit
         
-        self.scalar_screens_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
-        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_self_per_unit
+        self.scalar_screens_per_unit = self.scalar_selfs_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_selfs_per_unit
 
-        self.unit_strike_price = self.strike_price * self.scalar_self_per_unit
+        self.unit_strike_price = self.strike_price * self.scalar_selfs_per_unit
 
     def get_scalar(self):
         from input_output.Class_InputOutput import InputOutput

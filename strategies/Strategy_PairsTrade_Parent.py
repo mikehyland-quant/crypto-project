@@ -56,7 +56,7 @@ class PairsTrade_Parent(Strategy):
                 setattr(obj, attr_key, attr_val)
     
         return self.obj1, self.obj2
-
+ 
  
     def _attach_strat_attr(self, objs_list):
         buy_sell_dict  = {'BUY': ('cf_unit_lift_ask', -1), 'SELL': ('cf_unit_hit_bid', 1)}
@@ -68,7 +68,7 @@ class PairsTrade_Parent(Strategy):
             obj.trade             = None
             
             obj.buy_sell          = obj.buy_sell.upper()
-            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_size_mkt_per_unit))
+            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size / obj.scalar_units_per_screen))
             obj.calc_price        = self._calc_price   # assigns function below 
             obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread        = self.target_spread / obj.spread_ratio
@@ -84,7 +84,7 @@ class PairsTrade_Parent(Strategy):
 
     def on_close_data(self, obj):
         #creates a placeholder limit order to get trade opened and in system
-        mkt_close = obj.price_mkt_close
+        mkt_close = obj.price_screen_close
         if obj.buy_sell == 'BUY':
             placeholder_price = mkt_close * 0.5
         elif obj.buy_sell == 'SELL':
@@ -143,8 +143,9 @@ class PairsTrade_Parent(Strategy):
     def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):     
         unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
         unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
-        mkt_output_price = unit_output_price * output_obj.scalar_price_unit_to_mkt
-        mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))                                             
+        mkt_output_price = unit_output_price * output_obj.scalar_units_per_self
+        mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))    
+        # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
         return mkt_output_price
 
     

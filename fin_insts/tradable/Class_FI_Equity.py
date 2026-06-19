@@ -23,9 +23,11 @@ class Equity(FinancialInstrument):
         
         # overwrite previous entries and reattach scalars
         self.scalar_size_raw_to_screen = 100
-        self.scalar_self_per_unit = self.get_scalar()
-        self.scalar_screens_per_unit = self.scalar_self_per_unit / self.scalar_order_multiplier
-        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_self_per_unit
+        self.scalar_selfs_per_unit = self.get_scalar()
+        self.scalar_units_per_self = 1 / self.scalar_selfs_per_unit
+
+        self.scalar_screens_per_unit = self.scalar_selfs_per_unit / self.scalar_order_multiplier
+        self.scalar_units_per_screen = self.scalar_order_multiplier / self.scalar_selfs_per_unit
 
 
     def get_scalar(self):

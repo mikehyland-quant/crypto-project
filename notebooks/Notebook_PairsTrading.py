@@ -36,42 +36,17 @@ ibkr = IBKR_IB(port=7496)
 #from ws_feeds import WSFeedManager
 
 # --- utils ---
-from input_output.Standard_Input_and_Output import standard_output
+from input_output.Standard_Input_and_Output import standard_input, standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
 # --- trading strategy ---
 from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
 
-OUTPUT_COLS = []
-
-async def standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
-
-    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
-    df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
-    input_dict = df.set_index('Keys')['Values'].to_dict()
-    
-    wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
-    true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
-    
-    if 'TRUE/FALSE' not in true_false_df.columns:
-        true_false_df = true_false_df.set_index('Keys').T
-
-    true_false_df = true_false_df[true_false_df['TRUE/FALSE'] == True]
-    
-    wb, ws = io.set_xw_book_and_sheet(DB_WB_NAME, input_dict['crypto long name'])
-    tbl = input_dict['crypto abbrev'] + "_static_data_table"
-    db_df = io.get_xw_df(ws, tbl, table=True)
-    
-    merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
-
-    fin_inst_objs_list = make_single_leg_fin_insts(merged_df)
-
-    return input_dict, fin_inst_objs_list
 
 async def main():
 
-    input_dict, objs_list = await standard_startup(io, INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
+    input_dict, objs_list = await standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
     '''
     ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
     ws_feed      = WSFeedManager(ws_objs_list)
@@ -89,17 +64,10 @@ async def main():
         
     ''' 
     # insert ibkr BAG instruments here (future_spread, option_spread, option_combo, etc.)
-    futures_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'future']
-    bag_objs_list = FutureSpread.make_spreads(futures_list)                                    
-    await asyncio.gather(*(ibkr.create_bag_contract(obj) for obj in bag_objs_list))
-    '''                
-        
-    ''' 
+
     insert synthetic instruments here 
     output_list.extend(syn_objs_list)
-    ''' 
-
-    ''' 
+    
     insert bestOf instruments here
     output_list[:0] = bo_objs_list   # this puts bestOf instruments at the top of the list
     ''' 
