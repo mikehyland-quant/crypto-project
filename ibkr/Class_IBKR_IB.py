@@ -258,7 +258,7 @@ class IBKR_IB:
         return trade
 
 
-    def cancel_trade(self, trade):
+    def cancel_order(self, trade):
         if trade is None:
             return
 

@@ -16,7 +16,7 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
         #print(vars(self.obj1), '\n')
         #print(vars(self.obj2), '\n')  
          
-   
+    '''
     def on_mkt_data(self, input_obj):
         if self.stage != "ZERO FILLED":
             return  # no need to update price 
@@ -54,27 +54,34 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
                                          output_price, 
                                          input_price, 
                                          trade.order.orderId)
+    '''
 
           
     async def on_trade_exec(self, filled_obj, filled_order):  
-        remaining = filled_order.orderStatus.remaining
+        filled = filled_trade.orderStatus.filled
+        remaining = filled_trade.orderStatus.remaining
         
         if self.stage == "ZERO FILLED":
-            if remaining > 0:
+            if filled == 0:
                 return
             
             self.stage = "ONE FILLED" 
 
             unfilled_obj = filled_obj.opp_obj  
-
+ 
+            if remaining > 0:
+                ibkr.cancel_trade(filled_trade)
+                pct_filled = filled_trade.orderStatus.filled / remaining
+                unfilled_obj.order_size = unfilled_obj.round_size_to_increment(unfilled_obj.order_size * pct_filled)
+###
             trade = unfilled_obj.platform_obj.modify_to_market_order(obj=unfilled_obj, 
                                                                      size=unfilled_obj.order_size, 
                                                                      buy_sell=unfilled_obj.buy_sell, 
                                                                      trade=unfilled_obj.trade)
-            
+###            
             if trade is not None:
                 self._placed_order_admin(unfilled_obj, trade, None)
-
+###
                 if self.print_orders:
                     self.print_order_message(unfilled_obj.buy_sell, 
                                              unfilled_obj.order_size, 
@@ -82,7 +89,7 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
                                              "market order", 
                                              "market order", 
                                              trade.order.orderId)
-            
+###            
             #_filled_obj_admin is called below
 
             filled_obj.strat_on_mkt_data    = False

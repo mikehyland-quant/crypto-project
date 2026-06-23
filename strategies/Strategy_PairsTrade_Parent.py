@@ -50,7 +50,7 @@ class PairsTrade_Parent(Strategy):
     
             # creates self.obj1, self.obj2, etc.
             setattr(self, obj_name.lower(), obj)
-    
+     
             # attaches strategy attrs to the object
             for attr_key, attr_val in obj_dict.items():
                 setattr(obj, attr_key, attr_val)
@@ -68,7 +68,7 @@ class PairsTrade_Parent(Strategy):
             obj.trade             = None
             
             obj.buy_sell          = obj.buy_sell.upper()
-            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size / obj.scalar_units_per_screen))
+            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_screens_per_unit))
             obj.calc_price        = self._calc_price   # assigns function below 
             obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread        = self.target_spread / obj.spread_ratio
@@ -109,6 +109,49 @@ class PairsTrade_Parent(Strategy):
             self._placed_order_admin(obj, trade, mkt_close)
 
 
+    def on_mkt_data(self, input_obj):
+        if self.stage != "ZERO FILLED":
+            return  # no need to update price 
+
+        output_obj  = input_obj.opp_obj
+
+        if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
+            return
+
+        input_price = getattr(input_obj, input_obj.input_price_attr)
+        active_base_price = output_obj.active_base_price
+        
+        if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
+            return
+
+        output_price = output_obj.calc_price(input_price, output_obj) #, 0)  
+        active_order_price = output_obj.trade.order.lmtPrice if output_obj.trade is not None else None
+        
+        if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
+            return     
+        
+        trade = output_obj.platform_obj.modify_limit_order(obj=output_obj, 
+                                                           size=output_obj.order_size, 
+                                                           buy_sell=output_obj.buy_sell, 
+                                                           trade=output_obj.trade, 
+                                                           price=output_price)
+
+        if trade is not None:
+            self._placed_order_admin(output_obj, trade, input_price)
+            
+            if self.print_orders:
+                self.print_order_message(output_obj.buy_sell, 
+                                         output_obj.order_size, 
+                                         output_obj.my_fi_name, 
+                                         output_price, 
+                                         input_price, 
+                                         trade.order.orderId)
+       
+
+    def on_trade_exec(self, obj, trade):
+        pass
+
+
     def _placed_order_admin(self, obj, trade, base_price):   
         obj.trade               = trade
         obj.active_base_price   = base_price     
@@ -122,6 +165,10 @@ class PairsTrade_Parent(Strategy):
     def _finalize_results(self):
         final_spread = (self.obj2.trade.orderStatus.avgFillPrice * self.obj2.spread_ratio * self.obj2.filled_scalar + 
                         self.obj1.trade.orderStatus.avgFillPrice * self.obj1.spread_ratio * self.obj1.filled_scalar)  
+        
+        self.obj1.units_filled = self.obj1.trade.orderStatus.filled * self.obj1.scalar_units_per_screen
+        self.obj2.units_filled = self.obj2.trade.orderStatus.filled * self.obj2.scalar_units_per_screen 
+        net_units = self.obj1.units_filled - self.obj2.units_filled
 
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
@@ -133,11 +180,12 @@ class PairsTrade_Parent(Strategy):
                 ", order_id:", obj.trade.order.orderId,
                 ", status:", obj.trade.orderStatus.status,
                 ", filled:", obj.trade.orderStatus.filled,
+                ", units:", obj.units_filled,
                 ", avg_price:", obj.trade.orderStatus.avgFillPrice,
                 ", last_price:", obj.trade.orderStatus.lastFillPrice,
             )
 
-        print('Final spread: ', final_spread, '\n')
+        print('Final spread: ', final_spread, 'Final net units: ', net_units, '\n')
 
         
     def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):     

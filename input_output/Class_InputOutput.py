@@ -12,21 +12,32 @@ class InputOutput():
 
     # xlWings shortcuts
 
-    def set_xw_book(self, wb):
-        return xw.Book(wb)
-    
-    def set_xw_book_and_sheet(self, wb, ws):
-        wbook = self.set_xw_book(wb)
-        wsheet = wbook.sheets[ws]
-        return wbook, wsheet
-    
-    def set_xw_book_sheet_and_range(self, wb, ws, cell):
-        wbook, wsheet = self.set_xw_book_and_sheet(wb, ws)
-        range = wsheet.range(cell)
-        return wbook, wsheet, range
+    def set_xw_book(self, wb_name):
+        return xw.Book(wb_name)
 
-    def get_xw_cell(self, ws, range):
-        return ws.range(range).value
+    def set_xw_sheet(self, wb, ws_name):
+        return wb.sheets(ws_name)
+    
+    def set_xw_range(self, ws, range_name):
+        return ws.range(range_name)
+
+    def set_xw_book_and_sheet(self, wb_name, ws_name):
+        wb = self.set_xw_book(wb_name)
+        ws = self.set_xw_sheet(wb, ws_name)
+        return wb, ws
+    
+    def set_xw_sheet_and_range(self, wb, ws_name, range_name):
+        ws    = self.set_xw_sheet(wb, ws_name)
+        range = self.set_xw_range(ws, range_name)
+        return ws, range
+    
+    def set_xw_book_sheet_and_range(self, wb_name, ws_name, range_name):
+        wb, ws = self.set_xw_book_and_sheet(wb_name, ws_name)
+        range  = self.set_xw_range(ws, range_name)
+        return wb, ws, range
+    
+    def get_xw_range(self, ws, range_name):
+        return ws.range(range_name).value
 
     def get_xw_dict(self, ws, range, table=False, style=float):  
         if table == False:
@@ -44,8 +55,8 @@ class InputOutput():
             tbl_range = tbl.range
             return tbl_range.options(pd.DataFrame, index=False).value
 
-    def print_xw_df(self, ws, range, df, headerRows=1):       
-        ws.range(range).options(index = False, header=headerRows).value = df
+    def print_xw_df(self, range, df, headerRows=1):       
+        range(range).options(index = False, header=headerRows).value = df
 
 
     # additional shortcuts  

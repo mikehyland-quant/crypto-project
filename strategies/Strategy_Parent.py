@@ -105,6 +105,10 @@ class Strategy:
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
     
 
+    def cancel_order(self, obj, order):
+        obj.platform_obj.cancel_order(order)
+
+    
     def print_order_message(self, buy_sell, size, fi_name, price, order_id):
         print(f"{buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}")
 

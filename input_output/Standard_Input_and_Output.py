@@ -27,6 +27,7 @@ async def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
     
     wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
     true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
+    # print(true_false_df)
     
     if 'TRUE/FALSE' not in true_false_df.columns:
         true_false_df = true_false_df.set_index('Keys').T
@@ -36,8 +37,10 @@ async def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
     wb, ws = io.set_xw_book_and_sheet(database_wb, database_ws)
     tbl = database_tbl
     db_df = io.get_xw_df(ws, tbl, table=True)
+    # print(db_df)
     
     merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
+    # print(merged_df)
 
     fin_inst_objs_list = make_single_leg_fin_insts(merged_df)
 

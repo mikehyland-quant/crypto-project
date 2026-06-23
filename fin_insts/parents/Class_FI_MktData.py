@@ -185,7 +185,7 @@ class MktData:
 
         return changed
         
-    
+     
     def calc_comm(self, price, maker_taker):
         type_ = self.comm_type
         amount = getattr(self, 'comm_' + maker_taker + '_amount')

@@ -16,7 +16,7 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
         #print(vars(self.obj1), '\n')
         #print(vars(self.obj2), '\n')  
 
-                           
+    '''                       
     def on_mkt_data(self, input_obj):
         if self.stage != "ZERO FILLED":
             return  # no need to update price 
@@ -54,19 +54,26 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
                                          output_price, 
                                          input_price, 
                                          trade.order.orderId)
+    '''
 
           
     async def on_trade_exec(self, filled_obj, filled_trade):  
+        filled = filled_trade.orderStatus.filled
         remaining = filled_trade.orderStatus.remaining
         
         if self.stage == "ZERO FILLED":
-            if remaining > 0:
+            if filled == 0:
                 return
-            
+
             self.stage = "ONE FILLED" 
 
             unfilled_obj = filled_obj.opp_obj  
 
+            if remaining > 0:
+                self.cancel_order(filled_obj, filled_trade)
+                pct_filled = filled_trade.orderStatus.filled / remaining
+                unfilled_obj.order_size = unfilled_obj.round_size_to_increment(unfilled_obj.order_size * pct_filled)
+###
             avg_fill_price = filled_trade.orderStatus.avgFillPrice
             input_price    = avg_fill_price * filled_obj.filled_scalar
             output_price   = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
@@ -76,10 +83,10 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
                                                                  buy_sell=unfilled_obj.buy_sell, 
                                                                  trade=unfilled_obj.trade,
                                                                  price=output_price)
-            
+###            
             if trade is not None:
                 self._placed_order_admin(unfilled_obj, trade, input_price)
-
+###
                 if self.print_orders:
                     self.print_order_message(unfilled_obj.buy_sell, 
                                              unfilled_obj.order_size, 
@@ -87,7 +94,7 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
                                              output_price, 
                                              input_price, 
                                              trade.order.orderId)
-
+###
             #_filled_obj_admin is called below
 
             filled_obj.strat_on_mkt_data    = False
