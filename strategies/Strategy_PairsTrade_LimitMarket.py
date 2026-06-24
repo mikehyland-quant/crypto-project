@@ -58,8 +58,8 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
 
           
     async def on_trade_exec(self, filled_obj, filled_order):  
-        filled = filled_trade.orderStatus.filled
-        remaining = filled_trade.orderStatus.remaining
+        filled = filled_order.orderStatus.filled
+        remaining = filled_order.orderStatus.remaining
         
         if self.stage == "ZERO FILLED":
             if filled == 0:
@@ -70,8 +70,8 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
             unfilled_obj = filled_obj.opp_obj  
  
             if remaining > 0:
-                ibkr.cancel_trade(filled_trade)
-                pct_filled = filled_trade.orderStatus.filled / remaining
+                self.cancel_trade(filled_order)
+                pct_filled = filled_order.orderStatus.filled / remaining
                 unfilled_obj.order_size = unfilled_obj.round_size_to_increment(unfilled_obj.order_size * pct_filled)
 ###
             trade = unfilled_obj.platform_obj.modify_to_market_order(obj=unfilled_obj, 
