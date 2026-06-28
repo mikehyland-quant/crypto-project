@@ -24,7 +24,7 @@ from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 # from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7496)
+ibkr = IBKR_IB(port=7497)
 
 # %%
 # --- feeds ---
@@ -232,7 +232,7 @@ ETF_COLS = ['my_fi_name',
             'price_screen_ask']
 
 
-async def make_etf_inputs(input_dict):
+def make_etf_inputs(input_dict):
     etf_input_dict = input_dict.copy()
 
     today = datetime.today().strftime("%Y-%m-%d")
@@ -248,13 +248,13 @@ async def make_etf_inputs(input_dict):
     etf_input_dict['print timestamp onscreen']   = False
     
     return etf_input_dict 
-
-
+ 
+ 
 # %%
 async def main():
 
-    input_dict, objs_list = await standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
-    etf_input_dict = await make_etf_inputs(input_dict)
+    input_dict, objs_list = standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
+    etf_input_dict = make_etf_inputs(input_dict)
 
     ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
     ws_feed      = WSFeedManager(ws_objs_list)

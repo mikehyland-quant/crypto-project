@@ -74,10 +74,12 @@ async def main():
 
     #''' 
     #insert trading and analysis scripts here
-    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
-    strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
+    wb, ws          = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
+    strat_df        = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
+
     strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-    strat = PairsTrade_LimitMarket(strat_objs_list, strat_df)
+
+    strat           = PairsTrade_LimitMarket(strat_objs_list, strat_df)
         
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name

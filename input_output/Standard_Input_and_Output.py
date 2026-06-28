@@ -19,7 +19,7 @@ database_ws  = 'Crypto'
 database_tbl = 'crypto_static_data_table'
 
 
-async def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
+def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
     wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
     df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
@@ -48,6 +48,7 @@ async def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
 
 
 async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[]):
+    # needs async because of the two await asyncio.sleep commands below 
     
     refresh      = input_dict.get('timer interval', 10)
     display_mode = input_dict.get('display df onscreen', False)

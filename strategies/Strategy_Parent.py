@@ -4,13 +4,15 @@ import math
 import types
 import winsound
 
-from datetime import datetime
 
 class Strategy:
 
     def __init__(self, objs_list=None):
         self.done_event = asyncio.Event()  # needs to be awaited in main() and set at the end of each strategy
-        self.print_orders = True  # set to False in main() to disable order printing
+        
+        # set to False in main() to disable printing
+        self.need_to_print_active_orders   = True  
+        self.need_to_print_finished_orders = True
         
         self.objs_list = objs_list if objs_list is not None else []
       
@@ -23,10 +25,10 @@ class Strategy:
             obj.strat_on_mkt_data_update = True
             obj.strat_on_trade_exec      = True
 
-            obj.active_trade_list    = []
-            obj.inactive_trade_list  = []
+            obj.active_trade_list        = []
+            obj.finished_trade_list      = []
 
-            obj.trading_complete     = False
+            obj.trading_complete         = False
         
             
     @classmethod
@@ -48,6 +50,7 @@ class Strategy:
 
     def round_price_to_tick(self, price, buy_sell=None):
         # best to input price as abs(price) when calling function
+        # rounds price to tick conservatively based on buy/bid or sell/ask
         if price is None:
             return None
     
@@ -75,6 +78,7 @@ class Strategy:
 
     def round_size_to_increment(self, size):
         # best to input size as abs(size) when calling function
+        # rounds up or down to closest size increment
         if size is None:
             return None
 
@@ -96,10 +100,6 @@ class Strategy:
         return round(rounded, 10)
     
 
-    def launch_placeholder_orders(self):
-        pass
-
-
     def update_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
         if order_id is None:
             return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
@@ -116,19 +116,19 @@ class Strategy:
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
     
 
-    def cancel_order(self, obj, order):
-        obj.platform_obj.cancel_order(order)
+    def cancel_order(self, obj, trade):
+        obj.platform_obj.cancel_order(trade)
 
      
-    def print_order_message(self, buy_sell, size, fi_name, price, order_id):
-        print(f"{buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
+    def print_orders(self, active_finished, buy_sell, size, fi_name, price, order_id):
+        print(f"{active_finished} order: {buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
 
 
-    def on_close_data(self, obj):
+    def on_close_update(self, obj):
         pass
 
 
-    def on_mkt_data(self, obj):
+    def on_mkt_data_update(self, obj):
         pass
         
 
