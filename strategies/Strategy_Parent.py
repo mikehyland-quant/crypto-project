@@ -13,21 +13,28 @@ class Strategy:
         self.print_orders = True  # set to False in main() to disable order printing
         
         self.objs_list = objs_list if objs_list is not None else []
-               
+      
         for obj in self.objs_list:
             self._attach_trading_helpers(obj)
-            obj.strategy             = self
-            obj.strat_on_mkt_data    = True
-            obj.strat_on_trade_exec  = True
-            obj.strat_on_close_data  = True
+
+            obj.strategy                 = self
+            
+            obj.strat_on_close_update    = True
+            obj.strat_on_mkt_data_update = True
+            obj.strat_on_trade_exec      = True
+
+            obj.active_trade_list    = []
+            obj.inactive_trade_list  = []
+
+            obj.trading_complete     = False
         
             
     @classmethod
     def _attach_trading_helpers(cls, obj):
         #obj.my_trading_rules = cls._extract_trading_rules(obj)
 
-        obj.round_price_to_tick = types.MethodType(cls.round_price_to_tick, obj)
-        obj.round_size_to_increment = types.MethodType(cls.round_size_to_increment, obj)
+        obj.round_price_to_tick      = types.MethodType(cls.round_price_to_tick, obj)
+        obj.round_size_to_increment  = types.MethodType(cls.round_size_to_increment, obj)
         
    
     @classmethod    
@@ -87,6 +94,10 @@ class Strategy:
             return 0.0
  
         return round(rounded, 10)
+    
+
+    def launch_placeholder_orders(self):
+        pass
 
 
     def update_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
@@ -108,9 +119,9 @@ class Strategy:
     def cancel_order(self, obj, order):
         obj.platform_obj.cancel_order(order)
 
-    
+     
     def print_order_message(self, buy_sell, size, fi_name, price, order_id):
-        print(f"{buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}")
+        print(f"{buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
 
 
     def on_close_data(self, obj):

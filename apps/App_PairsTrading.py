@@ -30,7 +30,7 @@ from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Syntheti
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 #from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7496)
+ibkr = IBKR_IB(port=7497)
 
 # --- feeds ---
 #from ws_feeds import WSFeedManager
@@ -77,12 +77,12 @@ async def main():
     wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
     strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
     strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-    strat = PairsTrade_LimitLimit(strat_objs_list, strat_df)
+    strat = PairsTrade_LimitMarket(strat_objs_list, strat_df)
         
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name
         
-    strat.print_orders = False
+    strat.print_orders = True
     #'''    
       
     # Run all streams concurrently

@@ -14,13 +14,13 @@ class PairsTrade_Parent(Strategy):
         super().__init__(objs_list)  
         
         # create self attributes
-        self.stage = 'ZERO FILLED'
+        self.trade_has_been_cancelled = False
+
+        self.target_spread = df.loc['target_profit_per_unit'].sum()
+        self.epsilon       = df.loc['epsilon_per_unit'].sum()
         
-        self.target_spread = df.loc['target_spread_per_unit'].sum()
-        self.epsilon       = df.loc['epsilon'].sum()
-        
-        df = df.drop(index=['target_spread_per_unit'])
-        df = df.drop(index=['epsilon'])
+        df = df.drop(index=['target_profit_per_unit'])
+        df = df.drop(index=['epsilon_per_unit'])
 
         objs_dict = df.to_dict()
 
@@ -59,22 +59,24 @@ class PairsTrade_Parent(Strategy):
  
  
     def _attach_strat_attr(self, objs_list):
-        buy_sell_dict  = {'BUY': ('cf_unit_lift_ask', -1), 'SELL': ('cf_unit_hit_bid', 1)}
+        buy_tuple      = ('BUY', 'cf_unit_lift_ask', -1)
+        sell_tuple     = ('SELL', 'cf_unit_hit_bid',  1)
         min_ratio_size = min(self.obj1.ratio_size, self.obj2.ratio_size)
         
         for obj in objs_list:
-            obj.active_base_price = None
+            obj.active_base_price  = None
+
+            if obj.initial_unit_order_size > 0:
+                (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = buy_tuple 
+            elif obj.initial_unit_order_size < 0:
+                (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = sell_tuple  
+        
+            obj.initial_screens_order_size = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_screens_per_unit))
+            obj.order_size                 = obj.initial_screens_order_size     
+            
+            obj.spread_ratio = obj.opp_obj.ratio_size / min_ratio_size
+            obj.adj_spread   = self.target_spread / obj.spread_ratio
     
-            obj.trade             = None
-            
-            obj.buy_sell          = obj.buy_sell.upper()
-            obj.order_size        = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_screens_per_unit))
-            obj.calc_price        = self._calc_price   # assigns function below 
-            obj.spread_ratio      = obj.opp_obj.ratio_size / min_ratio_size
-            obj.adj_spread        = self.target_spread / obj.spread_ratio
-            
-            obj.input_price_attr, obj.filled_scalar = buy_sell_dict[obj.buy_sell]  
-            
             if obj.active_passive.lower() == 'passive':
                 #was set to True in Strategy_Parent, so now set to False for passive leg
                 setattr(obj.opp_obj, 'strat_on_mkt_data', False)   
@@ -82,9 +84,10 @@ class PairsTrade_Parent(Strategy):
         return self.obj1, self.obj2
                     
 
-    def on_close_data(self, obj):
+   def on_close_update(self, obj):
         #creates a placeholder limit order to get trade opened and in system
         mkt_close = obj.price_screen_close
+
         if obj.buy_sell == 'BUY':
             placeholder_price = mkt_close * 0.5
         elif obj.buy_sell == 'SELL':
@@ -93,40 +96,36 @@ class PairsTrade_Parent(Strategy):
         placeholder_price = obj.round_price_to_tick(placeholder_price)
 
         size=obj.order_size
-        buy_sell=obj.buy_sell
+        buy_sell=obj.
         
-        trade = obj.platform_obj.place_limit_order(obj=obj, 
-                                                   size=size, 
-                                                   buy_sell=buy_sell, 
-                                                   price=placeholder_price)
+        trade = self.update_limit_order(obj=obj, 
+                                        size=size, 
+                                        buy_sell=buy_sell, 
+                                        price=placeholder_price)
         
         if trade is not None:
-            obj.strat_on_close_data = False 
+            obj.strat_on_close_update = False 
             
             if self.print_orders:
                 self.print_order_message(buy_sell, size, obj.my_fi_name, placeholder_price, trade.order.orderId)
 
-            self._placed_order_admin(obj, trade, mkt_close)
+            obj.active_base_price = mkt_close 
+            self._placed_order_admin(obj, trade)
 
 
-    def on_mkt_data(self, input_obj):
-        if self.stage != "ZERO FILLED":
-            return  # no need to update price 
+    def on_mkt_data_update(self, input_obj):
 
         output_obj  = input_obj.opp_obj
-
         if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
             return
 
-        input_price = getattr(input_obj, input_obj.input_price_attr)
         active_base_price = output_obj.active_base_price
-        
+        input_price = getattr(input_obj, input_obj.input_price_attr)
         if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
 
-        output_price = output_obj.calc_price(input_price, output_obj) #, 0)  
+        output_price = output_obj.calc_price(input_price, output_obj) 
         active_order_price = output_obj.trade.order.lmtPrice if output_obj.trade is not None else None
-        
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
         
@@ -137,29 +136,138 @@ class PairsTrade_Parent(Strategy):
                                                            price=output_price)
 
         if trade is not None:
-            self._placed_order_admin(output_obj, trade, input_price)
+            output_obj.active_base_price = input_price
+            self._placed_order_admin(output_obj, trade)
             
             if self.print_orders:
                 self.print_order_message(output_obj.buy_sell, 
                                          output_obj.order_size, 
                                          output_obj.my_fi_name, 
                                          output_price, 
-                                         input_price, 
                                          trade.order.orderId)
        
+ 
+    async def on_trade_exec(self, filled_obj, filled_order):  
+        # print(filled_order, '\n')
+        status = filled_order.orderStatus
 
-    def on_trade_exec(self, obj, trade):
-        pass
+        filled = status.filled
+        if filled == 0:   # this will be the case many times
+            return
+        
+        remaining = status.remaining
+        
+        unfilled_obj = filled_obj.opp_obj
+        
+        if self.trade_has_been_cancelled:
+            return self._filled_after_cancellation(filled_obj, unfilled_obj, filled_order, remaining)
+        
+        return self._filled_before_cancellation(filled_obj, unfilled_obj, filled_order, remaining)
+        
 
-
-    def _placed_order_admin(self, obj, trade, base_price):   
-        obj.trade               = trade
-        obj.active_base_price   = base_price     
+    def _filled_before_cancellation(self, filled_obj, unfilled_obj, filled_order, remaining):
+        if unfilled_obj.trading_complete: # trading in other object is complete
+            return self._filled_before_cancellation_opp_obj_trading_complete(filled_obj, filled_order, remaining)
     
+        else:  # trading in other object is not yet complete
+            if remaining == 0:  # this trade is completely filled
+                return self._filled_before_cancellation_completely_opp_obj_trading_incomplete(filled_obj, unfilled_obj, filled_order) 
 
-    def _filled_order_admin(self, obj):      
-        obj.strat_on_trade_exec = False     
-        obj.active_base_price   = None
+            else:  # this trade is only partially filled
+                return self._filled_before_cancellation_partially_opp_obj_trading_incomplete(filled_obj, unfilled_obj, filled_order)
+                
+
+    def _filled_before_cancellation_opp_obj_trading_complete(self, filled_obj, filled_order, remaining):
+        if remaining == 0:  # this trade is completely filled
+            filled_obj.trading_complete    = True
+            filled_obj.strat_on_trade_exec = False
+
+            self._finished_order_admin(filled_obj, filled_order)  
+            self._finish_routine()   
+        # else:  # remaining > 0 and trading in this object is not yet complete
+
+
+    def _filled_before_cancellation_completely_opp_obj_trading_incomplete(self, filled_obj, unfilled_obj, filled_order):
+        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order) # see specialty code
+
+        filled_obj.trading_complete    = True
+        filled_obj.strat_on_trade_exec = False
+        filled_obj.strat_on_mkt_data   = False
+        unfilled_obj.strat_on_mkt_data = False
+
+        self._finished_order_admin(filled_obj, filled_order)  
+
+
+    def _filled_before_cancellation_partially_opp_obj_trading_incomplete(self, filled_obj, unfilled_obj, filled_order):
+        self.cancel_order(filled_obj, filled_order)
+
+        pct_filled = filled_order.orderStatus.filled / filled_obj.initial_screens_order_size
+        unfilled_obj.order_size = unfilled_obj.round_size_to_increment(unfilled_obj.order_size * pct_filled)
+
+        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order) # see specialty code
+
+        self.trade_has_been_cancelled= True
+
+
+    def _filled_after_cancellation(self, filled_obj, unfilled_obj, filled_order, remaining, tolerance=0.02):
+        if remaining > 0:
+            return  # can't make any decisions until remaining = 0
+        
+        need_balancing_order = (abs(filled_obj.active_plus_traded_units - 
+                                    unfilled_obj.active_plus_traded_units) > tolerance)
+        if need_balancing_order:
+            self.launch_balancing_order()
+            
+        # total order amounts are balanced between the two objects
+        self._finished_order_admin(filled_obj, filled_order)  
+
+        if filled_obj.active_trade_list or unfilled_obj.active_trade_list: 
+            return
+        
+        # neither object has any active trades outstanding
+        for object in [filled_obj, unfilled_obj]:
+            object.trading_complete    = True
+            object.strat_on_trade_exec = False
+            object.strat_on_mkt_data   = False
+
+        self._finish_routine()
+
+        
+    def _placed_order_admin(self, obj, trade):   
+        if trade not in obj.active_trade_list:
+            obj.active_trade_list.append(trade)
+
+        self._update_trading_amounts(obj)    
+        
+
+    def _finished_order_admin(self, obj, trade):
+        if trade in obj.active_trade_list:
+            obj.active_trade_list.remove(trade)
+
+        if trade not in obj.inactive_trade_list:
+            obj.inactive_trade_list.append(trade)
+
+        self._update_trading_amounts(obj)
+
+
+    def _update_trading_amounts(self, obj):
+        print(obj.my_fi_name, obj.active_trade_list, obj.inactive_trade_list)
+
+        obj.active_screens = sum(t.orderStatus.filled for t in obj.active_trade_list)
+        obj.active_units   = obj.active_screens * obj.scalar_units_per_screen
+
+        obj.traded_screens = sum(t.orderStatus.filled for t in obj.inactive_trade_list)
+        obj.traded_units   = obj.traded_screens * obj.scalar_units_per_screen
+        
+        obj.active_plus_traded_units = obj.active_units + obj.traded_units
+
+
+    def _finish_routine(self):
+        self._finalize_results()
+
+        # if using event:
+        if self.done_event is not None:
+            self.done_event.set()
 
 
     def _finalize_results(self):
@@ -185,15 +293,19 @@ class PairsTrade_Parent(Strategy):
                 ", last_price:", obj.trade.orderStatus.lastFillPrice,
             )
 
-        print('Final spread: ', final_spread, 'Final net units: ', net_units, '\n')
+        print('Final spread: ', final_spread, 'Net open units: ', net_units, '\n')
 
         
-    def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):     
+    def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):     
         unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
         unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
         mkt_output_price = unit_output_price * output_obj.scalar_units_per_self
         mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))    
         # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
         return mkt_output_price
+    
+
+    def _calc_price_pct():
+        pass
 
     

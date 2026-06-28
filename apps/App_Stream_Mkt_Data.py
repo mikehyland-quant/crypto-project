@@ -297,7 +297,9 @@ async def main():
  
     #''' 
     #insert synthetic instruments here 
-    syn_objs_list = Synthetic.make_syn_futures_list(ibkr_futs_list_btc, ibkr_fut_spds_objs_list_btc)
+    syn_objs_list_btc = Synthetic.make_syn_futures_list(ibkr_futs_list_btc, ibkr_fut_spds_objs_list_btc)
+    syn_objs_list_eth = Synthetic.make_syn_futures_list(ibkr_futs_list_eth, ibkr_fut_spds_objs_list_eth)
+    syn_objs_list = (*syn_objs_list_btc, *syn_objs_list_eth)
     #''' 
 
     #''' 

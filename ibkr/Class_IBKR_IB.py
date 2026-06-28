@@ -12,7 +12,7 @@ from fin_insts.parents.Class_FI_Dates import Dates
 
 class IBKR_IB:
     SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
-
+ 
 
     def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
@@ -95,6 +95,7 @@ class IBKR_IB:
         
 
     async def connect(self):
+        # print(f"Connecting to IBKR host={self.host}, port={self.port}, clientId={self.clientId}")
         if not self.ib.isConnected():
             await self.ib.connectAsync(
                 host=self.host,
@@ -142,29 +143,18 @@ class IBKR_IB:
         if obj is None:
             return
         
-        if obj.need_close_data and ticker.close is not None and not np.isnan(ticker.close):
-            x = obj.update_mkt_data(
-                    bid_price=ticker.bid,
-                    ask_price=ticker.ask,
-                    bid_size=ticker.bidSize,
-                    ask_size=ticker.askSize
-            )
-            
-            obj.on_close_data(
-                close_price=ticker.close
-            )
-            
-        elif ticker.bid is not None and ticker.ask is not None:
-            obj.on_mkt_data(
-                bid_price=ticker.bid,
-                ask_price=ticker.ask,
-                bid_size=ticker.bidSize,
-                ask_size=ticker.askSize
-            )
+        if obj.need_to_update_mkt_data:
+            obj.on_mkt_data_update(bid_price=ticker.bid,
+                                   ask_price=ticker.ask,
+                                   bid_size=ticker.bidSize,
+                                   ask_size=ticker.askSize)
+        
+        elif obj.need_to_save_closing_price:    
+            obj.on_close_update(close_price=ticker.close) 
            
 
     def order_handler(self, trade):
-        # print(trade, '\n')
+        print(trade, '\n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:

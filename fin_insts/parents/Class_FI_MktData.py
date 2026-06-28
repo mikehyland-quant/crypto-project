@@ -32,7 +32,9 @@ class MktData:
         # self.scalar_screens_per_unit  = self.scalar_selfs_per_unit / self.scalar_order_multiplier
         # self.scalar_units_per_screen  = self.scalar_order_multiplier / self.scalar_selfs_per_unit
 
-        self.need_close_data    = True
+        self.need_to_update_mkt_data    = False
+        self.need_to_save_closing_price = True
+        
         self.price_raw_close    = np.nan
         self.price_screen_close = np.nan
         self.price_unit_close   = np.nan
@@ -69,35 +71,20 @@ class MktData:
         a_sz = self.size_screen_ask
         return (pd.notna(bid) and pd.notna(ask) and pd.notna(b_sz) and pd.notna(a_sz) and bid < ask)
        
-        
-    def on_close_data(self, close_price=np.nan):
-        if close_price is not np.nan:
-            self.price_raw_close     = self._safe_float(close_price, default=np.nan)
-
-            self.price_screen_close = self.price_raw_close    * self.scalar_price_raw_to_screen
-            self.price_order_close  = self.price_screen_close * self.scalar_order_multiplier
-            self.price_unit_close   = self.price_order_close  * self.scalar_screens_per_unit
-
-            strategy = getattr(self, "strategy", np.nan)
-            if getattr(self, "strat_on_close_data", False):  
-                strategy.on_close_data(self)
-
-            self.need_close_data  = False
-
  
-    def on_mkt_data(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan): 
+    def on_mkt_data_update(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan): 
         changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
             #self.update_mkt_data() is overwritten in strategy classes to update additional attributes when necessary
 
         if not changed:
              return 
-              
+               
         for subscriber in self.subscribers:
             subscriber.update_subscriber_data(self)
 
         strategy = getattr(self, "strategy", None)
-        if strategy is not None and getattr(self, "strat_on_mkt_data", False):
-            strategy.on_mkt_data(self)
+        if strategy is not None and getattr(self, "strat_on_mkt_data_update", False):
+            strategy.on_mkt_data_update(self)
 
 
     def update_mkt_data(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan):        
@@ -200,6 +187,22 @@ class MktData:
         else:
             return 0 
         
+
+    def on_close_update(self, close_price=np.nan):
+        close_price = self._safe_float(close_price, default=np.nan)
+        if close_price is not None and not np.nan:
+            self.price_raw_close    = close_price 
+
+            self.price_screen_close = self.price_raw_close    * self.scalar_price_raw_to_screen
+            self.price_unit_close   = self.price_screen_close * self.scalar_screens_per_unit
+
+            strategy = getattr(self, "strategy", np.nan)
+            if getattr(self, "strat_on_close_update", False):  
+                strategy.on_close_uodate(self)
+
+            self.need_to_update_mkt_data     = True
+            self.need_to_save_closing_price  = False
+
 
 
     
