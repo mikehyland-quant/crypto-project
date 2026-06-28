@@ -109,6 +109,7 @@ class PairsTrade_Parent(Strategy,
                                         price=placeholder_price)
         
         if trade is not None:
+            obj.initial_trade = trade
             obj.active_base_price = mkt_close 
             self._placed_order_admin(obj, trade)
             obj.strat_on_close_update = False 
@@ -120,12 +121,12 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)   
 
-        if self.need_to_print_active_orders:
+        if self.need_to_print_orders:
             self.print_orders("active",
-                              trade.buy_sell, 
-                              trade.size, 
+                              trade.order.action, 
+                              trade.order.totalQuantity, 
                               obj.my_fi_name, 
-                              trade.price, 
+                              trade.order.lmtPrice, 
                               trade.order.orderId)
 
 
@@ -138,12 +139,12 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)
 
-        if self.need_to_print_finished_orders:
+        if self.need_to_print_orders:
             self.print_orders("finsihed",
-                              trade.buy_sell, 
-                              trade.size, 
+                              trade.action, 
+                              trade.orderStatus.filled, 
                               obj.my_fi_name, 
-                              trade.price, 
+                              trade.orderStatus.avgFillPrice, 
                               trade.order.orderId)
 
 

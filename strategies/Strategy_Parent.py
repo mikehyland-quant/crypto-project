@@ -100,19 +100,19 @@ class Strategy:
         return round(rounded, 10)
     
 
-    def update_market_order(self, obj=None, size=None, buy_sell=None, order_id=None):
-        if order_id is None:
+    def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
+        if trade is None:
             return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
         else:
-            return obj.platform_obj.modify_to_market_order(obj=obj, size=size, buy_sell=buy_sell, order_id=order_id)
+            return obj.platform_obj.modify_to_market_order(obj=obj, size=size, buy_sell=buy_sell, trade=trade)
         raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
             
 
-    def update_limit_order(self, obj=None, size=None, buy_sell=None, order_id=None, price=None):
-        if order_id is None:
+    def update_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None):
+        if trade is None:
             return obj.platform_obj.place_limit_order(obj=obj, size=size, buy_sell=buy_sell, price=price)
         else:
-            return obj.platform_obj.modify_limit_order(obj=obj, size=size, buy_sell=buy_sell, order_id=order_id, price=price)
+            return obj.platform_obj.modify_limit_order(obj=obj, size=size, buy_sell=buy_sell, trade=trade, price=price)
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
     
 

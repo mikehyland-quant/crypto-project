@@ -51,12 +51,11 @@ class PairsTrade_OnMktDataHotPath:
             return     
         
         trade = self.update_limit_order(obj=output_obj, 
-                                        size=output_obj.order_size, 
-                                        buy_sell=output_obj.buy_sell, 
-                                        order_id=output_obj.order_id, 
+                                        trade=output_obj.initial_trade, 
                                         price=output_price)
         
         if trade is not None:
+            output_obj.initial_trade = trade
             output_obj.active_base_price = input_price
             self._placed_order_admin(output_obj, trade)
        
