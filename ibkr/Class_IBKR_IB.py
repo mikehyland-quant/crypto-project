@@ -79,7 +79,7 @@ class IBKR_IB:
         obj.size_increment = obj._safe_float(getattr(obj.ibkr_details, 'sizeIncrement'), 1.0)
 
         obj.scalar_price_raw_to_screen = obj._safe_float(getattr(obj.ibkr_details,  'priceMagnifier'), 1.0)
-        obj.scalar_order_multiplier    = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
+        obj.scalar_size_FIs_per_order  = obj._safe_float(getattr(obj.ibkr_contract, 'multiplier')    , 1.0)
         
         if obj.pf_prod_type in ['FUT', "FOP", "OPT"]:
             obj.date_expiry      = Dates.date_from_string(obj.ibkr_details.realExpirationDate)         
@@ -149,12 +149,12 @@ class IBKR_IB:
                                    bid_size=ticker.bidSize,
                                    ask_size=ticker.askSize)
         
-        elif obj.need_to_save_closing_price:    
+        elif obj.need_to_save_closing_price:     
             obj.on_close_update(close_price=ticker.close) 
            
 
     def order_handler(self, trade):
-        print(trade, '\n')
+        # print(trade, '\n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:
@@ -162,7 +162,8 @@ class IBKR_IB:
 
         strategy = getattr(obj, "strategy", None)
         if strategy is not None and getattr(obj, "strat_on_trade_exec", False):
-            asyncio.create_task(strategy.on_trade_exec(obj, trade))
+            # asyncio.create_task(strategy.on_trade_exec(obj, trade))
+            strategy.on_trade_exec(obj, trade)
 
 
     def place_market_order(self, obj=None, size=None, buy_sell=None, tif='DAY'):

@@ -46,7 +46,7 @@ from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit
 
 async def main():
 
-    input_dict, objs_list = await standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
+    input_dict, objs_list = standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
     '''
     ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
     ws_feed      = WSFeedManager(ws_objs_list)
@@ -84,7 +84,8 @@ async def main():
     for obj in strat_objs_list:
         obj.platform_obj = ibkr  # this is the object not the name
         
-    strat.print_orders = True
+    # strat.need_to_print_active_orders = True
+    # strat.need_to_print_finished_orders = True
     #'''    
       
     # Run all streams concurrently

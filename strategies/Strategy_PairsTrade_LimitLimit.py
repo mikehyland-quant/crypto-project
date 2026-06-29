@@ -11,8 +11,11 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
 
         #print(vars(self.obj1), '\n')
         #print(vars(self.obj2), '\n')  
-obj.calc_price         = self._calc_price_amount   # assigns function below 
-          
+
+        for obj in objs_list:
+            obj.calc_price = self._calc_price_amount   # assigns function below 
+
+
     async def on_trade_exec_modify_unfilled_order(self, unfilled_obj, filled_order):  
         avg_fill_price = filled_order.orderStatus.avgFillPrice
         input_price    = avg_fill_price * filled_obj.filled_scalar

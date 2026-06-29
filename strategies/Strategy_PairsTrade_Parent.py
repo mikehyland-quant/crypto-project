@@ -15,7 +15,7 @@ class PairsTrade_Parent(Strategy,
         
         # create self attributes
         self.trade_has_been_cancelled = False
-
+ 
         self.update_on_mkt_data_trade_in_progress = False
         self.need_to_update_on_mkt_data_trade     = False
         self.update_on_mkt_data_trade_task        = None
@@ -70,15 +70,16 @@ class PairsTrade_Parent(Strategy,
         
         for obj in objs_list:
             obj.active_base_price  = None
+            obj.active_order_price = None
 
-            if obj.initial_unit_order_size > 0:
+            if obj.initial_units_order_size > 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = buy_tuple 
-            elif obj.initial_unit_order_size < 0:
+            elif obj.initial_units_order_size < 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = sell_tuple  
-        
-            obj.initial_screens_order_size = obj.round_size_to_increment(abs(obj.unit_order_size * obj.scalar_screens_per_unit))
-            obj.order_size                 = obj.initial_screens_order_size     
-            
+
+            obj.initial_order_size = obj.round_size_to_increment(abs(obj.initial_units_order_size *
+                                                                     obj.scalar_size_orders_per_unit))
+                                                                
             obj.spread_ratio = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread   = self.target_spread / obj.spread_ratio
     
@@ -95,37 +96,39 @@ class PairsTrade_Parent(Strategy,
 
         if obj.buy_sell == 'BUY':
             placeholder_price = mkt_close * 0.5
-        elif obj.buy_sell == 'SELL':
+        elif obj.buy_sell == 'SELL': 
             placeholder_price = mkt_close * 2.0
 
         placeholder_price = obj.round_price_to_tick(placeholder_price)
 
-        size=obj.order_size
-        buy_sell=obj.buy_sell
-        
+        size = obj.initial_order_size
+        buy_sell = obj.buy_sell
+ 
         trade = self.update_limit_order(obj=obj, 
                                         size=size, 
                                         buy_sell=buy_sell, 
                                         price=placeholder_price)
         
         if trade is not None:
-            obj.active_base_price = mkt_close 
+            obj.active_base_price  = placeholder_price  # don't use market price as that may slow down hot path
+            obj.active_order_price = placeholder_price
+            obj.initial_trade      = trade
             self._placed_order_admin(obj, trade)
             obj.strat_on_close_update = False 
 
     
-    def _placed_order_admin(self, obj, trade):   
+    def _placed_order_admin(self, obj, trade):
         if trade not in obj.active_trade_list:
             obj.active_trade_list.append(trade)
 
-        self._update_trading_amounts(obj)   
+        self._update_trading_amounts(obj)
 
         if self.need_to_print_active_orders:
             self.print_orders("active",
-                              trade.buy_sell, 
-                              trade.size, 
+                              trade.order.action, 
+                              trade.order.totalQuantity, 
                               obj.my_fi_name, 
-                              trade.price, 
+                              trade.order.lmtPrice, 
                               trade.order.orderId)
 
 
@@ -140,21 +143,21 @@ class PairsTrade_Parent(Strategy,
 
         if self.need_to_print_finished_orders:
             self.print_orders("finsihed",
-                              trade.buy_sell, 
-                              trade.size, 
+                              trade.order.action, 
+                              trade.orderStatus.filled, 
                               obj.my_fi_name, 
-                              trade.price, 
+                              trade.orderStatus.avgFillPrice, 
                               trade.order.orderId)
 
 
     def _update_trading_amounts(self, obj):
         # print(obj.my_fi_name, obj.active_trade_list, obj.inactive_trade_list)
 
-        obj.active_screens = sum(t.orderStatus.filled for t in obj.active_trade_list)
-        obj.active_units   = obj.active_screens * obj.scalar_units_per_screen
+        obj.active_orders = sum(t.orderStatus.filled for t in obj.active_trade_list)
+        obj.active_units  = obj.active_orders * obj.scalar_size_units_per_order
 
-        obj.traded_screens = sum(t.orderStatus.filled for t in obj.finished_trade_list)
-        obj.traded_units   = obj.traded_screens * obj.scalar_units_per_screen
+        obj.traded_orders = sum(t.orderStatus.filled for t in obj.finished_trade_list)
+        obj.traded_units  = obj.traded_orders * obj.scalar_size_units_per_order
         
         obj.active_plus_traded_units = obj.active_units + obj.traded_units
 
@@ -193,11 +196,11 @@ class PairsTrade_Parent(Strategy,
         print('Final spread: ', final_spread, 'Net open units: ', net_units, '\n')
 
         
-    def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):     
+    def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):
         unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
         unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
-        mkt_output_price = unit_output_price * output_obj.scalar_units_per_self
-        mkt_output_price = output_obj.round_price_to_tick(abs(mkt_output_price))    
+        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI
+        mkt_output_price  = output_obj.round_price_to_tick(abs(mkt_output_price))    
         # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
         return mkt_output_price
     

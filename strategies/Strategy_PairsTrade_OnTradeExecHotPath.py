@@ -4,8 +4,7 @@ import asyncio
 
 class PairsTrade_OnTradeExecHotPath:
  
-    async def on_trade_exec(self, filled_obj, filled_order):  
-        # print(filled_order, '\n')
+    def on_trade_exec(self, filled_obj, filled_order):  
         status = filled_order.orderStatus
 
         filled = status.filled
@@ -71,7 +70,7 @@ class PairsTrade_OnTradeExecHotPath:
 
 
     def _filled_before_cancellation_completely_opp_obj_trading_incomplete(self, filled_obj, unfilled_obj, filled_order):
-        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order) # see specialty code
+        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order, unfilled_obj.initial_order_size) # see specialty code
 
         filled_obj.trading_complete           = True
         filled_obj.strat_on_trade_exec        = False
@@ -84,9 +83,9 @@ class PairsTrade_OnTradeExecHotPath:
     def _filled_before_cancellation_partially_opp_obj_trading_incomplete(self, filled_obj, unfilled_obj, filled_order):
         self.cancel_order(filled_obj, filled_order)
 
-        pct_filled = filled_order.orderStatus.filled / filled_obj.initial_screens_order_size
-        unfilled_obj.order_size = unfilled_obj.round_size_to_increment(unfilled_obj.order_size * pct_filled)
+        pct_filled = filled_order.orderStatus.filled / filled_obj.initial_order_size
+        new_order_size = unfilled_obj.round_size_to_increment(unfilled_obj.initial_order_size * pct_filled)
 
-        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order) # see specialty code
+        self.on_trade_exec_modify_unfilled_order(unfilled_obj, filled_order, new_order_size) # see specialty code
 
         self.trade_has_been_cancelled = True

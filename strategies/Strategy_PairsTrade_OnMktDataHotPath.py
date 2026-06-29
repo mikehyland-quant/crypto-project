@@ -40,23 +40,25 @@ class PairsTrade_OnMktDataHotPath:
         if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
             return
 
-        active_base_price = output_obj.active_base_price
         input_price = getattr(input_obj, input_obj.input_price_attr)
+        active_base_price = output_obj.active_base_price
         if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
 
-        output_price = output_obj.calc_price(input_price, output_obj) 
-        active_order_price = output_obj.trade.order.lmtPrice if output_obj.trade is not None else None
+        output_price = output_obj.calc_price(input_price, output_obj)
+        active_order_price = output_obj.active_order_price
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
         
         trade = self.update_limit_order(obj=output_obj, 
-                                        size=output_obj.order_size, 
+                                        size=output_obj.initial_order_size, 
                                         buy_sell=output_obj.buy_sell, 
-                                        order_id=output_obj.order_id, 
+                                        trade=output_obj.initial_trade, 
                                         price=output_price)
         
         if trade is not None:
             output_obj.active_base_price = input_price
+            output_obj.active_order_price = output_price
+            output_obj.initial_trade = trade
             self._placed_order_admin(output_obj, trade)
        
