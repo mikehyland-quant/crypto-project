@@ -110,9 +110,14 @@ class PairsTrade_Parent(Strategy,
                                         price=placeholder_price)
         
         if trade is not None:
+<<<<<<< HEAD
             obj.active_base_price  = placeholder_price  # don't use market price as that may slow down hot path
             obj.active_order_price = placeholder_price
             obj.initial_trade      = trade
+=======
+            obj.initial_trade = trade
+            obj.active_base_price = mkt_close 
+>>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
             self._placed_order_admin(obj, trade)
             obj.strat_on_close_update = False 
 
@@ -123,7 +128,7 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)
 
-        if self.need_to_print_active_orders:
+        if self.need_to_print_orders:
             self.print_orders("active",
                               trade.order.action, 
                               trade.order.totalQuantity, 
@@ -141,9 +146,13 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)
 
-        if self.need_to_print_finished_orders:
+        if self.need_to_print_orders:
             self.print_orders("finsihed",
+<<<<<<< HEAD
                               trade.order.action, 
+=======
+                              trade.action, 
+>>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
                               trade.orderStatus.filled, 
                               obj.my_fi_name, 
                               trade.orderStatus.avgFillPrice, 

@@ -220,8 +220,12 @@ class IBKR_IB:
         # Important: market orders should not keep a limit price
         trade.order.lmtPrice = None
 
-        trade.order.totalQuantity = size
-        trade.order.action = buy_sell
+        # Only overwrite if explicitly provided
+        if size is not None:
+            trade.order.totalQuantity = size
+
+        if buy_sell is not None:
+            trade.order.action = buy_sell
     
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
 
@@ -238,9 +242,15 @@ class IBKR_IB:
             #raise ValueError(f"Order {trade.order.orderId} is not in a modifiable state")
             return
 
-        trade.order.lmtPrice = price
-        trade.order.totalQuantity = size
-        trade.order.action = buy_sell
+        # Only overwrite if explicitly provided
+        if price is not None:
+            trade.order.lmtPrice = price
+       
+        if size is not None:
+            trade.order.totalQuantity = size
+
+        if buy_sell is not None:
+            trade.order.action = buy_sell
 
         self.ib.placeOrder(obj.ibkr_contract, trade.order)
 

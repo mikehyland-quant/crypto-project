@@ -99,7 +99,11 @@ class Strategy:
  
         return round(rounded, 10)
     
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
     def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
         if trade is None:
             return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
