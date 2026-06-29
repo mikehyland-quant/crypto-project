@@ -99,12 +99,8 @@ class Strategy:
  
         return round(rounded, 10)
     
-<<<<<<< HEAD
- 
-=======
 
->>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
-    def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
+     def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
         if trade is None:
             return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
         else:
@@ -126,4 +122,23 @@ class Strategy:
      
     def print_orders(self, active_finished, buy_sell, size, fi_name, price, order_id):
         print(f"{active_finished} order: {buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
+
+
+    def calc_final_fills_and_avg_price(self, obj):
+        trade_list = obj.inactive_trade_list
+
+        total_filled = sum(t.orderStatus.filled for t in trade_list)
+
+        if total_filled == 0:
+            return 0, None
+
+        total_dollars = sum(
+            t.orderStatus.filled * t.orderStatus.avgFillPrice
+            for t in trade_list
+        )
+
+        avg_fill_price = total_dollars / total_filled
+
+        return total_filled, avg_fill_price
+
 

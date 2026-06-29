@@ -51,11 +51,6 @@ class PairsTrade_OnMktDataHotPath:
             return     
         
         trade = self.update_limit_order(obj=output_obj, 
-<<<<<<< HEAD
-                                        size=output_obj.initial_order_size, 
-                                        buy_sell=output_obj.buy_sell, 
-=======
->>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
                                         trade=output_obj.initial_trade, 
                                         price=output_price)
         

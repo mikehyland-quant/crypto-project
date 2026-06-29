@@ -143,11 +143,7 @@ class PairsTrade_Parent(Strategy,
 
         if self.need_to_print_orders:
             self.print_orders("finsihed",
-<<<<<<< HEAD
                               trade.order.action, 
-=======
-                              trade.action, 
->>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
                               trade.orderStatus.filled, 
                               obj.my_fi_name, 
                               trade.orderStatus.avgFillPrice, 
@@ -175,27 +171,27 @@ class PairsTrade_Parent(Strategy,
 
 
     def _finalize_results(self):
-        final_spread = (self.obj2.trade.orderStatus.avgFillPrice * self.obj2.spread_ratio * self.obj2.filled_scalar + 
-                        self.obj1.trade.orderStatus.avgFillPrice * self.obj1.spread_ratio * self.obj1.filled_scalar)  
-        
-        self.obj1.units_filled = self.obj1.trade.orderStatus.filled * self.obj1.scalar_units_per_screen
-        self.obj2.units_filled = self.obj2.trade.orderStatus.filled * self.obj2.scalar_units_per_screen 
-        net_units = self.obj1.units_filled - self.obj2.units_filled
-
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
-    
+
         for obj in [self.obj1, self.obj2]:
+            obj.total_orders_filled, obj.final_avg_fill_price = self.calc_final_fills_and_avg_price(obj)
+            obj.total_units_filled = obj.total_orders_filled * obj.scalar_size_units_per_order
+            obj.final_avg_unit_price = obj.final_avg_fill_price * obj.scalar_size_FIs_per_order
+
             print(
                 obj.my_fi_name,
                 obj.buy_sell,
-                ", order_id:", obj.trade.order.orderId,
-                ", status:", obj.trade.orderStatus.status,
-                ", filled:", obj.trade.orderStatus.filled,
-                ", units:", obj.units_filled,
-                ", avg_price:", obj.trade.orderStatus.avgFillPrice,
-                ", last_price:", obj.trade.orderStatus.lastFillPrice,
+                ", filled_orders:", obj.total_orders_filled,
+                ", filled_units:", obj.total_units_filled,
+                ", avg_FI_price:", obj.final_avg_fill_price,
+                ", avg_unit_price:", obj.final_avg_unit_price
             )
+        
+        final_spread = (self.obj2.avg_unit_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
+                        self.obj1.avg_unit_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
+        
+        net_units = self.obj1.total_units_filled - self.obj2.total_units_filled
 
         print('Final spread: ', final_spread, 'Net open units: ', net_units, '\n')
 
