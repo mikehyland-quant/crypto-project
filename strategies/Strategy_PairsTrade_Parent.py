@@ -110,14 +110,9 @@ class PairsTrade_Parent(Strategy,
                                         price=placeholder_price)
         
         if trade is not None:
-<<<<<<< HEAD
             obj.active_base_price  = placeholder_price  # don't use market price as that may slow down hot path
             obj.active_order_price = placeholder_price
             obj.initial_trade      = trade
-=======
-            obj.initial_trade = trade
-            obj.active_base_price = mkt_close 
->>>>>>> 401cdc45a2522877a9eace3c8c5145c91a8be0a6
             self._placed_order_admin(obj, trade)
             obj.strat_on_close_update = False 
 
