@@ -60,13 +60,12 @@ class FinancialInstrument(MktData):
 
     def complete_obj(self):
         Dates.calc_and_attach(self)
-        
-        self.scalar_size_orders_per_FI   = 1 / self.scalar_size_FIs_per_order
-        
-        self.scalar_size_orders_per_unit = self.scalar_size_orders_per_FI / self.scalar_size_units_per_FI
-        self.scalar_size_units_per_order = 1 / self.scalar_size_orders_per_unit
 
-        
+        self.scalar_size_orders_per_unit = self.scalar_size_FIs_per_unit / self.scalar_size_FIs_per_order
+
+        self.scalar_size_units_per_FI    = 1 / self.scalar_size_FIs_per_unit
+        self.scalar_size_orders_per_FI   = 1 / self.scalar_size_FIs_per_order
+        self.scalar_size_units_per_order = 1 / self.scalar_size_orders_per_unit
         
         
         

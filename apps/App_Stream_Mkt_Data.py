@@ -24,7 +24,7 @@ from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
 # from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7497)
+ibkr = IBKR_IB(port=7496)
 
 # %%
 # --- feeds ---

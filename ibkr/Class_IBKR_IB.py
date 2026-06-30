@@ -143,8 +143,8 @@ class IBKR_IB:
         if obj is None:
             return
         
-        if obj.need_to_update_mkt_data:
-            obj.on_mkt_data_update(bid_price=ticker.bid,
+        if obj.actively_updating_mkt_data:
+            obj.on_mkt_data_change(bid_price=ticker.bid,
                                    ask_price=ticker.ask,
                                    bid_size=ticker.bidSize,
                                    ask_size=ticker.askSize)
@@ -154,7 +154,7 @@ class IBKR_IB:
            
 
     def order_handler(self, trade):
-        # print(trade, '\n')
+        print(trade, '\n')
         
         obj = self.obj_by_order_handler.get(trade.order)
         if obj is None:

@@ -6,24 +6,18 @@ from strategies.Strategy_PairsTrade_OnMktDataHotPath import PairsTrade_OnMktData
 from strategies.Strategy_PairsTrade_OnTradeExecHotPath import PairsTrade_OnTradeExecHotPath
 
 
-class PairsTrade_Parent(Strategy, 
-                        PairsTrade_OnMktDataHotPath,
-                        PairsTrade_OnTradeExecHotPath):
+class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
+                        PairsTrade_OnTradeExecHotPath, 
+                        Strategy):
 
     def __init__(self, objs_list, df):
-        super().__init__(objs_list)  
+        super().__init__(objs_list, df)
         
         # create self attributes
-        self.trade_has_been_cancelled = False
- 
-        self.update_on_mkt_data_trade_in_progress = False
-        self.need_to_update_on_mkt_data_trade     = False
-        self.update_on_mkt_data_trade_task        = None
+        self.no_partial_trades_yet = True
 
-        self.pending_mkt_data_objs = set()
-
-        self.target_spread = df.loc['target_profit_per_unit'].sum()
-        self.epsilon       = df.loc['epsilon_per_unit'].sum()
+        self.target_spread = float(df.loc['target_profit_per_unit'].sum())
+        self.epsilon       = float(df.loc['epsilon_per_unit'].sum())
         
         df = df.drop(index=['target_profit_per_unit', 'epsilon_per_unit'], errors='ignore')
 
@@ -53,10 +47,8 @@ class PairsTrade_Parent(Strategy,
             if obj is None:
                 raise ValueError(f"Could not find object for {obj_name}: {obj_dict}")
     
-            # creates self.obj1, self.obj2, etc.
             setattr(self, obj_name.lower(), obj)
      
-            # attaches strategy attrs to the object
             for attr_key, attr_val in obj_dict.items():
                 setattr(obj, attr_key, attr_val)
     
@@ -72,25 +64,25 @@ class PairsTrade_Parent(Strategy,
             obj.active_base_price  = None
             obj.active_order_price = None
 
-            if obj.initial_units_order_size > 0:
+            if obj.initial_order_size_units > 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = buy_tuple 
-            elif obj.initial_units_order_size < 0:
+            elif obj.initial_order_size_units < 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = sell_tuple  
 
-            obj.initial_order_size = obj.round_size_to_increment(abs(obj.initial_units_order_size *
-                                                                     obj.scalar_size_orders_per_unit))
+            obj.on_mkt_data_change_order_size = obj.round_size_to_increment(abs(obj.initial_order_size_units *
+                                                                                obj.scalar_size_orders_per_unit))
                                                                 
             obj.spread_ratio = obj.opp_obj.ratio_size / min_ratio_size
             obj.adj_spread   = self.target_spread / obj.spread_ratio
     
             if obj.active_passive.lower() == 'passive':
                 #was set to True in Strategy_Parent, so now set to False for passive leg
-                setattr(obj.opp_obj, 'strat_on_mkt_data_update', False)   
+                setattr(obj.opp_obj, 'strat_on_mkt_data_change', False)   
 
         return self.obj1, self.obj2
                     
 
-    def on_close_update(self, obj):
+    def on_closing_price_update(self, obj):
         #creates a placeholder limit order to get trade opened and in system
         mkt_close = obj.price_screen_close
 
@@ -101,7 +93,7 @@ class PairsTrade_Parent(Strategy,
 
         placeholder_price = obj.round_price_to_tick(placeholder_price)
 
-        size = obj.initial_order_size
+        size = obj.on_mkt_data_change_order_size
         buy_sell = obj.buy_sell
  
         trade = self.update_limit_order(obj=obj, 
@@ -110,11 +102,15 @@ class PairsTrade_Parent(Strategy,
                                         price=placeholder_price)
         
         if trade is not None:
-            obj.active_base_price  = placeholder_price  # don't use market price as that may slow down hot path
-            obj.active_order_price = placeholder_price
-            obj.initial_trade      = trade
+            self._on_mkt_data_change_placed_order_admin(obj, trade, placeholder_price, placeholder_price)  # don't use market price as that may slow down hot path
             self._placed_order_admin(obj, trade)
-            obj.strat_on_close_update = False 
+            obj.strat_on_closing_price_update = False
+            
+
+    def _on_mkt_data_change_placed_order_admin(self, obj, trade, active_base_price, active_order_price):
+        obj.on_mkt_data_change_trade = trade
+        obj.active_base_price        = active_base_price  
+        obj.active_order_price       = active_order_price
 
     
     def _placed_order_admin(self, obj, trade):
@@ -123,7 +119,7 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)
 
-        if self.need_to_print_orders:
+        if self.need_to_print_active_orders:
             self.print_orders("active",
                               trade.order.action, 
                               trade.order.totalQuantity, 
@@ -141,8 +137,8 @@ class PairsTrade_Parent(Strategy,
 
         self._update_trading_amounts(obj)
 
-        if self.need_to_print_orders:
-            self.print_orders("finsihed",
+        if self.need_to_print_finished_orders:
+            self.print_orders("finished",
                               trade.order.action, 
                               trade.orderStatus.filled, 
                               obj.my_fi_name, 
@@ -175,25 +171,25 @@ class PairsTrade_Parent(Strategy,
         print("----------------------")
 
         for obj in [self.obj1, self.obj2]:
-            obj.total_orders_filled, obj.final_avg_fill_price = self.calc_final_fills_and_avg_price(obj)
-            obj.total_units_filled = obj.total_orders_filled * obj.scalar_size_units_per_order
-            obj.final_avg_unit_price = obj.final_avg_fill_price * obj.scalar_size_FIs_per_order
+            obj.total_orders_filled, obj.final_avg_FI_price    = self.calc_final_fills_and_avg_price(obj)
+            obj.total_units_filled   = obj.total_orders_filled * obj.scalar_size_units_per_order
+            obj.final_avg_unit_price = obj.final_avg_FI_price  * obj.scalar_size_FIs_per_unit
 
             print(
                 obj.my_fi_name,
                 obj.buy_sell,
                 ", filled_orders:", obj.total_orders_filled,
                 ", filled_units:", obj.total_units_filled,
-                ", avg_FI_price:", obj.final_avg_fill_price,
+                ", avg_FI_price:", obj.final_avg_FI_price,
                 ", avg_unit_price:", obj.final_avg_unit_price
             )
         
-        final_spread = (self.obj2.avg_unit_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
-                        self.obj1.avg_unit_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
+        final_spread = (self.obj2.final_avg_unit_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
+                        self.obj1.final_avg_unit_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
         
         net_units = self.obj1.total_units_filled - self.obj2.total_units_filled
 
-        print('Final spread: ', final_spread, 'Net open units: ', net_units, '\n')
+        print('Final spread: ', final_spread, ', Net open units: ', net_units, '\n')
 
         
     def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):

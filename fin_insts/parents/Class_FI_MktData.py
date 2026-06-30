@@ -22,22 +22,22 @@ class MktData:
     def __init__(self):
         self.subscribers = []
 
-        self.scalar_price_raw_to_screen  = 1 
-        self.scalar_size_raw_to_screen   = 1  
+        self.scalar_price_raw_to_screen  = 1  # overwritten in platform if necessary (this is the IBKR priceMagnifier)
+        self.scalar_size_raw_to_screen   = 1  # overwritten in platform if necessary
 
-        self.scalar_size_FIs_per_order   = 1 
-        self.scalar_size_orders_per_FI   = 1 
+        self.scalar_size_FIs_per_unit    = 1  # overwritten in product if necessary (see equity and option)
+        self.scalar_size_FIs_per_order   = 1  # overwritten in platform if necessary (this is the IBKR multiplier)
 
-        self.scalar_size_FIs_per_unit    = 1
+        # the scalars below are all recalced as part of obj.complete_obj()
         self.scalar_size_units_per_FI    = 1
-        
+        self.scalar_size_orders_per_FI   = 1 
         self.scalar_size_orders_per_unit = 1
         self.scalar_size_units_per_order = 1
 
         # the next line is calculated as part of complete object
         # self.scalar_units_per_screen  = 1 / self.scalar_screens_per_unit
 
-        self.need_to_update_mkt_data    = False
+        self.actively_update_mkt_data   = False
         self.need_to_save_closing_price = True
         
         self.price_raw_close    = np.nan
@@ -77,7 +77,7 @@ class MktData:
         return (pd.notna(bid) and pd.notna(ask) and pd.notna(b_sz) and pd.notna(a_sz) and bid < ask)
        
  
-    def on_mkt_data_update(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan): 
+    def on_mkt_data_change(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan): 
       
         changed = self.update_mkt_data(bid_price=bid_price, ask_price=ask_price, bid_size=bid_size, ask_size=ask_size) 
             #self.update_mkt_data() is overwritten in strategy classes to update additional attributes when necessary
@@ -89,8 +89,8 @@ class MktData:
             subscriber.update_subscriber_data(self)
 
         strategy = getattr(self, "strategy", None)
-        if strategy is not None and getattr(self, "strat_on_mkt_data_update", False):
-            strategy.on_mkt_data_update(self)
+        if strategy is not None and getattr(self, "strat_on_mkt_data_change", False):
+            strategy.on_mkt_data_change(self)
 
 
     def update_mkt_data(self, bid_price=np.nan, ask_price=np.nan, bid_size=np.nan, ask_size=np.nan):        
@@ -203,11 +203,11 @@ class MktData:
             self.price_unit_close   = self.price_screen_close * self.scalar_size_FIs_per_unit
             
             strategy = getattr(self, "strategy", np.nan)
-            if getattr(self, "strat_on_close_update", False):  
-                strategy.on_close_update(self)
+            if getattr(self, "strat_on_closing_price_update", False):  
+                strategy.on_closing_price_update(self)
 
-            self.need_to_update_mkt_data     = True
-            self.need_to_save_closing_price  = False
+            self.actively_updating_mkt_data = True
+            self.need_to_save_closing_price = False
 
 
 

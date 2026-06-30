@@ -17,27 +17,19 @@ class Strategy:
         self.objs_list = objs_list if objs_list is not None else []
       
         for obj in self.objs_list:
-            self._attach_trading_helpers(obj)
-
-            obj.strategy                 = self
+            obj.strategy         = self
+            obj.trading_complete = False
             
-            obj.strat_on_close_update    = True
-            obj.strat_on_mkt_data_update = True
-            obj.strat_on_trade_exec      = True
+            obj.strat_on_closing_price_update = True
+            obj.strat_on_mkt_data_change      = True
+            obj.strat_on_trade_exec           = True
 
-            obj.active_trade_list        = []
-            obj.finished_trade_list      = []
+            obj.active_trade_list   = []
+            obj.finished_trade_list = []
 
-            obj.trading_complete         = False
-        
+            obj.round_price_to_tick      = types.MethodType(cls.round_price_to_tick, obj)
+            obj.round_size_to_increment  = types.MethodType(cls.round_size_to_increment, obj)       
             
-    @classmethod
-    def _attach_trading_helpers(cls, obj):
-        #obj.my_trading_rules = cls._extract_trading_rules(obj)
-
-        obj.round_price_to_tick      = types.MethodType(cls.round_price_to_tick, obj)
-        obj.round_size_to_increment  = types.MethodType(cls.round_size_to_increment, obj)
-        
    
     @classmethod    
     def play_fill_sound(self):
@@ -100,7 +92,7 @@ class Strategy:
         return round(rounded, 10)
     
 
-     def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
+    def update_market_order(self, obj=None, size=None, buy_sell=None, trade=None):
         if trade is None:
             return obj.platform_obj.place_market_order(obj=obj, size=size, buy_sell=buy_sell)
         else:
@@ -125,7 +117,7 @@ class Strategy:
 
 
     def calc_final_fills_and_avg_price(self, obj):
-        trade_list = obj.inactive_trade_list
+        trade_list = obj.finished_trade_list
 
         total_filled = sum(t.orderStatus.filled for t in trade_list)
 

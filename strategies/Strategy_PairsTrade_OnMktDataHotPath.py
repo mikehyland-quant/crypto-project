@@ -4,37 +4,47 @@ import asyncio
 
 class PairsTrade_OnMktDataHotPath:
 
-    def on_mkt_data_update(self, input_obj):
-        self.pending_mkt_data_objs.add(input_obj)
-        self.need_to_update_on_mkt_data_trade = True
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if self.update_on_mkt_data_trade_in_progress:
+        self.pending_mkt_data_objs = set()
+ 
+        self.need_to_update        = False
+        self.is_update_in_progress = False
+
+        self.update_task           = None
+
+
+    def on_mkt_data_change(self, input_obj):
+        self.pending_mkt_data_objs.add(input_obj)
+        self.need_to_update = True
+
+        if self.is_update_in_progress:
             return
 
-        self.update_on_mkt_data_trade_in_progress = True
+        self.is_update_in_progress = True
         
-        self.update_on_mkt_data_trade_task = asyncio.create_task(self._update_on_mkt_data_trade_worker())
+        self.update_task = asyncio.create_task(self._update_trade_worker())
 
 
-    async def _update_on_mkt_data_trade_worker(self):
+    async def _update_trade_worker(self):
         try:
             while True:
-                self.need_to_update_on_mkt_data_trade = False
+                self.need_to_update = False
 
                 pending_objs = list(self.pending_mkt_data_objs)
                 self.pending_mkt_data_objs.clear()
 
                 for input_obj in pending_objs:
-                    await self._update_on_mkt_data_trade(input_obj)
+                    await self._update_trade(input_obj)
 
-                if not self.need_to_update_on_mkt_data_trade:
+                if not self.need_to_update:
                     break
-
         finally:
-            self.update_on_mkt_data_trade_in_progress = False
+            self.is_update_in_progress = False
 
 
-    async def _update_on_mkt_data_trade(self, input_obj):
+    async def _update_trade(self, input_obj):
 
         output_obj  = input_obj.opp_obj
         if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
@@ -51,13 +61,10 @@ class PairsTrade_OnMktDataHotPath:
             return     
         
         trade = self.update_limit_order(obj=output_obj, 
-                                        trade=output_obj.initial_trade, 
+                                        trade=output_obj.on_mkt_data_change_trade, 
                                         price=output_price)
         
         if trade is not None:
-            output_obj.initial_trade = trade
-            output_obj.active_base_price = input_price
-            output_obj.active_order_price = output_price
-            output_obj.initial_trade = trade
+            self._on_mkt_data_change_placed_order_admin(self, output_obj, trade, input_price, output_price)
             self._placed_order_admin(output_obj, trade)
        
