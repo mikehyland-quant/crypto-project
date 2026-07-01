@@ -6,8 +6,9 @@ import winsound
 
 
 class Strategy:
+    def __init__(self, objs_list=None, *args, **kwargs):
+        super().__init__
 
-    def __init__(self, objs_list=None):
         self.done_event = asyncio.Event()  # needs to be awaited in main() and set at the end of each strategy
         
         # set to False in main() to disable printing
@@ -24,11 +25,8 @@ class Strategy:
             obj.strat_on_mkt_data_change      = True
             obj.strat_on_trade_exec           = True
 
-            obj.active_trade_list   = []
-            obj.finished_trade_list = []
-
-            obj.round_price_to_tick      = types.MethodType(cls.round_price_to_tick, obj)
-            obj.round_size_to_increment  = types.MethodType(cls.round_size_to_increment, obj)       
+            obj.round_price_to_tick      = types.MethodType(type(self).round_price_to_tick, obj)
+            obj.round_size_to_increment  = types.MethodType(type(self).round_size_to_increment, obj)       
             
    
     @classmethod    
@@ -113,6 +111,8 @@ class Strategy:
 
      
     def print_orders(self, active_finished, buy_sell, size, fi_name, price, order_id):
+        if price == None:
+            price = "market"
         print(f"{active_finished} order: {buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
 
 

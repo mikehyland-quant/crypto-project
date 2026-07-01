@@ -7,14 +7,15 @@ from strategies.Strategy_PairsTrade_OnTradeExecHotPath import PairsTrade_OnTrade
 
 
 class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
-                        PairsTrade_OnTradeExecHotPath, 
+                        PairsTrade_OnTradeExecHotPath,
                         Strategy):
-
     def __init__(self, objs_list, df):
-        super().__init__(objs_list, df)
+        super().__init__(objs_list=objs_list, df=df)
         
         # create self attributes
         self.no_partial_trades_yet = True
+
+        self.trades_by_orderId_dict = {}
 
         self.target_spread = float(df.loc['target_profit_per_unit'].sum())
         self.epsilon       = float(df.loc['epsilon_per_unit'].sum())
@@ -103,9 +104,20 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
         
         if trade is not None:
             self._on_mkt_data_change_placed_order_admin(obj, trade, placeholder_price, placeholder_price)  # don't use market price as that may slow down hot path
-            self._placed_order_admin(obj, trade)
+            self._placed_order_admin(obj, trade, size)
             obj.strat_on_closing_price_update = False
             
+
+    def prep_and_launch_balancing_order(self, net_units):
+        if net_units > 0:
+            order_obj = self.obj2
+        else:
+            order_obj = self.obj1
+
+        order_size = order_obj.round_size_to_increment(abs(net_units) * order_obj.scalar_size_orders_per_unit)
+
+        self.launch_balancing_order(order_obj, order_size)
+
 
     def _on_mkt_data_change_placed_order_admin(self, obj, trade, active_base_price, active_order_price):
         obj.on_mkt_data_change_trade = trade
@@ -113,48 +125,62 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
         obj.active_order_price       = active_order_price
 
     
-    def _placed_order_admin(self, obj, trade):
-        if trade not in obj.active_trade_list:
-            obj.active_trade_list.append(trade)
+    def _placed_order_admin(self, obj, trade, size=None):
+        order_id = trade.order.orderId
+
+        if size is None:
+            record = obj.trades_by_orderId.get(order_id, {})
+            size = record.get("intended_size", trade.order.totalQuantity)
+
+
+        obj.trades_by_orderId[order_id] = {'active' : True,
+                                           'intended_size' : size,
+                                           "filled_size": trade.orderStatus.filled}
 
         self._update_trading_amounts(obj)
 
         if self.need_to_print_active_orders:
             self.print_orders("active",
                               trade.order.action, 
-                              trade.order.totalQuantity, 
-                              obj.my_fi_name, 
+                              size, 
+                              obj.my_fi_name,
                               trade.order.lmtPrice, 
-                              trade.order.orderId)
+                              order_id)
 
 
     def _finished_order_admin(self, obj, trade):
-        if trade in obj.active_trade_list:
-            obj.active_trade_list.remove(trade)
+        order_id = trade.order.orderId
+        trade_size = trade.orderStatus.filled
 
-        if trade not in obj.finished_trade_list:
-            obj.finished_trade_list.append(trade)
+        record = obj.trades_by_orderId.get(order_id, {})
+        intended_size = record.get("intended_size", trade.order.totalQuantity)
+
+        obj.trades_by_orderId[order_id] = {'active' : False,
+                                           'intended_size' : intended_size,
+                                           'filled_size' : trade_size}
 
         self._update_trading_amounts(obj)
 
         if self.need_to_print_finished_orders:
             self.print_orders("finished",
                               trade.order.action, 
-                              trade.orderStatus.filled, 
+                              trade_size, 
                               obj.my_fi_name, 
                               trade.orderStatus.avgFillPrice, 
-                              trade.order.orderId)
+                              order_id)
 
 
     def _update_trading_amounts(self, obj):
-        # print(obj.my_fi_name, obj.active_trade_list, obj.inactive_trade_list)
+        obj.active_orders = sum(
+                rec["intended_size"] for rec in obj.trades_by_orderId.values() if rec["active"])
 
-        obj.active_orders = sum(t.orderStatus.filled for t in obj.active_trade_list)
-        obj.active_units  = obj.active_orders * obj.scalar_size_units_per_order
+        obj.active_units = obj.active_orders * obj.scalar_size_units_per_order
 
-        obj.traded_orders = sum(t.orderStatus.filled for t in obj.finished_trade_list)
-        obj.traded_units  = obj.traded_orders * obj.scalar_size_units_per_order
-        
+        obj.traded_orders = sum(
+                rec["filled_size"] for rec in obj.trades_by_orderId.values() if not rec["active"])
+
+        obj.traded_units = obj.traded_orders * obj.scalar_size_units_per_order
+
         obj.active_plus_traded_units = obj.active_units + obj.traded_units
 
 

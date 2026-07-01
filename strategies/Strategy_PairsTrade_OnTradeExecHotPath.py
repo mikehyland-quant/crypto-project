@@ -1,6 +1,9 @@
 
 
 class PairsTrade_OnTradeExecHotPath:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+ 
  
     def on_trade_exec(self, filled_obj, filled_order):  
         # this gets called on every trade execution
@@ -65,7 +68,7 @@ class PairsTrade_OnTradeExecHotPath:
         self.cancel_order(filled_obj, filled_order)
 
         pct_filled = filled_order.orderStatus.filled / filled_obj.on_mkt_data_change_order_size
-        new_order_size = unfilled_obj.round_size_to_increment(unfilled_obj.on_mkt_data_update_order_size * pct_filled)
+        new_order_size = unfilled_obj.round_size_to_increment(unfilled_obj.on_mkt_data_change_order_size * pct_filled)
 
         self.modify_unfilled_order(unfilled_obj, new_order_size, filled_order) # see specialty code
 
@@ -73,55 +76,14 @@ class PairsTrade_OnTradeExecHotPath:
     def _filled_after_partial(self, filled_obj, unfilled_obj, filled_order, tolerance=0.02):
         # this is the only function called after a partial fill - gets called multiple times
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#########
-        if remaining > 0:
+        if filled_order.orderStatus.status not in filled_obj.platform_obj.DONE_STATUSES:
             return  # can't make any decisions until remaining = 0
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         net_units = self.obj1.active_plus_traded_units - self.obj2.active_plus_traded_units
+        print('net units = ', self.obj1.active_plus_traded_units, self.obj2.active_plus_traded_units, '\n')
         need_balancing_order = (abs(net_units) > tolerance)
         if need_balancing_order:
-            self.launch_balancing_order(net_units)
+            self.prep_and_launch_balancing_order(net_units)
             
         # now that order amounts are balanced between the two objects
         self._finished_order_admin(filled_obj, filled_order)  

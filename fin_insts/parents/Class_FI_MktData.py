@@ -37,7 +37,7 @@ class MktData:
         # the next line is calculated as part of complete object
         # self.scalar_units_per_screen  = 1 / self.scalar_screens_per_unit
 
-        self.actively_update_mkt_data   = False
+        self.actively_updating_mkt_data = False
         self.need_to_save_closing_price = True
         
         self.price_raw_close    = np.nan

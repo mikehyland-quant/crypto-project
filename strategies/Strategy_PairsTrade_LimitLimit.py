@@ -16,13 +16,13 @@ class PairsTrade_LimitLimit(PairsTrade_Parent):
             obj.calc_price = self._calc_price_amount   # assigns function below 
 
 
-    async def on_trade_exec_modify_unfilled_order(self, unfilled_obj, filled_order):  
+    async def modify_unfilled_order(self, unfilled_obj, order_size, filled_order):  
         avg_fill_price = filled_order.orderStatus.avgFillPrice
         input_price    = avg_fill_price * filled_obj.filled_scalar
         output_price   = unfilled_obj.calc_price(input_price, unfilled_obj, 1)  
 
         trade = unfilled_obj.platform_obj.modify_limit_order(obj=unfilled_obj, 
-                                                                                    size=unfilled_obj.order_size, 
+                                                            size=order_size, 
                                                                 buy_sell=unfilled_obj.buy_sell, 
                                                                 trade=unfilled_obj.trade,
                                                                 price=output_price)

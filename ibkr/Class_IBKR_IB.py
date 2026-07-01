@@ -11,9 +11,7 @@ from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
 from fin_insts.parents.Class_FI_Dates import Dates
 
 class IBKR_IB:
-    SAFE_TO_MODIFY = {"Submitted", "PreSubmitted"}
- 
-
+    
     def __init__(self, host='127.0.0.1', port=7496):
         self.host = host
         self.port = port
@@ -23,6 +21,15 @@ class IBKR_IB:
         self.ticker_dict = {}  # created in stream_contract
         self.obj_by_order_handler = {}  # created in place_limit_order
 
+        # note that IBKR sometimes mis-spells "Cancelled" as "Canceled"
+        self.ACTIVE_STATUSES    = {"ApiPending", "PendingSubmit", "PreSubmitted", "Submitted"}
+
+        self.SAFE_TO_MODIFY     = {"PreSubmitted", "Submitted"}
+
+        self.DONE_STATUSES      = {"ApiCancelled", "Cancelled", "Canceled", "Filled", "Inactive", }
+
+        self.NOT_SAFE_TO_MODIFY = {"ApiPending", "PendingSubmit", "PendingCancel", "ApiCancelled",
+                                   "Cancelled", "Canceled", "Filled", "Inactive"}
 
     async def contract_by_conId(self, conid):
         contract = Contract(conId=int(conid))
@@ -177,9 +184,9 @@ class IBKR_IB:
         print(order, '\n')
 
         trade = self.ib.placeOrder(obj.ibkr_contract, order)
-        trade.statusEvent += self.order_handler
 
         self.obj_by_order_handler[order] = obj
+        trade.statusEvent += self.order_handler
         
         print(trade, '\n')
 
@@ -198,9 +205,9 @@ class IBKR_IB:
         print(order, '\n')
 
         trade = self.ib.placeOrder(obj.ibkr_contract, order)
-        trade.statusEvent += self.order_handler
 
         self.obj_by_order_handler[order] = obj
+        trade.statusEvent += self.order_handler
 
         print(trade, '\n')
 

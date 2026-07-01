@@ -3,7 +3,6 @@ import asyncio
 
 
 class PairsTrade_OnMktDataHotPath:
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -15,8 +14,8 @@ class PairsTrade_OnMktDataHotPath:
         self.update_task           = None
 
 
-    def on_mkt_data_change(self, input_obj):
-        self.pending_mkt_data_objs.add(input_obj)
+    def on_mkt_data_change(self, obj):
+        self.pending_mkt_data_objs.add(obj)
         self.need_to_update = True
 
         if self.is_update_in_progress:
@@ -35,8 +34,8 @@ class PairsTrade_OnMktDataHotPath:
                 pending_objs = list(self.pending_mkt_data_objs)
                 self.pending_mkt_data_objs.clear()
 
-                for input_obj in pending_objs:
-                    await self._update_trade(input_obj)
+                for obj in pending_objs:
+                    await self._update_trade(obj)
 
                 if not self.need_to_update:
                     break
@@ -63,8 +62,10 @@ class PairsTrade_OnMktDataHotPath:
         trade = self.update_limit_order(obj=output_obj, 
                                         trade=output_obj.on_mkt_data_change_trade, 
                                         price=output_price)
-        
+ 
         if trade is not None:
-            self._on_mkt_data_change_placed_order_admin(self, output_obj, trade, input_price, output_price)
+            self._on_mkt_data_change_placed_order_admin(output_obj, trade, input_price, output_price)
             self._placed_order_admin(output_obj, trade)
+
+
        
