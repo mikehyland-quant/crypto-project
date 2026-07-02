@@ -40,20 +40,20 @@ class InputOutput():
         return ws.range(range_name).value
 
     def get_xw_dict(self, ws, range, table=False, style=float):  
-        if table == False:
-            return ws.range(range).options(dict, numbers=style).value
-        else:
+        if table:
             tbl = ws.tables[range]
             tbl_range = tbl.range
             return tbl_range.options(dict, numbers=style).value
-        
+        else:            
+            return ws.range(range).options(dict, numbers=style).value
+
     def get_xw_df(self, ws, range, table=False, headerRows=1, style=float):    
-        if table == False:
-            return ws.range(range).options(pd.DataFrame, index = False, numbers=style, header=int(headerRows)).value
-        else:
+        if table:
             tbl = ws.tables[range]
             tbl_range = tbl.range
             return tbl_range.options(pd.DataFrame, index=False).value
+        else:
+            return ws.range(range).options(pd.DataFrame, index = False, numbers=style, header=int(headerRows)).value
 
     def print_xw_df(self, range, df, headerRows=1):       
         range(range).options(index = False, header=headerRows).value = df

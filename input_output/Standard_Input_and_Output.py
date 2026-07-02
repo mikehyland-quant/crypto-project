@@ -12,39 +12,43 @@ from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
 
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
- 
-
-database_wb  = '2026 Crypto Products Database.xlsx'
-database_ws  = 'Crypto'
-database_tbl = 'crypto_static_data_table'
 
 
-def standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME):
-
-    wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
-    df = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
-    input_dict = df.set_index('Keys')['Values'].to_dict()
-    
-    wb, ws = io.set_xw_book_and_sheet(input_dict['input workbook name'], input_dict['true/false sheet name'])
-    true_false_df = io.get_xw_df(ws, input_dict['true/false table name'], table=True)
-    # print(true_false_df)
-    
-    if 'TRUE/FALSE' not in true_false_df.columns:
-        true_false_df = true_false_df.set_index('Keys').T
-
-    true_false_df = true_false_df[true_false_df['TRUE/FALSE'] == True]
-    
-    wb, ws = io.set_xw_book_and_sheet(database_wb, database_ws)
-    tbl = database_tbl
-    db_df = io.get_xw_df(ws, tbl, table=True)
+def get_objs_list(ws, range, table=True):
+    db_df = get_db_df()
     # print(db_df)
-    
-    merged_df = true_false_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
-    # print(merged_df)
 
-    fin_inst_objs_list = make_single_leg_fin_insts(merged_df)
+    active_fi_df = io.get_xw_df(ws, range, table)
+    # print(active_fi_df)
 
-    return input_dict, fin_inst_objs_list
+    if 'TRUE/FALSE' not in active_fi_df.columns:
+        active_fi_df = active_fi_df.set_index('Keys').T
+
+    active_fi_df = active_fi_df[active_fi_df['TRUE/FALSE'] == True]
+    # print(active_fi_df)
+
+    merged_df = active_fi_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
+    # print(merged_df)  
+
+    obj_list = make_single_leg_fin_insts(merged_df)
+
+    return obj_list
+
+
+def standard_input(wb_name, ws_name, range, table=True, style=float):
+    wb, ws = io.set_xw_book_and_sheet(wb_name, ws_name)
+
+    input_dict = io.get_xw_dict(ws, range, table, style)
+    # print(input_dict)
+
+    # if wb_name != input_dict['true/false workbook name']:
+    #     wb = io.set_xw_book(input_dict['true/false workbook name'])
+
+    ws = io.set_xw_sheet(wb, input_dict['true/false sheet name'])
+
+    obj_list = get_objs_list(ws, input_dict['true/false table name'], table)
+
+    return input_dict, obj_list
 
 
 async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[]):

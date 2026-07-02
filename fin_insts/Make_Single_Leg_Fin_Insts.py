@@ -1,8 +1,11 @@
 
+from input_output.Class_InputOutput import InputOutput
+io = InputOutput()
+
 from fin_insts.tradable.Class_FI_Equity import Equity
 from fin_insts.tradable.Class_FI_Future import Future
 from fin_insts.tradable.Class_FI_Option import Option
-from fin_insts.tradable.Class_FI_Spot import Spot
+from fin_insts.tradable.Class_FI_Spot   import Spot
 
 
 def make_single_leg_fin_insts(df):   
@@ -21,3 +24,29 @@ def make_single_leg_fin_insts(df):
     objs_list = s_objs + e_objs + f_objs + o_objs
     
     return objs_list
+
+
+def make_xyz(df):
+    db_df = get_db_df()
+    # print(db_df)
+
+    merged_df = df.merge(db_df, how='left', on=['my_fi_name', 'my_pf_name'])
+    # print(merged_df)
+
+    objs_list = make_single_leg_fin_insts(merged_df)
+
+    return objs_list
+
+
+def get_db_df():
+
+    wb_name  = '2026 Crypto Products Database.xlsx'
+    ws_name  = 'Crypto'
+    tbl_name = 'crypto_static_data_table'
+
+    wb, ws = io.set_xw_book_and_sheet(wb_name, ws_name)
+    
+    db_df = io.get_xw_df(ws, tbl_name, table=True)
+    # print(db_df)
+
+    return db_df
