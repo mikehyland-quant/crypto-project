@@ -12,30 +12,26 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
         #print(vars(self.obj1), '\n')
         #print(vars(self.obj2), '\n')  
 
-        for obj in objs_list:
-            obj.calc_price = self._calc_price_amount   # assigns function below
-            # print(vars(obj), '\n')
-
      
-    def modify_unfilled_order(self, obj, size, filled_order):
-        trade = self.update_market_order(obj=obj, 
-                                         size=size, 
-                                         trade=obj.on_mkt_data_change_trade)
-        
+    def modify_primary_order(self, obj, size, x=None):
+        trade =  self.update_market_order(obj=obj, 
+                                          size=size, 
+                                          trade=obj.primary_trade)
+    
         if trade is not None:
-            obj.active_base_price  = None
-            obj.active_order_price = None            
-            self._placed_order_admin(obj, trade, size)
-                
+            self._placed_order_admin(obj, trade, size, "market")
 
-    def launch_balancing_order(self, obj, size):
+        return trade
         
-        trade = self.update_market_order(obj=obj, 
-                                         size=size, 
-                                         buy_sell=obj.buy_sell,
-                                         trade=None)
-        
-        if trade is not None:           
-            self._placed_order_admin(obj, trade, size)
+ 
+    def launch_balancing_order(self, obj, size, x=None):
+        trade =  self.update_market_order(obj=obj, 
+                                          size=size, 
+                                          buy_sell=obj.buy_sell,
+                                          trade=None)
+    
+        if trade is not None:
+            self._placed_order_admin(obj, trade, size, "market")
 
-            
+        return trade
+        

@@ -37,7 +37,7 @@ class PairsTrade_OnMktDataHotPath:
                 for obj in pending_objs:
                     await self._update_trade(obj)
 
-                if not self.need_to_update:
+                if not self.need_to_update:  
                     break
         finally:
             self.is_update_in_progress = False
@@ -50,22 +50,19 @@ class PairsTrade_OnMktDataHotPath:
             return
 
         input_price = getattr(input_obj, input_obj.input_price_attr)
-        active_base_price = output_obj.active_base_price
+        active_base_price = output_obj.primary_trade_base_price
         if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
 
-        output_price = output_obj.calc_price(input_price, output_obj)
-        active_order_price = output_obj.active_order_price
+        output_price = self._calc_price_amount(input_price, output_obj)
+        active_order_price = output_obj.primary_trade_order_price
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
         
         trade = self.update_limit_order(obj=output_obj, 
-                                        trade=output_obj.on_mkt_data_change_trade, 
+                                        trade=output_obj.primary_trade, 
                                         price=output_price)
  
         if trade is not None:
-            self._on_mkt_data_change_placed_order_admin(output_obj, trade, input_price, output_price)
-            self._placed_order_admin(output_obj, trade)
-
-
-       
+            self._primary_trade_placed_order_admin(output_obj, trade, input_price, output_price)
+            self._placed_order_admin(output_obj, trade, output_obj.primary_trade_initial_order_size, output_price)

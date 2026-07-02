@@ -18,9 +18,10 @@ class Strategy:
         self.objs_list = objs_list if objs_list is not None else []
       
         for obj in self.objs_list:
-            obj.strategy         = self
-            obj.trading_complete = False
-            
+            obj.strategy = self
+
+            obj.finished_trade_dict = {}
+
             obj.strat_on_closing_price_update = True
             obj.strat_on_mkt_data_change      = True
             obj.strat_on_trade_exec           = True
@@ -117,7 +118,7 @@ class Strategy:
 
 
     def calc_final_fills_and_avg_price(self, obj):
-        trade_list = obj.finished_trade_list
+        trade_list = obj.finished_trade_dict.values()
 
         total_filled = sum(t.orderStatus.filled for t in trade_list)
 
@@ -132,5 +133,14 @@ class Strategy:
         avg_fill_price = total_dollars / total_filled
 
         return total_filled, avg_fill_price
+    
+
+    def finish_strategy(self):
+        self._finalize_results()
+
+        # if using event:
+        if self.done_event is not None:
+            self.done_event.set()
+
 
 
