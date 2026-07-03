@@ -1,57 +1,98 @@
-# %%
+
 # CONSTANTS
+
+IBKR_PORT      = 7497
 
 INPUT_WB_NAME  = "2026 Market Data.xlsx"
 INPUT_WS_NAME  = "MKT DATA INPUTS"
 INPUT_TBL_NAME = "MKT_DATA_INPUTS"
 
-# %%
+MKT_DATA_COLS = [   'my_prod_type',
+
+                    'my_fi_name',
+                    'my_pf_name',
+
+                    'numerator_currency',
+                    'denominator_currency',
+
+                    'size_screen_bid',
+                    'price_screen_bid',
+                    'price_screen_ask',
+                    'size_screen_ask',
+
+                    'size_unit_bid',
+                    'price_unit_bid',
+                    'price_unit_ask',
+                    'size_unit_ask',
+
+                    'size_unit_bid',
+                    'comm_unit_hit_bid',
+                    'cf_unit_hit_bid',
+                    'cf_unit_hit_bid_all_in',
+                    'cf_unit_lift_ask_all_in',
+                    'cf_unit_lift_ask',
+                    'comm_unit_lift_ask',
+                    'size_unit_ask',
+                    
+                    'days_settle_comm',
+                    'days_settle_trade',
+                    'days_settle_expiry',
+                    'days_settle_expiry_near', 	 
+                    'days_settle_expiry_far',
+
+                    #'time'
+                ]
+
+ETF_COLS = ['my_fi_name',
+            'price_screen_bid',
+            'price_screen_ask']
+
+BO_ATTR_LIST = [('price_unit_bid', max),
+                ('price_unit_ask', min),        
+                ('cf_unit_hit_bid_all_in', max),
+                ('cf_unit_lift_ask_all_in', max)]
+
+
+# --- python imports ---
+import asyncio
+from collections import defaultdict
+from datetime import datetime
+from IPython.display import display, clear_output
+import numpy as np
+import pandas as pd
+from zoneinfo import ZoneInfo
+
 # --- system setup ---
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
 
-# %%
-import asyncio
-from collections import defaultdict
-import numpy as np
-
-# %%
-# --- builders ---
-from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
-
-# %%
-# --- IBKR ---
-from ibkr.Class_IBKR_IB import IBKR_IB
-# from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7496)
-
-# %%
-# --- feeds ---
-from ws_feeds import WSFeedManager
-
-# %%
 # --- utils ---
 from input_output.Standard_Input_and_Output import standard_input, standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
-# %%
+# --- IBKR ---
+from ibkr.Class_IBKR_IB import IBKR_IB
+ibkr = IBKR_IB(port=IBKR_PORT)
+
+# --- feeds ---
+from ws_feeds import WSFeedManager
+
+# --- builders ---
+from fin_insts import make_single_leg_fin_insts
+from fin_insts import FutureSpread, Synthetic, BestOf
+
+
 # this cell contains code for creating and calculating bestOf
-
-attr_list = [('price_unit_bid', max), 
-             ('price_unit_ask', min),
-             ('cf_unit_hit_bid_all_in', max),
-             ('cf_unit_lift_ask_all_in', max)]
-
 def create_bo_objs_list(ws_objs_list, ibkr_objs_list, futures_list, syn_objs_list):
     ws_spot_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'spot']
     ibkr_spot_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'spot']
     spot_list      = [*ws_spot_list, *ibkr_spot_list]
-    bo_spot        = BestOf("SPOT", spot_list, attr_list)   
+    bo_spot        = BestOf("SPOT", spot_list, BO_ATTR_LIST)   
 
     etf_list = [obj for obj in ibkr_objs_list if obj.my_prod_type == 'equity']
-    bo_etf   = BestOf("ETF", etf_list, attr_list)   
+    bo_etf   = BestOf("ETF", etf_list, BO_ATTR_LIST)   
 
     futs_dict = defaultdict(list)
     for obj in futures_list:
@@ -62,7 +103,7 @@ def create_bo_objs_list(ws_objs_list, ibkr_objs_list, futures_list, syn_objs_lis
 
     bo_objs_list = [bo_spot, bo_etf]
     for key, list_ in futs_dict.items():
-        bo_obj = BestOf(key, list_, attr_list)
+        bo_obj = BestOf(key, list_, BO_ATTR_LIST)
         bo_objs_list.append(bo_obj)
 
     return bo_objs_list
@@ -88,7 +129,7 @@ def calc_best_of(bo_objs_list):
         
         obj.update_best_of()
         
-        for attr, x in attr_list:
+        for attr, x in BO_ATTR_LIST:
 
             b_obj = getattr(obj, attr + '_obj')
 
@@ -114,48 +155,6 @@ def calc_best_of(bo_objs_list):
               
     return bo_objs_list
 
-# %%
-from datetime import datetime
-import pandas as pd
-from zoneinfo import ZoneInfo
-from IPython.display import display, clear_output
-
-OUTPUT_COLS = [
-              'my_prod_type',
-
-              'my_fi_name',
-              'my_pf_name',
-
-              'numerator_currency',
-              'denominator_currency',
-
-              'size_screen_bid',
-              'price_screen_bid',
-              'price_screen_ask',
-              'size_screen_ask',
-
-              'size_unit_bid',
-              'price_unit_bid',
-              'price_unit_ask',
-              'size_unit_ask',
-
-              'size_unit_bid',
-              'comm_unit_hit_bid',
-              'cf_unit_hit_bid',
-              'cf_unit_hit_bid_all_in',
-              'cf_unit_lift_ask_all_in',
-              'cf_unit_lift_ask',
-              'comm_unit_lift_ask',
-              'size_unit_ask',
-             
-              'days_settle_comm',
-              'days_settle_trade',
-              'days_settle_expiry',
-              'days_settle_expiry_near', 	 
-              'days_settle_expiry_far',
-
-              #'time',
-            ]
 
 async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_COLS, FLATTEN_COLS=[]):
     
@@ -193,7 +192,7 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
 
         bo_objs_list = calc_best_of(bo_objs_list)
         
-        current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
+        current_df = io.convert_objs_to_printable_df(output_list, MKT_DATA_COLS)
     
         if add_ts:
             current_df['time'] = ts
@@ -226,11 +225,6 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
         
         await asyncio.sleep(refresh)
 
-# %%
-ETF_COLS = ['my_fi_name',
-            'price_screen_bid',
-            'price_screen_ask']
-
 
 def make_etf_inputs(input_dict):
     etf_input_dict = input_dict.copy()
@@ -250,18 +244,17 @@ def make_etf_inputs(input_dict):
     return etf_input_dict 
  
  
-# %%
 async def main():
 
     input_dict, objs_list = standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
-    etf_input_dict = make_etf_inputs(input_dict)
+    etf_input_dict        = make_etf_inputs(input_dict)
 
     ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
     ws_feed      = WSFeedManager(ws_objs_list)
 
     await ws_feed.complete_fi_objects()   
         
-    ibkr_objs_list     = [obj for obj in objs_list if obj.my_pf_name == 'IBKR']
+    ibkr_objs_list = [obj for obj in objs_list if obj.my_pf_name == 'IBKR']
     if ibkr_objs_list:
         await ibkr.connect()
         print("IBKR connected:", ibkr.ib.isConnected())
@@ -335,15 +328,9 @@ async def main():
     await asyncio.gather(*tasks)  # expose this for .py usage
 
 
-# %%
 # for ipynb usage
 # await main()
 
 # for .py usage and remember to expose await at end of main and comment out the two autoreload lines
 if __name__ == "__main__":
    asyncio.run(main())
-
-# %%
-
-
-
