@@ -1,12 +1,12 @@
 
-from strategies.Strategy_Parent            import Strategy_Parent
-from pairs_trade.PairsTrade_OnClosingPrice import PairsTrade_OnClosingPrice
-from pairs_trade.PairsTrade_OnMktDat       import PairsTrade_OnMktData
-from pairs_trade.PairsTrade_OnTradeExec    import PairsTrade_OnTradeExec
+from strategies.Strategy_Parent             import Strategy_Parent
+from pairs_trade.PairsTrade_OnClosingPrice  import PairsTrade_OnClosingPrice
+from pairs_trade.PairsTrade_OnMktDataChange import PairsTrade_OnMktDataChange
+from pairs_trade.PairsTrade_OnTradeExec     import PairsTrade_OnTradeExec
 
 
 class PairsTrade_Parent(PairsTrade_OnClosingPrice,
-                        PairsTrade_OnMktData,
+                        PairsTrade_OnMktDataChange,
                         PairsTrade_OnTradeExec,
                         Strategy_Parent):
     
@@ -19,8 +19,8 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         self.no_partial_trades_yet  = True
         self.trades_by_orderId_dict = {}
 
-        self.target_spread = float(df.loc['target_profit_per_unit'].sum())
-        self.epsilon       = float(df.loc['epsilon_per_unit'].sum())
+        self.target_spread          = float(df.loc['target_profit_per_unit'].sum())
+        self.epsilon                = float(df.loc['epsilon_per_unit'].sum())
 
         self.prepare_on_mkt_data_change()
 

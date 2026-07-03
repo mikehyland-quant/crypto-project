@@ -9,7 +9,7 @@ class Strategy_Parent:
 
 
     def __init__(self, objs_list=None, *args, **kwargs):
-        super().__init__
+        super().__init__()
 
         self.done_event = asyncio.Event()  # needs to be awaited in main() and set at the end of each strategy
         

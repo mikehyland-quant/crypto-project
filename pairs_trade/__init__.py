@@ -2,11 +2,6 @@
 
 
 # --- Pairs Trading ---
-from .Strategy_PairsTrade_Parent import PairsTrade_Parent
-from .Strategy_PairsTrade_LimitMarket import PairsTrade_LimitMarket
-from .Strategy_PairsTrade_LimitLimit import PairsTrade_LimitLimit
-#from .Strategy_PairsTrade_HitLift import PairsTrade_HitLift 
+from .PairsTrade_Parent import PairsTrade_Parent
 
-# --- Best Of Trading --- 
-from .Strategy_BestOfStrat import BestOfStrat
 

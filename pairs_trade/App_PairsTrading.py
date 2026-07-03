@@ -18,12 +18,11 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 # --- input/output ---
-from fin_insts.Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts
-from input_output.Class_InputOutput import InputOutput
+from input_output import InputOutput
 io = InputOutput()
 
 # --- IBKR ---
-from ibkr.Class_IBKR_IB import IBKR_IB
+from ibkr import IBKR_IB
 ibkr = IBKR_IB(port=IBKR_PORT) 
 
 # --- fin inst builders ---
@@ -36,7 +35,7 @@ from strategies import STRAT_NAME
 
 # CODE
 async def main():
-    x, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
+    wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
     strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
     strat_transpose_df = strat_df.T

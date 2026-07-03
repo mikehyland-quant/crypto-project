@@ -16,8 +16,8 @@ class PairsTrade_OnTradeExecHotPath:
                 
         unfilled_obj = filled_obj.opp_obj
 
-        filled_obj.strat_on_mkt_data_update   = False
-        unfilled_obj.strat_on_mkt_data_update = False 
+        filled_obj.strat_on_mkt_data_change   = False
+        unfilled_obj.strat_on_mkt_data_change = False 
         
         if self.no_partial_trades_yet:
             self._filled_before_partial(filled_obj, unfilled_obj, filled_order)
@@ -88,8 +88,7 @@ class PairsTrade_OnTradeExecHotPath:
             filled_obj.strat_on_trade_exec        = False
             unfilled_obj.strat_on_trade_exec      = False
 
-            self._finished_order_admin(filled_obj, filled_order)
-
+            self.finish_strategy()
         
    
         

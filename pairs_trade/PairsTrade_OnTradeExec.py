@@ -86,8 +86,7 @@ class PairsTrade_OnTradeExec:
             filled_obj.strat_on_trade_exec        = False
             unfilled_obj.strat_on_trade_exec      = False
 
-            self._finished_order_admin(filled_obj, filled_order)
-
+            self.finish_strategy()
         
    
         

@@ -1,5 +1,5 @@
 
-import asyncio
+# import asyncio
 
 import numpy as np
 
@@ -30,6 +30,7 @@ class IBKR_IB:
 
         self.NOT_SAFE_TO_MODIFY = {"ApiPending", "PendingSubmit", "PendingCancel", "ApiCancelled",
                                    "Cancelled", "Canceled", "Filled", "Inactive"}
+
 
     async def contract_by_conId(self, conid):
         contract = Contract(conId=int(conid))

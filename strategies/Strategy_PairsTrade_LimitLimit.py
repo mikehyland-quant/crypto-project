@@ -1,9 +1,8 @@
 
 import asyncio
 
-from strategies.Strategy_PairsTrade_Parent import PairsTrade_Parent
 
-
+#
 class PairsTrade_LimitLimit(PairsTrade_Parent):
 
     def __init__(self, objs_list, df):
