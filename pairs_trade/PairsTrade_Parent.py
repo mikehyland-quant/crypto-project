@@ -1,30 +1,32 @@
 
-import asyncio
+from strategies.Strategy_Parent            import Strategy_Parent
+from pairs_trade.PairsTrade_OnClosingPrice import PairsTrade_OnClosingPrice
+from pairs_trade.PairsTrade_OnMktDat       import PairsTrade_OnMktData
+from pairs_trade.PairsTrade_OnTradeExec    import PairsTrade_OnTradeExec
 
-from strategies.Strategy_Parent import Strategy
-from strategies.Strategy_PairsTrade_OnMktDataHotPath import PairsTrade_OnMktDataHotPath
-from strategies.Strategy_PairsTrade_OnTradeExecHotPath import PairsTrade_OnTradeExecHotPath
 
+class PairsTrade_Parent(PairsTrade_OnClosingPrice,
+                        PairsTrade_OnMktData,
+                        PairsTrade_OnTradeExec,
+                        Strategy_Parent):
+    
 
-class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
-                        PairsTrade_OnTradeExecHotPath,
-                        Strategy):
     def __init__(self, objs_list, df):
-        super().__init__(objs_list=objs_list, df=df)
+        super().__init__(objs_list=objs_list, df=df)  # this calls Strategy_Parent.__init__() 
         
         # create self attributes
-        self.no_partial_trades_yet = True
-
+        self._calc_price            = self._calc_price_amount  # or self._calc_price_pct
+        self.no_partial_trades_yet  = True
         self.trades_by_orderId_dict = {}
 
         self.target_spread = float(df.loc['target_profit_per_unit'].sum())
         self.epsilon       = float(df.loc['epsilon_per_unit'].sum())
-        
-        df = df.drop(index=['target_profit_per_unit', 'epsilon_per_unit'], errors='ignore')
 
-        objs_dict = df.to_dict()
+        self.prepare_on_mkt_data_change()
 
         # attach attributes to objs
+        objs_dict = df.to_dict()
+
         self.obj1, self.obj2 = self._attach_input_attr(objs_list, objs_dict)
                                                  
         self.obj1.opp_obj = self.obj2
@@ -51,8 +53,9 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
             setattr(self, obj_name.lower(), obj)
      
             for attr_key, attr_val in obj_dict.items():
-                setattr(obj, attr_key, attr_val)
-    
+                if not hasattr(obj, attr_key):
+                    setattr(obj, attr_key, attr_val)
+                
         return self.obj1, self.obj2
  
  
@@ -78,7 +81,6 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
             obj.primary_trade_initial_order_size = obj.round_size_to_increment(obj.initial_order_size_units *
                                                                                obj.scalar_size_orders_per_unit)
             
-            
             obj.trades_by_orderId = {}
                                                                 
             if obj.active_passive.lower() == 'passive':
@@ -87,32 +89,6 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
 
         return self.obj1, self.obj2
                     
-
-    def on_closing_price_update(self, obj):
-        #creates a placeholder limit order to get trade opened and in system
-        mkt_close = obj.price_screen_close
-
-        buy_sell = obj.buy_sell
-        if buy_sell == 'BUY':
-            placeholder_price = mkt_close * 0.5
-        elif buy_sell == 'SELL': 
-            placeholder_price = mkt_close * 2.0
-        else:
-            raise ValueError(f"Invalid buy_sell value: {buy_sell}")
-        placeholder_price = obj.round_price_to_tick(placeholder_price)
-
-        size = obj.primary_trade_initial_order_size
-        trade = self.update_limit_order(obj=obj, 
-                                        buy_sell=buy_sell, 
-                                        price=placeholder_price,
-                                        size=size)
-
-        if trade is not None:
-            self._primary_trade_placed_order_admin(obj, trade, placeholder_price, placeholder_price)  # don't use market price as that may slow down hot path
-            self._placed_order_admin(obj, trade, size, placeholder_price)
-
-            obj.strat_on_closing_price_update = False
-         
 
     def prep_and_launch_balancing_order(self, net_units):
         if net_units > 0:
@@ -219,16 +195,3 @@ class PairsTrade_Parent(PairsTrade_OnMktDataHotPath,
         print('Final spread: ', f'{final_spread:.2f}', ', Net open units: ', f'{net_units:.2f}', '\n')
 
         
-    def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):
-        unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
-        unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
-        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI
-        mkt_output_price  = output_obj.round_price_to_tick(abs(mkt_output_price))    
-        # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
-        return mkt_output_price
-    
-
-    def _calc_price_pct(self):
-        pass
-
-    

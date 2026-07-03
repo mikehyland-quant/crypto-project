@@ -9,7 +9,7 @@ STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
 STRAT_WS_NAME  = "PAIRS TRADING INPUTS"
 STRAT_TBL_NAME = "ACTIVE_STRAT"
 
-
+# IMPORTS
 import asyncio
 
 # --- system setup ---
@@ -18,6 +18,7 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 # --- input/output ---
+from fin_insts.Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
@@ -26,13 +27,14 @@ from ibkr.Class_IBKR_IB import IBKR_IB
 ibkr = IBKR_IB(port=IBKR_PORT) 
 
 # --- fin inst builders ---
-from fin_insts import make_xyz
+from fin_insts import make_single_leg_fin_insts
 # from fin_insts import FutureSpread, BestOf, Synthetic
 
 # --- trading strategy ---
 from strategies import STRAT_NAME
 
 
+# CODE
 async def main():
     x, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
@@ -42,10 +44,10 @@ async def main():
 
     cols=['target_profit_per_unit', 'epsilon_per_unit']
     strat_df = strat_df[cols]
-    strat_transpose_df = strat_transpose_df.drop(columns=cols)
+    strat_transpose_df = strat_transpose_df.drop(index=cols)
     # print(strat_df, '\n', strat_transpose_df, '\n')
 
-    objs_list = make_xyz(strat_transpose_df)
+    objs_list = make_single_leg_fin_insts(strat_transpose_df)
     for obj in objs_list:
         obj.platform_obj = ibkr  # this is the object not the name 
     # print(objs_list, '\n')

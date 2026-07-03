@@ -1,9 +1,7 @@
 
-
-class PairsTrade_OnTradeExecHotPath:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
- 
+# handles the on trade execution event and updates the trades accordingly
+class PairsTrade_OnTradeExec:
+  
  
     def on_trade_exec(self, filled_obj, filled_order):  
         # this gets called on every trade execution

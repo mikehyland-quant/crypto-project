@@ -2,10 +2,11 @@
 import asyncio
 
 
-class PairsTrade_OnMktDataHotPath:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+# handles the on market data change event and updates the trades accordingly
+class PairsTrade_OnMktData:
 
+
+    def prepare_on_mkt_data_change(self):
         self.pending_mkt_data_objs = set()
  
         self.need_to_update        = False
@@ -54,7 +55,7 @@ class PairsTrade_OnMktDataHotPath:
         if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
 
-        output_price = self._calc_price_amount(input_price, output_obj)
+        output_price = self._calc_price(input_price, output_obj)
         active_order_price = output_obj.primary_trade_order_price
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
@@ -66,3 +67,19 @@ class PairsTrade_OnMktDataHotPath:
         if trade is not None:
             self._primary_trade_placed_order_admin(output_obj, trade, input_price, output_price)
             self._placed_order_admin(output_obj, trade, output_obj.primary_trade_initial_order_size, output_price)
+
+
+
+    def _calc_price_amount(self, unit_input_price, output_obj, epsilon_scalar=0):
+        unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
+        unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
+        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI
+        mkt_output_price  = output_obj.round_price_to_tick(abs(mkt_output_price))    
+        # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
+        return mkt_output_price
+    
+
+    def _calc_price_pct():
+        pass
+    
+    

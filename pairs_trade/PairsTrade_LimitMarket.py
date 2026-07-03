@@ -6,12 +6,6 @@ from strategies.Strategy_PairsTrade_Parent import PairsTrade_Parent
 
 class PairsTrade_LimitMarket(PairsTrade_Parent):
 
-    def __init__(self, objs_list, df):
-        super().__init__(objs_list, df)  
-
-        #print(vars(self.obj1), '\n')
-        #print(vars(self.obj2), '\n')  
-
      
     def modify_primary_order(self, obj, size, x=None):
         trade =  self.update_market_order(obj=obj, 

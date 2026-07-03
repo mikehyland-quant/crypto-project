@@ -5,7 +5,9 @@ import types
 import winsound
 
 
-class Strategy:
+class Strategy_Parent:
+
+
     def __init__(self, objs_list=None, *args, **kwargs):
         super().__init__
 
@@ -22,9 +24,9 @@ class Strategy:
 
             obj.finished_trade_dict = {}
 
-            obj.strat_on_closing_price_update = True
-            obj.strat_on_mkt_data_change      = True
-            obj.strat_on_trade_exec           = True
+            obj.strat_on_closing_price   = True
+            obj.strat_on_mkt_data_change = True
+            obj.strat_on_trade_exec      = True
 
             obj.round_price_to_tick      = types.MethodType(type(self).round_price_to_tick, obj)
             obj.round_size_to_increment  = types.MethodType(type(self).round_size_to_increment, obj)       
@@ -141,6 +143,3 @@ class Strategy:
         # if using event:
         if self.done_event is not None:
             self.done_event.set()
-
-
-
