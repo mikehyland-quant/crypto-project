@@ -9,7 +9,7 @@
 from .parents import FinancialInstrument, MktData, Dates
 from .tradable import Spot, Equity, Future, FutureSpread   #, Option
 from .derived import Subscriber, Synthetic, BestOf
-from .Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts
+from .Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts, get_db_df
 
 __all__ = [
     # base layer
@@ -30,6 +30,7 @@ __all__ = [
     "BestOf",
 
     # builder
-    "make_single_leg_fin_insts"
+    "make_single_leg_fin_insts",
+    "get_db_df"
 ]
 

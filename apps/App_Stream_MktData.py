@@ -1,7 +1,7 @@
 
 # CONSTANTS
 
-IBKR_PORT      = 7497
+IBKR_PORT      = 7496
 
 INPUT_WB_NAME  = "2026 Market Data.xlsx"
 INPUT_WS_NAME  = "MKT DATA INPUTS"
@@ -57,7 +57,6 @@ BO_ATTR_LIST = [('price_unit_bid', max),
 import asyncio
 from collections import defaultdict
 from datetime import datetime
-from IPython.display import display, clear_output
 import numpy as np
 import pandas as pd
 from zoneinfo import ZoneInfo
@@ -68,6 +67,7 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 # --- utils ---
+# from IPython.display import display, clear_output
 from input_output.Standard_Input_and_Output import standard_input, standard_output
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
@@ -80,7 +80,7 @@ ibkr = IBKR_IB(port=IBKR_PORT)
 from ws_feeds import WSFeedManager
 
 # --- builders ---
-from fin_insts import make_single_leg_fin_insts
+from fin_insts import make_single_leg_fin_insts, get_db_df
 from fin_insts import FutureSpread, Synthetic, BestOf
 
 
@@ -135,10 +135,10 @@ def calc_best_of(bo_objs_list):
 
             if 'bid' in attr:
                 new_attr = 'size_unit_bid'
-                amt = getattr(b_obj, new_attr)
+                amt = getattr(b_obj, new_attr, np.nan)
             elif 'ask' in attr:
                 new_attr = 'size_unit_ask'
-                amt = getattr(b_obj, new_attr)
+                amt = getattr(b_obj, new_attr, np.nan)
 
             setattr(obj, new_attr, amt)
 
@@ -150,7 +150,7 @@ def calc_best_of(bo_objs_list):
                     tail = '_lift_ask'
 
                 for new_attr in ['comm_unit', 'cf_unit']:
-                    amt = getattr(b_obj, new_attr + tail)
+                    amt = getattr(b_obj, new_attr + tail, np.nan)
                     setattr(obj, new_attr + tail, amt)
               
     return bo_objs_list
@@ -265,7 +265,7 @@ async def main():
     #for obj in ibkr_objs_list:
     #   print(obj.ibkr_details)
 
-
+    
 #rarely change anything above here
     
     ws_spot_list   = [obj for obj in ws_objs_list if obj.my_prod_type == 'spot']
@@ -312,7 +312,7 @@ async def main():
         *ibkr_fut_spds_objs_list_eth,
         *syn_objs_list
                    ]
-    
+
     # Run all streams concurrently
     tasks = []
     tasks.append(asyncio.create_task(ws_feed.run()))
@@ -322,7 +322,7 @@ async def main():
 
     await asyncio.sleep(input_dict.get('timer interval', 10))
 
-    tasks.append(asyncio.create_task(edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_COLS)))
+    tasks.append(asyncio.create_task(edited_standard_output(input_dict, output_list, bo_objs_list, MKT_DATA_COLS)))
     tasks.append(asyncio.create_task(standard_output(etf_input_dict, ibkr_etf_list, ETF_COLS)))
 
     await asyncio.gather(*tasks)  # expose this for .py usage

@@ -8,29 +8,23 @@ from IPython.display import display, clear_output
 
 # import xlwings as xw
 
-from fin_insts import make_single_leg_fin_insts, FutureSpread, Synthetic, BestOf
+from fin_insts import make_single_leg_fin_insts, get_db_df
+from fin_insts import FutureSpread, Synthetic, BestOf
 
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
 
 def get_objs_list(ws, range, table=True):
-    db_df = get_db_df()
-    # print(db_df)
-
-    active_fi_df = io.get_xw_df(ws, range, table)
+    df = io.get_xw_df(ws, range, table)
     # print(active_fi_df)
 
-    if 'TRUE/FALSE' not in active_fi_df.columns:
-        active_fi_df = active_fi_df.set_index('Keys').T
+    if 'TRUE/FALSE' not in df.columns:
+        df = df.set_index('Keys').T
 
-    active_fi_df = active_fi_df[active_fi_df['TRUE/FALSE'] == True]
-    # print(active_fi_df)
-
-    merged_df = active_fi_df.merge(db_df,how='left',on=['my_fi_name', 'my_pf_name'])
-    # print(merged_df)  
-
-    obj_list = make_single_leg_fin_insts(merged_df)
+    df = df[df['TRUE/FALSE'] == True]
+    
+    obj_list = make_single_leg_fin_insts(df)
 
     return obj_list
 
@@ -40,9 +34,6 @@ def standard_input(wb_name, ws_name, range, table=True, style=float):
 
     input_dict = io.get_xw_dict(ws, range, table, style)
     # print(input_dict)
-
-    # if wb_name != input_dict['true/false workbook name']:
-    #     wb = io.set_xw_book(input_dict['true/false workbook name'])
 
     ws = io.set_xw_sheet(wb, input_dict['true/false sheet name'])
 

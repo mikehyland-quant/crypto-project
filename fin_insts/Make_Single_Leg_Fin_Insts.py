@@ -8,12 +8,26 @@ from fin_insts.tradable.Class_FI_Option import Option
 from fin_insts.tradable.Class_FI_Spot   import Spot
 
 
+def get_db_df():
+
+    wb_name  = '2026 Crypto Products Database.xlsx'
+    ws_name  = 'Crypto'
+    tbl_name = 'crypto_static_data_table'
+
+    wb, ws = io.set_xw_book_and_sheet(wb_name, ws_name)
+    
+    db_df = io.get_xw_df(ws, tbl_name, table=True)
+    # print(db_df)
+
+    return db_df
+
+
 def make_single_leg_fin_insts(df):
     db_df = get_db_df()
     # print(db_df)
 
     df = df.merge(db_df, how='left', on=['my_fi_name', 'my_pf_name'])
-    # print(merged_df)
+    # print(df)
  
     rows = df[df['my_prod_type'] == 'spot']
     s_objs = [Spot(row) for row in rows.itertuples(index=False)]
@@ -32,15 +46,4 @@ def make_single_leg_fin_insts(df):
     return objs_list
 
 
-def get_db_df():
 
-    wb_name  = '2026 Crypto Products Database.xlsx'
-    ws_name  = 'Crypto'
-    tbl_name = 'crypto_static_data_table'
-
-    wb, ws = io.set_xw_book_and_sheet(wb_name, ws_name)
-    
-    db_df = io.get_xw_df(ws, tbl_name, table=True)
-    # print(db_df)
-
-    return db_df
