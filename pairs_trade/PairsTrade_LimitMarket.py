@@ -15,9 +15,9 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
         if trade is not None:
             self._placed_order_admin(obj, trade, size, "market")
 
-        return trade
+            return trade
         
- 
+  
     def launch_balancing_order(self, obj, size, x=None):
         trade =  self.update_market_order(obj=obj, 
                                           size=size, 
@@ -27,5 +27,5 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
         if trade is not None:
             self._placed_order_admin(obj, trade, size, "market")
 
-        return trade
+            return trade
         

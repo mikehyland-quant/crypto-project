@@ -39,7 +39,9 @@ class PairsTrade_OnTradeExec:
         # this is either the first or second complete fill
         # if this is first complete fill then modify other obj's primary order based on this fill
         if unfilled_obj.strat_on_trade_exec:  # unfilled obj is still active
-            x = self.modify_primary_order(unfilled_obj, unfilled_obj.primary_trade_initial_order_size, filled_order) # see specialty code
+            x = self.modify_primary_order(unfilled_obj, 
+                                          unfilled_obj.primary_trade_initial_order_size, 
+                                          filled_order) # see specialty code
             
         # regardless of which fill, the filled obj needs to be "turned off"
         filled_obj.strat_on_trade_exec        = False
@@ -63,7 +65,8 @@ class PairsTrade_OnTradeExec:
         pct_filled = filled_order.orderStatus.filled / filled_obj.primary_trade_initial_order_size
         new_order_size = unfilled_obj.round_size_to_increment(unfilled_obj.primary_trade_initial_order_size * pct_filled)
 
-        x = self.modify_primary_order(unfilled_obj, new_order_size) # see specialty code
+        x = self.modify_primary_order(unfilled_obj, 
+                                      new_order_size) # see specialty code
 
         
     def _filled_after_partial(self, filled_obj, unfilled_obj, filled_order, tolerance=0.02):
@@ -87,6 +90,17 @@ class PairsTrade_OnTradeExec:
             unfilled_obj.strat_on_trade_exec      = False
 
             self.finish_strategy()
+
+
+    def prep_and_launch_balancing_order(self, net_units):
+        if net_units > 0:
+            order_obj = self.obj2
+        else:
+            order_obj = self.obj1
+
+        size = order_obj.round_size_to_increment(abs(net_units) * order_obj.scalar_size_orders_per_unit)
+
+        trade = self.launch_balancing_order(order_obj, size)
         
    
         

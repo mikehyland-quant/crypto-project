@@ -31,7 +31,7 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
                                                  
         self.obj1.opp_obj = self.obj2
         self.obj2.opp_obj = self.obj1
-
+ 
         self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
 
                 
@@ -88,17 +88,6 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
                 setattr(obj.opp_obj, 'strat_on_mkt_data_change', False)   
 
         return self.obj1, self.obj2
-                    
-
-    def prep_and_launch_balancing_order(self, net_units):
-        if net_units > 0:
-            order_obj = self.obj2
-        else:
-            order_obj = self.obj1
-
-        size = order_obj.round_size_to_increment(abs(net_units) * order_obj.scalar_size_orders_per_unit)
-
-        trade = self.launch_balancing_order(order_obj, size)
 
     
     def _primary_trade_placed_order_admin(self, obj, trade, base_price, order_price):
@@ -181,9 +170,9 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
             print(
                 obj.my_fi_name,
                 obj.buy_sell,
-                ", filled_orders:", obj.total_orders_filled,
-                ", filled_units:", f'{obj.total_units_filled:.2f}',
-                ", avg_FI_price:", f'{obj.final_avg_FI_price:.2f}',
+                ", filled_orders:",     obj.total_orders_filled,
+                ", filled_units:",   f'{obj.total_units_filled:.2f}',
+                ", avg_FI_price:",   f'{obj.final_avg_FI_price:.2f}',
                 ", avg_unit_price:", f'{obj.final_avg_unit_price:.2f}'
             )
         

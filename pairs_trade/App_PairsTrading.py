@@ -1,5 +1,11 @@
+'''
+need a STRAT_NAME
+need a strategy import
+need to attach a _calc_price (amt vs pct)
+need to decide limit vs mkt
+'''
 
-# CONSTANTS
+# CONSTANTS 
 
 IBKR_PORT      = 7497
 
@@ -30,10 +36,11 @@ from fin_insts import make_single_leg_fin_insts
 # from fin_insts import FutureSpread, BestOf, Synthetic
 
 # --- trading strategy ---
-from strategies import STRAT_NAME
+from pairs_trade import STRAT_NAME
 
 
 # CODE
+
 async def main():
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
