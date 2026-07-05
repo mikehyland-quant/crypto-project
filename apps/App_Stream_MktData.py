@@ -69,7 +69,7 @@ sys.path.append(os.path.abspath(".."))
 # --- utils ---
 # from IPython.display import display, clear_output
 from input_output.Standard_Input_and_Output import standard_input, standard_output
-from input_output.Class_InputOutput import InputOutput
+from input_output.Class_InputOutput         import InputOutput
 io = InputOutput()
 
 # --- IBKR ---
@@ -77,11 +77,13 @@ from ibkr.Class_IBKR_IB import IBKR_IB
 ibkr = IBKR_IB(port=IBKR_PORT)
 
 # --- feeds ---
-from ws_feeds import WSFeedManager
+from ws_feeds.Class_WS_FeedManager import WSFeedManager
 
 # --- builders ---
-from fin_insts import make_single_leg_fin_insts, get_db_df
-from fin_insts import FutureSpread, Synthetic, BestOf
+from fin_insts.Make_Single_Leg_Fin_Insts      import make_single_leg_fin_insts
+from fin_insts.tradable.Class_FI_FutureSpread import FutureSpread
+from fin_insts.derived.Class_FI_Synthetic     import Synthetic
+from fin_insts.derived.Class_FI_BestOf        import BestOf
 
 
 # this cell contains code for creating and calculating bestOf

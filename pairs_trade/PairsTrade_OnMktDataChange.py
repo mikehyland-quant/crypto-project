@@ -3,7 +3,7 @@ import asyncio
 
 
 # handles the on market data change event and updates the trades accordingly
-class PairsTrade_OnMktData:
+class PairsTrade_OnMktDataChange:
 
 
     def prepare_on_mkt_data_change(self):

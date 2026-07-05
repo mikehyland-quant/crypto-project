@@ -1,66 +1,70 @@
+'''
+need to attach a _calc_price (amt vs pct)
+need to decide limit vs mkt
+'''
 
-# CONSTANTS
+# CONSTANTS 
 
-INPUT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
+IBKR_PORT      = 7497
 
-####
-INPUT_WS_NAME  = "PAIRS TRADING INPUTS"
-INPUT_TBL_NAME = "PAIRS_TRADING_INPUTS"
+STRAT_NAME     = "LimitMarket"
 
+STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
+STRAT_WS_NAME  = "PAIRS TRADING INPUTS"
 STRAT_TBL_NAME = "ACTIVE_STRAT"
-####
 
-DB_WB_NAME  = "2026 Crypto Products Database.xlsx"
+# IMPORTS
+import asyncio
 
 # --- system setup ---
 import sys
 import os
 sys.path.append(os.path.abspath(".."))
 
-# --- autoreload ---
-#%load_ext autoreload
-#%autoreload 2
-
-import asyncio
-from collections import defaultdict
-
-# --- builders ---
-from fin_insts import make_single_leg_fin_insts#, FutureSpread, BestOf, Synthetic
-
-# --- IBKR ---
-from ibkr.Class_IBKR_IB import IBKR_IB
-#from ibkr.Class_IBKR_TWS import IBKR_TWS
-ibkr = IBKR_IB(port=7496)
-
-# --- feeds ---
-#from ws_feeds import WSFeedManager
-
-# --- utils ---
-from input_output.Standard_Input_and_Output import standard_input, standard_output
+# --- input/output ---
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
-# --- trading strategy ---
-from strategies import PairsTrade_LimitMarket, PairsTrade_LimitLimit 
+# --- IBKR ---
+from ibkr.Class_IBKR_IB import IBKR_IB
+ibkr = IBKR_IB(port=IBKR_PORT) 
 
+# --- fin inst builders ---
+from fin_insts.Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts
+# from fin_insts import FutureSpread, BestOf, Synthetic
+
+# --- trading strategy ---
+from pairs_trade.PairsTrade_LimitMarket import PairsTrade_LimitMarket
+# from pairs_trade.PairsTrade_LimitLimit  import PairsTrade_LimitLimit
+
+strategy_dict = {"LimitMarket" : PairsTrade_LimitMarket,
+                 "LimitLimit"  : None}
+
+
+# CODE
 
 async def main():
+    wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
-    input_dict, objs_list = standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
-    '''
-    ws_objs_list = [obj for obj in objs_list if obj.my_pf_name != 'IBKR']
-    ws_feed      = WSFeedManager(ws_objs_list)
+    strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
+    strat_transpose_df = strat_df.T
+    # print(strat_df, '\n', strat_transpose_df, '\n')
 
-    await ws_feed.complete_fi_objects()   
-    '''
+    row_col=['target_profit_per_unit', 'epsilon_per_unit']
+    strat_df = strat_df.loc[row_col]
+    strat_transpose_df = strat_transpose_df.drop(columns=row_col)
+    # print(strat_df, '\n', strat_transpose_df, '\n')
 
-    ibkr_objs_list = [obj for obj in objs_list if obj.my_pf_name == 'IBKR']
-    if ibkr_objs_list:
-        await ibkr.connect()
-        print("IBKR connected:", ibkr.ib.isConnected(), '\n')
-        
-        await asyncio.gather(*(ibkr.create_simple_contract(obj) for obj in ibkr_objs_list))
-        await asyncio.gather(*(ibkr.complete_obj(obj) for obj in ibkr_objs_list))
+    objs_list = make_single_leg_fin_insts(strat_transpose_df)
+    for obj in objs_list:
+        obj.platform_obj = ibkr  # this is the object not the name 
+    # print(objs_list, '\n')
+
+    await ibkr.connect()
+    print("IBKR connected:", ibkr.ib.isConnected(), '\n')
+    
+    await asyncio.gather(*(ibkr.create_simple_contract(obj) for obj in objs_list))
+    await asyncio.gather(*(ibkr.complete_obj(obj) for obj in objs_list))
         
     ''' 
     # insert ibkr BAG instruments here (future_spread, option_spread, option_combo, etc.)
@@ -72,30 +76,13 @@ async def main():
     output_list[:0] = bo_objs_list   # this puts bestOf instruments at the top of the list
     ''' 
 
-    #''' 
-    #insert trading and analysis scripts here
-    wb, ws          = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
-    strat_df        = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
-
-    strat_objs_list = [obj for obj in ibkr_objs_list if obj.my_fi_name in strat_df.loc['my_fi_name'].values]
-
-    strat           = PairsTrade_LimitMarket(strat_objs_list, strat_df)
-        
-    for obj in strat_objs_list:
-        obj.platform_obj = ibkr  # this is the object not the name
-        
-    # strat.need_to_print_active_orders = True
-    # strat.need_to_print_finished_orders = True
-    #'''    
+    strat = strategy_dict[STRAT_NAME](objs_list, strat_df)  
+    # strat.need_to_print_active_orders   = False
+    # strat.need_to_print_finished_orders = False  
       
     # Run all streams concurrently
     tasks = []
-
-#    tasks.append(asyncio.create_task(ws_feed.run()))
-#    tasks.append(asyncio.create_task(create_output(input_dict, output_list, OUTPUT_COLS)))
-    if ibkr_objs_list:
-        tasks.append(asyncio.create_task(ibkr.start_streams(strat_objs_list)))
-        #tasks.append(asyncio.create_task(ibkr.start_streams(strat_objs_list)))
+    tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))
 
     await strat.done_event.wait()   
     
