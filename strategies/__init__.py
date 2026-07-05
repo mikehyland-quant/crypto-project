@@ -1,4 +1,4 @@
-
+'''
 # --- Strategy parent ---
 from .Strategy_Parent import Strategy
 
@@ -10,4 +10,4 @@ from .Strategy_PairsTrade_LimitLimit import PairsTrade_LimitLimit
 
 # --- Best Of Trading --- 
 from .Strategy_BestOfStrat import BestOfStrat
-
+'''

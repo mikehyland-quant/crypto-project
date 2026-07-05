@@ -12,7 +12,7 @@ creation process for a financial instrument
 
 from fin_insts.parents.Class_FI_Dates import Dates
 from fin_insts.parents.Class_FI_MktData import MktData
-from datetime import date
+# from datetime import date
  
 
 class FinancialInstrument(MktData):

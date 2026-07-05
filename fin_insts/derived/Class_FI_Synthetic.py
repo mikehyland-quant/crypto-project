@@ -1,8 +1,9 @@
 
-import numpy as np
-
 from fin_insts.derived.Class_FI_Subscriber import Subscriber
 from other.Graph_Theory import find_all_node_permutations, create_list_of_edges, prepend_edge
+
+import numpy as np
+
 
 '''
 NEED TIMESTAMP LOGIC EVENTUALLY

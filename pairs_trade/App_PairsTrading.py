@@ -24,11 +24,11 @@ import os
 sys.path.append(os.path.abspath(".."))
 
 # --- input/output ---
-from input_output import InputOutput
+from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
 # --- IBKR ---
-from ibkr import IBKR_IB
+from ibkr.Class_IBKR_IB import IBKR_IB
 ibkr = IBKR_IB(port=IBKR_PORT) 
 
 # --- fin inst builders ---

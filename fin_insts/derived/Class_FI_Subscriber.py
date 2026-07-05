@@ -1,13 +1,5 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 from abc import ABC, abstractmethod
-
-
-# In[ ]:
 
  
 class Subscriber(ABC):

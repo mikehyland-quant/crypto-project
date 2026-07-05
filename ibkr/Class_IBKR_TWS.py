@@ -1,12 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
 
 #imports
 from datetime import datetime
-import time
+# import time
 
 #from IBKR
 from ibapi.client import EClient
@@ -14,9 +9,6 @@ from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract, ComboLeg
 from ibapi.tag_value import TagValue
 from ibapi.order import *
-
-
-# In[5]:
 
 
 class IBKR_TWS(EWrapper, EClient):     

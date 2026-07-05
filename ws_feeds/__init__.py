@@ -1,3 +1,4 @@
+'''
 # ws_feeds/__init__.py
 
 from .Class_WS_FeedBase import WSFeedBase
@@ -23,3 +24,4 @@ __all__ = [
     "WSFeedBase",
     "WSFeedManager",
 ]
+'''

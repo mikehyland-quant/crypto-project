@@ -4,7 +4,7 @@
 #imports
 from datetime import datetime, time, timedelta, date
 from dateutil import parser
-from zoneinfo import ZoneInfo
+# from zoneinfo import ZoneInfo
 
 import numbers
 
