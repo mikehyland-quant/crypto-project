@@ -15,7 +15,6 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         super().__init__(objs_list=objs_list,  df=df)  # this calls Strategy_Parent.__init__() 
         
         # create self attributes
-        self._calc_price            = self._calc_price_amount  # or self._calc_price_pct
         self.no_partial_trades_yet  = True
         self.trades_by_orderId_dict = {}
 

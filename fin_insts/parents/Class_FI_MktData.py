@@ -195,7 +195,6 @@ class MktData:
         
 
     def on_close_update(self, close_price=np.nan):
-        print('hi2')
         close_price = self._safe_float(close_price, default=np.nan)
         if close_price is not None and not np.isnan(close_price):
             self.price_raw_close    = close_price 
@@ -204,8 +203,8 @@ class MktData:
             self.price_unit_close   = self.price_screen_close * self.scalar_size_FIs_per_unit
             
             strategy = getattr(self, "strategy", np.nan)
-            if getattr(self, "strat_on_closing_price_update", False):  
-                strategy.on_closing_price_update(self)
+            if getattr(self, "strat_on_closing_price", False):  
+                strategy.on_closing_price(self)
 
             self.actively_updating_mkt_data = True
             self.need_to_save_closing_price = False

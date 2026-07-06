@@ -136,7 +136,7 @@ class IBKR_IB:
         #print(ticker, '\n')
         
         return ticker
-         
+          
 
     def tick_handler(self, ticker):
         '''
@@ -160,7 +160,7 @@ class IBKR_IB:
                                    ask_size=ticker.askSize)
         
         elif obj.need_to_save_closing_price:     
-            obj.on_closing_price(close_price=ticker.close) 
+            obj.on_close_update(close_price=ticker.close) 
            
 
     def order_handler(self, trade):

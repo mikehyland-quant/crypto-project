@@ -4,7 +4,6 @@ class PairsTrade_OnClosingPrice:
     
 
     def on_closing_price(self, obj):
-        print('hi')
         mkt_close = obj.price_screen_close
 
         buy_sell = obj.buy_sell
