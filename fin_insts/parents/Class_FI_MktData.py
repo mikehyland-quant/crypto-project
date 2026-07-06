@@ -195,6 +195,7 @@ class MktData:
         
 
     def on_close_update(self, close_price=np.nan):
+        print('hi2')
         close_price = self._safe_float(close_price, default=np.nan)
         if close_price is not None and not np.isnan(close_price):
             self.price_raw_close    = close_price 

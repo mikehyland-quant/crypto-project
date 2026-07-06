@@ -151,6 +151,8 @@ class IBKR_IB:
         if obj is None:
             return
         
+        # print(obj.actively_updating_mkt_data, obj.need_to_save_closing_price)
+
         if obj.actively_updating_mkt_data:
             obj.on_mkt_data_change(bid_price=ticker.bid,
                                    ask_price=ticker.ask,
@@ -158,7 +160,7 @@ class IBKR_IB:
                                    ask_size=ticker.askSize)
         
         elif obj.need_to_save_closing_price:     
-            obj.on_close_update(close_price=ticker.close) 
+            obj.on_closing_price(close_price=ticker.close) 
            
 
     def order_handler(self, trade):

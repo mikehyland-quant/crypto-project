@@ -30,8 +30,10 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
                                                  
         self.obj1.opp_obj = self.obj2
         self.obj2.opp_obj = self.obj1
- 
+
         self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
+
+        # print(vars(self.obj1), vars(self.obj2))
 
 
     def _attach_input_attr(self, objs_list, df):
@@ -51,7 +53,7 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
      
             for attr_key, attr_val in row.items():
                 setattr(obj, attr_key, attr_val)
-                
+            
         return self.obj1, self.obj2
 
  

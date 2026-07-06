@@ -10,7 +10,7 @@ IBKR_PORT      = 7496
 STRAT_NAME     = "LimitMarket"
 
 STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
-STRAT_WS_NAME  = "SPOT VS ETF INPUTS"
+STRAT_WS_NAME  = "ETF INPUTS"
 STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
 # IMPORTS
@@ -76,7 +76,7 @@ async def main():
 
     # print('test complete')
     # return
-  
+    
     # Run all streams concurrently
     tasks = []
     tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))
