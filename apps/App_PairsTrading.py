@@ -5,13 +5,13 @@ need to decide limit vs mkt
 
 # CONSTANTS 
 
-IBKR_PORT      = 7497
+IBKR_PORT      = 7496
 
 STRAT_NAME     = "LimitMarket"
 
 STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
-STRAT_WS_NAME  = "PAIRS TRADING INPUTS"
-STRAT_TBL_NAME = "ACTIVE_STRAT"
+STRAT_WS_NAME  = "SPOT VS ETF INPUTS"
+STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
 # IMPORTS
 import asyncio
@@ -46,16 +46,10 @@ strategy_dict = {"LimitMarket" : PairsTrade_LimitMarket,
 async def main():
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
-    strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('Keys')
-    strat_transpose_df = strat_df.T
-    # print(strat_df, '\n', strat_transpose_df, '\n')
+    strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('keys')
+    # print(strat_df, '\n')
 
-    row_col=['target_profit_per_unit', 'epsilon_per_unit']
-    strat_df = strat_df.loc[row_col]
-    strat_transpose_df = strat_transpose_df.drop(columns=row_col)
-    # print(strat_df, '\n', strat_transpose_df, '\n')
-
-    objs_list = make_single_leg_fin_insts(strat_transpose_df)
+    objs_list = make_single_leg_fin_insts(strat_df.T)
     for obj in objs_list:
         obj.platform_obj = ibkr  # this is the object not the name 
     # print(objs_list, '\n')
@@ -79,7 +73,10 @@ async def main():
     strat = strategy_dict[STRAT_NAME](objs_list, strat_df)  
     # strat.need_to_print_active_orders   = False
     # strat.need_to_print_finished_orders = False  
-      
+
+    # print('test complete')
+    # return
+  
     # Run all streams concurrently
     tasks = []
     tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))

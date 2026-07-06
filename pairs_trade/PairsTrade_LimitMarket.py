@@ -1,5 +1,5 @@
 
-from pairs_trade.PairsTrade_Parent  import PairsTrade_Parent
+from pairs_trade.PairsTrade_Parent import PairsTrade_Parent
 
 
 class PairsTrade_LimitMarket(PairsTrade_Parent):

@@ -1,4 +1,7 @@
 
+from pairs_trade.PairsTrade_Parent import PairsTrade_Parent
+
+
 class PairsTrade_LimitLimit(PairsTrade_Parent):
 
 
