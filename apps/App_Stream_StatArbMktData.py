@@ -3,7 +3,7 @@
 
 IBKR_PORT      = 7496
 
-INPUT_WB_NAME  = "2026 Stat Arb.xlsx"
+INPUT_WB_NAME  = "2026 Stat Arb Mkt Data.xlsx"
 INPUT_WS_NAME  = "MKT DATA INPUTS"
 INPUT_TBL_NAME = "MKT_DATA_INPUTS"
 
@@ -51,6 +51,7 @@ async def main():
     input_dict, objs_list = standard_input(INPUT_WB_NAME, INPUT_WS_NAME, INPUT_TBL_NAME)
         
     ibkr_objs_list = [obj for obj in objs_list if obj.my_pf_name == 'IBKR']
+
     if ibkr_objs_list:
         await ibkr.connect()
         print("IBKR connected:", ibkr.ib.isConnected())
@@ -59,7 +60,8 @@ async def main():
         await asyncio.gather(*(ibkr.complete_obj(obj) for obj in ibkr_objs_list))
 
 
-    output_list = [ibkr_objs_list]
+    output_list = ibkr_objs_list
+
 
     # Run all streams concurrently
     tasks = []

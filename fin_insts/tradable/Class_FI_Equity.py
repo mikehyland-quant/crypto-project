@@ -37,6 +37,10 @@ class Equity(FinancialInstrument):
 
         wb, ws = io.set_xw_book_and_sheet('2026 BTC ETF Ratios.xlsx', 'BTC RATIOS')
         df = io.get_xw_df(ws, 'btc_ratios', table=True)
+        
+        if self.my_fi_name not in df.columns:
+            return 1
+        
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         exp_date = self.date_settle_trade
         scalar = self._safe_float(df.loc[df['Date'] == exp_date, self.my_fi_name].to_list()[0])

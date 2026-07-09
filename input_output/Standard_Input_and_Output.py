@@ -17,12 +17,13 @@ io = InputOutput()
 
 def get_objs_list(ws, range, table=True):
     df = io.get_xw_df(ws, range, table)
-    # print(active_fi_df)
+    #  print(active_fi_df)
 
     if 'TRUE/FALSE' not in df.columns:
         df = df.set_index('Keys').T
 
     df = df[df['TRUE/FALSE'] == True]
+    # print(df)
     
     obj_list = make_single_leg_fin_insts(df)
 
@@ -75,6 +76,11 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
         if print_ts:
             print(ts)
         
+        #for obj in output_list:
+         #   for item in obj:
+          #      print(vars(item), '\n')
+
+
         current_df = io.convert_objs_to_printable_df(output_list, OUTPUT_COLS, FLATTEN_COLS)
         
         if add_ts:

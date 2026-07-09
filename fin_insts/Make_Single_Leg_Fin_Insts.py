@@ -10,9 +10,9 @@ from fin_insts.tradable.Class_FI_Spot   import Spot
 
 def get_db_df():
 
-    wb_name  = '2026 Crypto Products Database.xlsx'
-    ws_name  = 'Crypto'
-    tbl_name = 'crypto_static_data_table'
+    wb_name  = '2026 FI Static Data Database.xlsx'
+    ws_name  = 'Static Data Table'
+    tbl_name = 'static_data_table'
 
     wb, ws = io.set_xw_book_and_sheet(wb_name, ws_name)
     

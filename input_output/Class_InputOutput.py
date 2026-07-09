@@ -68,8 +68,8 @@ class InputOutput():
         df = df.reindex(columns=OUTPUT_COLS)
         return df
         
-    def objs_list_to_df(self, list_of_objs):
-        return pd.DataFrame([obj.__dict__ for obj in list_of_objs])
+    def objs_list_to_df(self, objs_list):
+        return pd.DataFrame([obj.__dict__ for obj in objs_list])
         
     def objs_dict_to_df(self, dict_of_objs):
         return pd.DataFrame([vars(obj) for obj in dict_of_objs.values()])

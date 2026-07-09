@@ -3,7 +3,7 @@
 
 IBKR_PORT      = 7496
 
-INPUT_WB_NAME  = "2026 Market Data.xlsx"
+INPUT_WB_NAME  = "2026 Stat Arb Mkt Data.xlsx"
 INPUT_WS_NAME  = "MKT DATA INPUTS"
 INPUT_TBL_NAME = "MKT_DATA_INPUTS"
 
