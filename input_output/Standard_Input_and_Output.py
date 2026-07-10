@@ -99,9 +99,10 @@ async def standard_output(input_dict, output_list, OUTPUT_COLS, FLATTEN_COLS=[])
             
         if display_mode:
             df = history_df if display_mode == 'append' else current_df
-            clear_output(wait=True)
-            display(df)
-
+            # clear_output(wait=True)
+            # display(df)
+            print(df)
+            
         if csv_mode:
             if csv_mode == 'append':
                 current_df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)

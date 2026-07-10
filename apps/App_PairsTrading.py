@@ -30,7 +30,7 @@ from ibkr.Class_IBKR_IB import IBKR_IB
 ibkr = IBKR_IB(port=IBKR_PORT) 
 
 # --- fin inst builders ---
-from fin_insts.Make_Single_Leg_Fin_Insts import make_single_leg_fin_insts
+from fin_insts.Make_Single_Leg_Fin_Insts import get_db_df_and_make_single_leg_fin_insts
 # from fin_insts import FutureSpread, BestOf, Synthetic
 
 # --- trading strategy ---
@@ -49,7 +49,7 @@ async def main():
     strat_df = io.get_xw_df(ws, STRAT_TBL_NAME, table=True).set_index('keys')
     # print(strat_df, '\n')
 
-    objs_list = make_single_leg_fin_insts(strat_df.T)
+    objs_list = get_db_df_and_make_single_leg_fin_insts(strat_df.T)
     for obj in objs_list:
         obj.platform_obj = ibkr  # this is the object not the name 
     # print(objs_list, '\n')
