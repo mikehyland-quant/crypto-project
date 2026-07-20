@@ -53,7 +53,9 @@ STAT_ARB_COLS = ['my_prod_type',
                  'size_screen_bid',
                  'price_screen_bid',
                  'price_screen_ask',
-                 'size_screen_ask']
+                 'size_screen_ask',
+                 
+                 'price_screen_close']
 
 BO_ATTR_LIST = [('price_unit_bid', max),
                 ('price_unit_ask', min),        
