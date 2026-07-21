@@ -10,7 +10,7 @@ IBKR_PORT      = 7496
 STRAT_NAME     = "LimitMarket"
 
 STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
-STRAT_WS_NAME  = "ETF INPUTS"
+STRAT_WS_NAME  = "STAT ARB INPUTS"
 STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
 # IMPORTS

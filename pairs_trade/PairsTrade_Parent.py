@@ -55,29 +55,32 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
             
         return self.obj1, self.obj2
 
- 
+  
     def _attach_strat_attr(self, objs_list):
-        buy_tuple      = ('BUY',  'cf_unit_lift_ask', -1)
-        sell_tuple     = ('SELL', 'cf_unit_hit_bid',   1)
-        min_ratio_size = min(self.obj1.ratio_size, self.obj2.ratio_size)
+        buy_tuple          = ('BUY',  'cf_unit_lift_ask', -1)
+        sell_tuple         = ('SELL', 'cf_unit_hit_bid',   1)
+        min_formula_scalar = min(self.obj1.formula_scalar, self.obj2.formula_scalar)
         
         for obj in objs_list:
-            obj.spread_ratio = obj.opp_obj.ratio_size / min_ratio_size
-            obj.adj_spread   = self.target_spread     / obj.spread_ratio
+            obj.spread_ratio = obj.opp_obj.formula_scalar / min_formula_scalar
+            obj.adj_spread   = self.target_spread         / obj.spread_ratio
 
-            if obj.initial_order_size_units > 0:
+            if obj.initial_order_size > 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = buy_tuple 
-            elif obj.initial_order_size_units < 0:
+            elif obj.initial_order_size < 0:
                 (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = sell_tuple  
 
-            obj.initial_order_size_units = abs(obj.initial_order_size_units)
+            obj.initial_order_size = abs(obj.initial_order_size)
 
             obj.primary_trade                    = None
             obj.primary_trade_base_price         = None
             obj.primary_trade_order_price        = None
-            obj.primary_trade_initial_order_size = obj.round_size_to_increment(obj.initial_order_size_units *
-                                                                               obj.scalar_size_orders_per_unit)
-            
+
+            size = obj.initial_order_size
+            if obj.initial_order_size_type.lower() == "units":
+                size = size * obj.scalar_size_orders_per_unit
+            obj.primary_trade_initial_order_size = obj.round_size_to_increment(size)
+         
             obj.trades_by_orderId = {}
                                                                 
             if obj.active_passive.lower() == 'passive':
