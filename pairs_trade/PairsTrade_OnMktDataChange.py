@@ -72,7 +72,7 @@ class PairsTrade_OnMktDataChange:
     def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):
         unit_fair_value   = output_obj.adj_spread - (unit_input_price * output_obj.spread_ratio)
         unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
-        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI / output_obj.formula_scalar
+        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI
         mkt_output_price  = output_obj.round_price_to_tick(abs(mkt_output_price))    
         # print(unit_input_price, unit_fair_value, mkt_output_price)                                         
         return mkt_output_price

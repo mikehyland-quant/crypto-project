@@ -25,6 +25,10 @@ class Equity(FinancialInstrument):
         self.scalar_size_raw_to_screen   = 100
 
         self.scalar_size_FIs_per_unit    = self.get_scalar()
+        self.reset_scalars()
+
+
+    def reset_scalars(self):
         self.scalar_size_units_per_FI    = 1 / self.scalar_size_FIs_per_unit
 
         self.scalar_size_orders_per_unit = self.scalar_size_FIs_per_unit / self.scalar_size_FIs_per_order
