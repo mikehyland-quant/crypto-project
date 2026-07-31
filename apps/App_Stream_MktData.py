@@ -38,7 +38,9 @@ CRYPTO_COLS = [ 'my_prod_type',
                 'days_settle_trade',
                 'days_settle_expiry',
                 'days_settle_expiry_near', 	 
-                'days_settle_expiry_far']
+                'days_settle_expiry_far',
+
+                'price_screen_close',]
 
 BTC_ETF_COLS = ['my_fi_name',
                 'price_screen_bid',

@@ -7,7 +7,7 @@ need to decide limit vs mkt
 
 IBKR_PORT      = 7496
 
-STRAT_NAME     = "LimitMarket"
+STRAT_NAME     = "LimitLimit"
 
 STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
 STRAT_WS_NAME  = "STAT ARB INPUTS"
@@ -35,10 +35,10 @@ from fin_insts.Make_Single_Leg_Fin_Insts import get_db_df_and_make_single_leg_fi
 
 # --- trading strategy ---
 from pairs_trade.PairsTrade_LimitMarket import PairsTrade_LimitMarket
-# from pairs_trade.PairsTrade_LimitLimit  import PairsTrade_LimitLimit
+from pairs_trade.PairsTrade_LimitLimit  import PairsTrade_LimitLimit
 
 strategy_dict = {"LimitMarket" : PairsTrade_LimitMarket,
-                 "LimitLimit"  : None}
+                 "LimitLimit"  : PairsTrade_LimitLimit}
 
 
 # CODE

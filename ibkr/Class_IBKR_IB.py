@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder
+from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder, Order
 
 from fin_insts.parents.Class_FI_Dates import Dates
 

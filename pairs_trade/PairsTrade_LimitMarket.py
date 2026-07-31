@@ -26,4 +26,4 @@ class PairsTrade_LimitMarket(PairsTrade_Parent):
             self._placed_order_admin(obj, trade, size, "market")
 
             return trade
-        
+         

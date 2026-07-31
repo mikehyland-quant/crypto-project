@@ -57,22 +57,22 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
 
   
     def _attach_strat_attr(self, objs_list):
-        buy_tuple  = ('BUY',  'cf_unit_lift_ask', -1)
-        sell_tuple = ('SELL', 'cf_unit_hit_bid',   1)
-        min_coeff  = min(self.obj1.unit_coefficient, self.obj2.unit_coefficient)
+        buy_tuple  = ('BUY',  'cf_unit_lift_ask',  self.target_spread)
+        sell_tuple = ('SELL', 'cf_unit_hit_bid',  -self.target_spread)
+        # min_coeff  = min(self.obj1.unit_coefficient, self.obj2.unit_coefficient)
         
         for obj in objs_list:
             if obj.reset_FIs_per_unit is not False:
                 obj.scalar_size_FIs_per_unit = obj.reset_FIs_per_unit
                 obj.reset_scalars()
 
-            obj.spread_ratio = obj.opp_obj.unit_coefficient / min_coeff
-            obj.adj_spread   = self.target_spread           / obj.spread_ratio
+            # obj.spread_ratio = obj.opp_obj.unit_coefficient / min_coeff
+            # obj.adj_spread   = self.target_spread           / obj.spread_ratio
 
             if obj.buy_sell.upper() == 'BUY':
-                (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = buy_tuple 
+                (obj.buy_sell, obj.input_price_attr, obj.adjusted_spread) = buy_tuple 
             elif obj.buy_sell.upper() == "SELL":
-                (obj.buy_sell, obj.input_price_attr, obj.filled_scalar) = sell_tuple  
+                (obj.buy_sell, obj.input_price_attr, obj.adjusted_spread) = sell_tuple  
 
             obj.primary_trade                    = None
             obj.primary_trade_base_price         = None

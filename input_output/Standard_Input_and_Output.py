@@ -15,7 +15,7 @@ from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
 
 
-def get_objs_list(ws, range, table=True):
+def make_objs_list(ws, range, table=True):
     df = io.get_xw_df(ws, range, table)
     #  print(active_fi_df)
 
@@ -38,7 +38,7 @@ def standard_input(wb_name, ws_name, range, table=True, style=float):
 
     ws = io.set_xw_sheet(wb, input_dict['true/false sheet name'])
 
-    obj_list = get_objs_list(ws, input_dict['true/false table name'], table)
+    obj_list = make_objs_list(ws, input_dict['true/false table name'], table)
 
     return input_dict, obj_list
 

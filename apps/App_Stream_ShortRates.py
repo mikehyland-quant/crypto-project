@@ -6,7 +6,7 @@ def WorkbookDetails():
     WorkbookDetailsDict = {    
 
         #initial instruction area for program
-        "Workbook Name" :                            '2026 Short Rates.xlsx',
+        "Workbook Name" :                            '2026 Short Rates.xlsm',
         "Instruction Worksheet Name" :               'PYTHON',
         "Instruction Range" :                        'Table1'}
 

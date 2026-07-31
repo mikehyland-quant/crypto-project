@@ -14,8 +14,8 @@ class PairsTrade_OnTradeExec:
                 
         unfilled_obj = filled_obj.opp_obj
 
-        filled_obj.strat_on_mkt_data_update   = False
-        unfilled_obj.strat_on_mkt_data_update = False 
+        filled_obj.strat_on_mkt_data_change   = False
+        unfilled_obj.strat_on_mkt_data_change = False 
         
         if self.no_partial_trades_yet:
             self._filled_before_partial(filled_obj, unfilled_obj, filled_order)
@@ -66,7 +66,8 @@ class PairsTrade_OnTradeExec:
         new_order_size = unfilled_obj.round_size_to_increment(unfilled_obj.primary_trade_initial_order_size * pct_filled)
 
         x = self.modify_primary_order(unfilled_obj, 
-                                      new_order_size) # see specialty code
+                                      new_order_size,
+                                      filled_order) # see specialty code
 
         
     def _filled_after_partial(self, filled_obj, unfilled_obj, filled_order, tolerance=0.02):
@@ -81,9 +82,11 @@ class PairsTrade_OnTradeExec:
         print('net units = ', self.obj1.my_fi_name, self.obj1.active_plus_traded_units, 
                               self.obj2.my_fi_name, self.obj2.active_plus_traded_units, '\n')
 
+        '''
         need_balancing_order = (abs(net_units) > tolerance)
         if need_balancing_order:
             x = self.prep_and_launch_balancing_order(net_units)
+        '''
 
         if (filled_obj.active_orders + unfilled_obj.active_orders == 0): 
             filled_obj.strat_on_trade_exec        = False
@@ -91,7 +94,7 @@ class PairsTrade_OnTradeExec:
 
             self.finish_strategy()
 
-
+    '''
     def prep_and_launch_balancing_order(self, net_units):
         if net_units > 0:
             order_obj = self.obj2
@@ -101,6 +104,7 @@ class PairsTrade_OnTradeExec:
         size = order_obj.round_size_to_increment(abs(net_units) * order_obj.scalar_size_orders_per_unit)
 
         trade = self.launch_balancing_order(order_obj, size)
+    '''
         
    
         
