@@ -57,8 +57,8 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
 
   
     def _attach_strat_attr(self, objs_list):
-        buy_tuple  = ('BUY',  'cf_unit_lift_ask',  self.target_spread)
-        sell_tuple = ('SELL', 'cf_unit_hit_bid',  -self.target_spread)
+        buy_tuple  = ('BUY',  'cf_unit_lift_ask', -1)
+        sell_tuple = ('SELL', 'cf_unit_hit_bid',   1)
         # min_coeff  = min(self.obj1.unit_coefficient, self.obj2.unit_coefficient)
         
         for obj in objs_list:
@@ -70,9 +70,9 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
             # obj.adj_spread   = self.target_spread           / obj.spread_ratio
 
             if obj.buy_sell.upper() == 'BUY':
-                (obj.buy_sell, obj.input_price_attr, obj.adjusted_spread) = buy_tuple 
+                (obj.buy_sell, obj.input_price_attr, obj.final_spread_scalar) = buy_tuple 
             elif obj.buy_sell.upper() == "SELL":
-                (obj.buy_sell, obj.input_price_attr, obj.adjusted_spread) = sell_tuple  
+                (obj.buy_sell, obj.input_price_attr, obj.final_spread_scalar) = sell_tuple  
 
             obj.primary_trade                    = None
             obj.primary_trade_base_price         = None
@@ -178,8 +178,8 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
                 ", avg_unit_price:", f'{obj.final_avg_unit_price:.2f}'
             )
         
-        final_spread = (self.obj2.final_avg_unit_price * self.obj2.spread_ratio * self.obj2.filled_scalar + 
-                        self.obj1.final_avg_unit_price * self.obj1.spread_ratio * self.obj1.filled_scalar)  
+        final_spread = (self.obj2.final_avg_unit_price * self.obj2.spread_ratio * self.obj2.fimal_spread_scalar + 
+                        self.obj1.final_avg_unit_price * self.obj1.spread_ratio * self.obj1.final_spread_scalar)  
         
         net_units = self.obj1.total_units_filled - self.obj2.total_units_filled
 
