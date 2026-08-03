@@ -10,31 +10,45 @@ import pandas as pd
 # USER INPUTS
 # ============================================================
 
-input_file = "HI YLD prep.csv"
+etf_group = 'hi yld'
+
+moving_average_window = 20
 
 dollar_constant = 100_000
+
 commission_per_share = 0.005
+
+enter_trade_limit = np.arange(0.001, 0.0071, 0.001)
+
+exit_trade_limit = np.arange(0.001, 0.0071, 0.001)
+
+
+# ============================================================
+# CHOOSE ETFs
+# ============================================================
+
+etf_group_dict = {"hi yld" : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
+                  "muni"   : ['TFI', 'VTEB', 'MUB']}
+
+sorted_etf_list = etf_group_dict[etf_group]
 
 
 # ============================================================
 # READ DATA
 # ============================================================
 
-df = pd.read_csv(input_file)
+input_file = etf_group + ' prep.csv'
+file_path = Path("stat_arb_analysis") / input_file
+df = pd.read_csv(file_path)
+
+df = df.dropna(axis=1, how="all")
+df = df.dropna(how="all")
 
 date_col = "date"
-
-# Convert CSV values such as "45659" into numbers
-df[date_col] = pd.to_numeric(
-    df[date_col],
-    errors="coerce",
-)
 
 # Convert Excel serial dates into pandas dates
 df[date_col] = pd.to_datetime(
     df[date_col],
-    unit="D",
-    origin="1899-12-30",
     errors="coerce",
 )
 
@@ -44,12 +58,6 @@ df = (
     .reset_index(drop=True)
 )
 
-sorted_etf_list =[
-    col.removesuffix("_scaled_price")
-    for col in df.columns
-    if col.endswith("_scaled_price")
-]
-
 
 # ============================================================
 # LOOP STARTS HERE
@@ -58,49 +66,96 @@ sorted_etf_list =[
 results = {}
 grid_results = []
 
-for enter_limit in np.arange(0.001, 0.0071, 0.001):
-    for exit_limit in np.arange(0.000, enter_limit + 0.0001, 0.001):
+for enter_limit in enter_trade_limit:
+    for exit_limit in exit_trade_limit:
 
-        determine_target_position(enter_limit, exit_limit)
+# ============================================================
+# DETERMINE TARGET POSITION
+# ============================================================
+
+        signal = df["max_ln_minus_min_ln"]
+
+        df["open_trade"] = (
+            signal > enter_limit
+        )
+
+        df["exit_trade"] = (
+            signal < exit_limit
+        )
+
+        df["target_position"] = (
+            1 if df["open_trade"].iat[i] else
+            0 if df["exit_trade"].iat[i] else
+            df["current_position"].iat[i]
+        )
+
+
+# ============================================================
+# DETERMINE CURRENT POSITION
+# ============================================================
+
+        for row in []
+
+        current_shs_cols = [
+            f"{etf}_current_shs"
+            for etf in sorted_etf_list
+        ]
+
+        df["current_position"] = (
+            df[current_shs_cols]
+            .ne(0)
+            .any(axis=1)
+            .astype(int)
+        )
+
+        # etf with lowest ln
+        valid_rows = df[scaled_price_columns].notna().any(axis=1)
+
+df["best_long"] = pd.NA
+df.loc[valid_rows, "best_long"] = (
+    df.loc[valid_rows, scaled_price_columns]
+    .idxmin(axis=1)
+)
+df["best_long"] = df["best_long"].str.replace(
+    "_scaled_price",
+    "",
+    regex=False,
+)
+
+        df['current_long'] = 
+
+        df['current_short'] = 
+
 
 
 
 # ============================================================
-# ENTRY AND EXIT CONDITIONS
+# DETERMINE TARGET ETFs
 # ============================================================
-def determine_target_position(enter_limit, exit_limit):
-    signal = df["max_ln_minus_min_ln"]
 
-    df["open_trade"] = (
-        signal > enter_limit
-    )
+        df['target_long'] = best_long or current_long
 
-    df["exit_trade"] = (
-        signal < exit_limit
-    )
+        df['target_short'] = best_short or current_short
 
-    df["target_position"] = (
-        1 if df["open_trade"].iat[i] else
-        0 if df["exit_trade"].iat[i] else
-        df["target_position"].iat[i - 1] if i > 0 else 0
-    )
+# ============================================================
+# DETERMINE TARGET SHARES
+# ============================================================
 
-def deterine_target_long():
-    for i in range(len(df)):
-        if df["target_position"].iat[i] == 0:
-            df["target_long"].iat[i] = None
-        else:
-            current_long is
-            target_long is
-            switch if target_long - switch_cost_long > current_long
+        for etf in sorted_etf_list:
+            df['etf' + '_target_shs'] = 0
 
-
-
-def determine_target_short():
-    for i in range(len(df)):
+        for row in df:
+            for etf in sorted_etf_list:
 
 
 def determine_target_shs():
+
+
+after row loop
+
+# ============================================================
+# DETERMINE CHANGE IN SHARES
+# ============================================================
 
 
 def determine_change_in_shs():

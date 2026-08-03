@@ -11,7 +11,7 @@ from pathlib import Path
 # USER INPUTS
 # ============================================================
 
-input_file = "HI YLD.csv"
+etf_group = "hi yld"
 
 moving_average_window = 20
 
@@ -20,24 +20,33 @@ end_date = pd.Timestamp("2025-12-15")
 
 
 # ============================================================
+# CHOOSE ETFs
+# ============================================================
+
+etf_group_dict = {"hi yld" : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
+                  "muni"   : ['TFI', 'VTEB', 'MUB']}
+
+sorted_etf_list = etf_group_dict[etf_group]
+
+
+# ============================================================
 # READ DATA
 # ============================================================
 
-df = pd.read_csv(input_file)
+input_file = 'prices.csv'
+file_path = Path("stat_arb_analysis") / input_file
+df = pd.read_csv(file_path)
 
-date_col = "DATE"
+df = df.dropna(axis=1, how="all")
+df = df.dropna(how="all")
 
-# Convert CSV values such as "45659" into numbers
-df[date_col] = pd.to_numeric(
-    df[date_col],
-    errors="coerce",
-)
+date_col = "date"
 
-# Convert Excel serial dates into pandas dates
+df = df[[date_col] + sorted_etf_list]
+
+# Convert into pandas dates
 df[date_col] = pd.to_datetime(
     df[date_col],
-    unit="D",
-    origin="1899-12-30",
     errors="coerce",
 )
 
@@ -47,15 +56,6 @@ df = (
     .sort_values(date_col)
     .reset_index(drop=True)
 )
-
-etf_list = [col for col in df.columns if col != date_col]
-
-sorted_etf_list = sorted(
-    etf_list,
-    key=lambda col: df[col].iloc[0],
-)
-
-df = df[[date_col] + sorted_etf_list]
 
 for col in sorted_etf_list:
     df[col] = pd.to_numeric(
@@ -69,12 +69,12 @@ for col in sorted_etf_list:
 
 df = (
     df.dropna(subset=sorted_etf_list)
-    .sort_values("DATE")
+    .sort_values(date_col)
     .reset_index(drop=True)
 )
 
 df.columns = [
-    col if col == "DATE" else f"{col}_price"
+    col if col == date_col else f"{col}_price"
     for col in df.columns
 ]
 
@@ -83,18 +83,21 @@ df.columns = [
 # CALCULATIONS
 # ============================================================
 
+# daily price changes
 for etf in sorted_etf_list:
     df[f"{etf}_price_chg"] = df[f"{etf}_price"].diff()
 
 
 anchor_etf = sorted_etf_list[-1]
 
+# daily price ratios
 ratio_name_list = []
 for etf in sorted_etf_list:
     ratio_name = f"{anchor_etf}/{etf}"
     ratio_name_list.append(ratio_name)
     df[ratio_name] = df[f"{anchor_etf}_price"] / df[f"{etf}_price"]
 
+# price ratio moving averages
 for ratio_name in ratio_name_list:
     df[f"{ratio_name}_moving_avg"] = (
         df[f"{ratio_name}"]
@@ -109,16 +112,21 @@ for ratio_name in ratio_name_list:
 for ratio_name in ratio_name_list:
     df[f"{ratio_name}_prev_moving_avg"] = df[f"{ratio_name}_moving_avg"].shift(1)
 
+# scaled prices
+scaled_price_columns = []
 for etf in sorted_etf_list:
     prior_price_ratio_moving_avg = (
         df[f"{anchor_etf}/{etf}_prev_moving_avg"]
     )
 
-    df[f"{etf}_scaled_price"] = (
+    scaled_price_name = f"{etf}_scaled_price"
+    scaled_price_columns.append(scaled_price_name)
+    df[scaled_price_name] = (
         df[f"{etf}_price"]
         * prior_price_ratio_moving_avg
     )
 
+# relative prices
 ln_name_list = []
 for etf in sorted_etf_list:
     ln_name = f"ln({etf}*/{anchor_etf})"
@@ -128,16 +136,48 @@ for etf in sorted_etf_list:
         / df[f"{anchor_etf}_price"]
     )
 
-'''
+# max, min and diff of ln's
 df['max_ln'] = df[ln_name_list].max(axis=1)
 df['min_ln'] = df[ln_name_list].min(axis=1) 
 df['max_ln_minus_min_ln'] = df['max_ln'] - df['min_ln']
-'''
+
+# etf with lowest ln
+valid_rows = df[scaled_price_columns].notna().any(axis=1)
+
+df["best_long"] = pd.NA
+df.loc[valid_rows, "best_long"] = (
+    df.loc[valid_rows, scaled_price_columns]
+    .idxmin(axis=1)
+)
+df["best_long"] = df["best_long"].str.replace(
+    "_scaled_price",
+    "",
+    regex=False,
+)
+
+# etf with highest ln
+df["best_short"] = pd.NA
+df.loc[valid_rows, "best_short"] = (
+    df.loc[valid_rows, scaled_price_columns]
+    .idxmax(axis=1)
+)
+df["best_short"] = df["best_short"].str.replace(
+    "_scaled_price",
+    "",
+    regex=False,
+)
 
 
 # ============================================================
 # EX-DIVIDEND / MONTH-END FLAGS
 # ============================================================
+
+df['new_date_col'] = df[date_col]
+df.drop(columns=[date_col], inplace=True)
+df.rename(
+    columns={'new_date_col': 'date'},
+    inplace=True,
+)
 
 # These ETFs go ex-dividend on the first trading day
 # of every month.
@@ -145,11 +185,8 @@ df['max_ln_minus_min_ln'] = df['max_ln'] - df['min_ln']
 # ex_div_date is True on the first available trading
 # day of each new month.
 
-current_month = df["DATE"].dt.to_period("M")
-previous_month = df["DATE"].shift(1).dt.to_period("M")
-
-df['date'] = df['DATE']
-df.drop(columns=['DATE'], inplace=True)
+current_month = df["date"].dt.to_period("M")
+previous_month = df["date"].shift(1).dt.to_period("M")
 
 df["ex_div_date"] = (
     current_month != previous_month
@@ -161,54 +198,9 @@ df.loc[df.index[0], "ex_div_date"] = False
 
 
 # ============================================================
-# ADD COLUMNS FOR BACKTEST
-# ============================================================
-
-for name in sorted_etf_list:
-    df[f"{name}_current_shs"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_daily_pnl"] = 0
-
-# flatten_at_close is True on the trading day immediately
-# preceding an ex-dividend date.
-#
-# The strategy's target position must be zero at that close.
-df["flatten_at_close"] = (
-    df["ex_div_date"]
-    .astype("boolean")
-    .shift(-1, fill_value=False)
-    .astype(bool)
-)
-    
-df["open_trade"] = False
-df['exit_trade'] = False
-df['target_position'] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_target_position"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_target_shs"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_shs_to_buy"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_shs_to_sell"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_daily_commission"] = 0
-
-for name in sorted_etf_list:
-    df[f"{name}_gross_pnl"] = 0
-
-'''
-
-# ============================================================
 # SAVE PREPARED FILE
 # ============================================================
 
-output_file = input_file.replace(".csv", " prep.csv")
-df.to_csv(output_file, index=False)
-
+file_name = etf_group + "_prep.csv"
+file_path = Path("stat_arb_analysis") / file_name
+df.to_csv(file_path, index=False)
