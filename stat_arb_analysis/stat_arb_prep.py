@@ -8,10 +8,10 @@ from pathlib import Path
 
 
 # ============================================================
-# USER INPUTS
+# USER INPUT
 # ============================================================
 
-etf_group = "hi_yld"
+etf_group = "em_mkts"
 
 moving_average_window = 20
 
@@ -25,8 +25,22 @@ comm_per_share = 0.005
 # CHOOSE ETFs
 # ============================================================
 
-etf_group_dict = {"hi_yld" : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
-                  "muni"   : ['TFI', 'VTEB', 'MUB']}
+etf_group_dict = {"agg"         : ['SCHZ', 'SPAB', 'IUSB', 'BND', 'AGG'],
+                  "ca_munis"    : ['CMF', 'VTEC'],
+                  "converts"    : ['CWB', 'ICVT'],
+                  "corps"       : ['SPBO', 'USIG', 'VTC', 'CORP'],
+                  "em_mkts"     : ['VWOB', 'EMB'],
+                  "faln_angls"  : ['FALN', 'ANGL'],
+                  "hi_yld"      : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
+                  "intl_agg"    : ['BNDX', 'IAGG'],
+                  "intl_tsy"    : ['BWX', 'IGOV'],
+                  "lt_corps"    : ['SPLB', 'IGLB', 'VCLT'],
+                  "lt_tsy"      : ['SPTL', 'SCHQ', 'VGLT'],
+                  "lt_tsy2"     : ['SPTL', 'SCHQ', 'VGLT', 'TLT'],
+                  "mortgages"   : ['SPMB', 'VMBS', 'MBB'],
+                  "munis"       : ['TFI', 'VTEB', 'MUB'],
+                  "prefs"       : ['PFFD', 'PFF'],
+                  "real_estate" : ['SCHH', 'USRT']}
 
 sorted_etf_list = etf_group_dict[etf_group]
 anchor_etf = sorted_etf_list[-1]
@@ -37,7 +51,7 @@ anchor_etf = sorted_etf_list[-1]
 # ============================================================
 
 input_file = 'prices.csv'
-file_path = Path("stat_arb_analysis") / input_file
+file_path = Path("stat_arb_analysis/prep") / input_file
 df = pd.read_csv(file_path)
 
 
@@ -187,7 +201,7 @@ df["tgt_max_price_etf"] = df["tgt_max_price_etf"].str.replace("_scaled_price_min
 
 df['new_date_col'] = df[date_col]
 df.drop(columns=[date_col], inplace=True)
-df.rename(columns={'new_date_col': 'date'}, inplace=True)
+df.rename(columns={'new_date_col' : 'date'}, inplace=True)
 
 # These ETFs go ex-dividend on the first trading day
 # of every month.
@@ -209,8 +223,12 @@ df.loc[df.index[0], "ex_div_date"] = False
 # SAVE AND PRINT DF
 # ============================================================
 
-file_name = etf_group + "_prep2.csv"
-file_path = Path("stat_arb_analysis") / file_name
+filename = etf_group + "_prep.csv"
+file_path = Path("stat_arb_analysis/prep") / filename
 df.to_csv(file_path, index=False) 
 
 print(df)
+
+print()
+print("finished")
+print()

@@ -11,26 +11,35 @@ from pathlib import Path
 # USER INPUTS
 # ============================================================
 
-etf_group = 'hi_yld'
+etf_group = 'real_estate'
 
 moving_average_window = 20
 
 dollar_constant = 100_000
 
-comm_per_share = 0.005
-
-min_limit = 0.001
-max_limit = 0.001
-limit_step_size = 0.001
-epsilon = 1E-16
-
+limit_list = [0.0001, 0.0010, 0.0001]
+# limit_list = [0.0005, 0.0050, 0.0005]
 
 # ============================================================
 # CHOOSE ETFs
 # ============================================================
 
-etf_group_dict = {"hi_yld" : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
-                  "muni"   : ['TFI', 'VTEB', 'MUB']}
+etf_group_dict = {"agg"         : ['SCHZ', 'SPAB', 'IUSB', 'BND', 'AGG'],
+                  "ca_munis"    : ['CMF', 'VTEC'],
+                  "converts"    : ['CWB', 'ICVT'],
+                  "corps"       : ['SPBO', 'USIG', 'VTC', 'CORP'],
+                  "em_mkts"     : ['VWOB', 'EMB'],
+                  "faln_angls"  : ['FALN', 'ANGL'],
+                  "hi_yld"      : ['SPHY', 'SCYB', 'HYLB', 'USHY', 'HYG', 'JNK'],
+                  "intl_agg"    : ['BNDX', 'IAGG'],
+                  "intl_tsy"    : ['BWX', 'IGOV'],
+                  "lt_corps"    : ['SPLB', 'IGLB', 'VCLT'],
+                  "lt_tsy"      : ['SPTL', 'SCHQ', 'VGLT'],
+                  "lt_tsy2"     : ['SPTL', 'SCHQ', 'VGLT', 'TLT'],
+                  "mortgages"   : ['SPMB', 'VMBS', 'MBB'],
+                  "munis"       : ['TFI', 'VTEB', 'MUB'],
+                  "prefs"       : ['PFFD', 'PFF'],
+                  "real_estate" : ['SCHH', 'USRT']}
 
 sorted_etf_list = etf_group_dict[etf_group]
 anchor_etf = sorted_etf_list[-1]
@@ -41,7 +50,7 @@ anchor_etf = sorted_etf_list[-1]
 # ============================================================
 
 input_file = etf_group + '_prep.csv'
-file_path = Path("stat_arb_analysis") / input_file
+file_path = Path("stat_arb_analysis/prep") / input_file
 df = pd.read_csv(file_path)
 
 
@@ -112,8 +121,16 @@ start_with_this_df = df.copy()
 results = {}
 grid_results = []
 
+min_limit = limit_list[0]
+max_limit = limit_list[1]
+limit_step_size = limit_list[2]
+epsilon = 1E-16
+
 for enter_limit in np.arange(min_limit, max_limit + epsilon, limit_step_size):
+    enter_limit = round(enter_limit, 4)
+
     for exit_limit in np.arange(min_limit, enter_limit + epsilon, limit_step_size):
+        exit_limit = round(exit_limit, 4)
 
         df = start_with_this_df.copy()
 
@@ -201,13 +218,9 @@ for enter_limit in np.arange(min_limit, max_limit + epsilon, limit_step_size):
                     
                 elif df.loc[row, "tgt_short_etf"] == etf:
                     df.loc[row, col] = -df.loc[row, f"{etf}_shs_per_unit"]
+                 
 
-
-# ============================================================
-# END OF LOOP
-# ============================================================                   
-
-
+            '''
 # ============================================================
 # CURRENT INVESTMENT
 # ============================================================
@@ -226,8 +239,8 @@ for enter_limit in np.arange(min_limit, max_limit + epsilon, limit_step_size):
 
                 df[col_name] = df[f"{etf}_tgt_shs"].shift(1) * df[f"{etf}_price"].shift(1)
 
-            df["gross_inv"] = df[inv_amt_col_list].abs().sum(axis=1)
-            df["net_inv"] = df[inv_amt_col_list].sum(axis=1)
+            df["gross_inv_amt"] = df[inv_amt_col_list].abs().sum(axis=1)
+            df["net_inv_amt"] = df[inv_amt_col_list].sum(axis=1)
 
 
 # ============================================================
@@ -271,24 +284,26 @@ for enter_limit in np.arange(min_limit, max_limit + epsilon, limit_step_size):
 
 
 # ============================================================
-# TOTALS
+# P&L TOTALS
 # ============================================================
 
-            df["daily_net_profit"] = df["daily_gross_profit"] +  df["daily_comm"]
-                    
+            df["daily_net_profit"] = df["daily_gross_profit"] +  df["daily_comm"]  
             df["cumulative_net_profit"] = df["daily_net_profit"].fillna(0).cumsum()
-
+            '''
 
 # ============================================================
 # SAVE AND PRINT DF
 # ============================================================
 
-            output_file = input_file.replace("prep", "analysis")
+        replace_string = f"analysis_{enter_limit}_{exit_limit}_{limit_step_size}"
+        output_file = input_file.replace("prep", replace_string)
 
-            df.to_csv(
-                output_file,
-                index=False,
-            )
+        file_path = Path("stat_arb_analysis/analysis/" + etf_group) / output_file
+        df.to_csv(file_path, index=False)
 
-            print(df)
- 
+        print(df)
+        print()
+
+print()
+print("finished")
+print()
