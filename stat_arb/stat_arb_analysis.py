@@ -265,7 +265,7 @@ def stat_arb_analysis(df=None,
 # SAVE AND PRINT DF
 # ============================================================
 
-            replace_string = f"_analysis_{enter_limit}_{exit_limit}_{limit_step_size}"
+            replace_string = f"_analysis_{enter_limit}_{exit_limit}_{limit_step_size}_{moving_avg_window}"
             output_file = etf_group + replace_string + '.csv'
 
             file_path = Path("stat_arb/analysis_" + suffix + "/" + etf_group) / output_file

@@ -79,8 +79,8 @@ def stat_arb_comp_stats(etf_group=None,
 # ============================================================
 
         filename_strings = filename.split("_")
-        enter_limit = filename_strings[-3]
-        exit_limit = filename_strings[-2]
+        enter_limit = filename_strings[-4]
+        exit_limit = filename_strings[-3]
 
 
 # ============================================================
@@ -313,7 +313,7 @@ def stat_arb_comp_stats(etf_group=None,
 # ============================================================ 
 
     directory = Path("stat_arb/comp_stats_" + suffix)
-    filename = f"{etf_group}_comp_stats_{suffix}.xlsx"
+    filename = f"{etf_group}_comp_stats_{suffix}_{moving_avg_window}.xlsx"
 
     # Create the directory if it does not already exist
     directory.mkdir(parents=True, exist_ok=True)
