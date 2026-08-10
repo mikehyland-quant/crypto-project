@@ -127,6 +127,9 @@ class MktData:
     
             self.comm_unit_join_bid   =  self.comm_order_join_bid * self.scalar_size_orders_per_unit
             self.comm_unit_hit_bid    =  self.comm_order_hit_bid  * self.scalar_size_orders_per_unit
+
+            self.cf_plus_comm_unit_hit_bid  = self.cf_unit_hit_bid  - self.comm_unit_hit_bid
+            self.cf_plus_comm_unit_join_bid = self.cf_unit_join_bid - self.comm_unit_join_bid
     
         if pd.notna(ask_price) and ask_price != self.price_raw_ask:
             changed = True
@@ -151,6 +154,10 @@ class MktData:
     
             self.comm_unit_join_ask   =  self.comm_order_join_ask * self.scalar_size_orders_per_unit
             self.comm_unit_lift_ask   =  self.comm_order_lift_ask * self.scalar_size_orders_per_unit
+
+            self.cf_plus_comm_unit_join_ask = self.cf_unit_join_ask - self.comm_unit_join_ask
+            self.cf_plus_comm_unit_lift_ask = self.cf_unit_lift_ask - self.comm_unit_lift_ask
+
 
         if pd.notna(bid_size) and bid_size != self.size_raw_bid:
             changed = True
@@ -210,9 +217,42 @@ class MktData:
             self.need_to_save_closing_price = False
 
 
+    def decompose_unit_cf(self, unit_cf, maker_taker="0"):
+        non_unit_cf = unit_cf / self.scalar_size_FIs_per_unit
+
+        if maker_taker == "0":
+            comm = 0
+            cf = non_unit_cf
+        else:
+            cf, comm = self.decompose_non_unit_cf(non_unit_cf, maker_taker)
+
+        return [cf, comm]
 
 
-    
+    def decompose_non_unit_cf(self, total_cf, maker_taker):
+    # total_cf must include a sign
 
+        type_ = self.comm_type
+        amount = float(getattr(self, 'comm_' + maker_taker + '_amount'))
 
-    
+        if type_ == 'flat_amt':
+            comm = -amount
+            cf = total_cf - comm
+        elif type_ == 'flat_pct':
+            if total_cf > 0:
+                amount = -amount
+            cf = total_cf / (1 + amount)
+            comm = total_cf - cf
+        elif type_ == 'flat_pct_with_min':
+            if total_cf > 0:
+                amount = -amount
+            cf = total_cf / (1 + amount)
+            comm = total_cf - cf
+            min_comm = float(self.comm_misc_amount)
+            if abs(comm) < min_comm:
+                comm = -min_comm
+                cf = total_cf - comm
+        else:
+            cf = total_cf
+            comm = 0
+        return cf, comm
