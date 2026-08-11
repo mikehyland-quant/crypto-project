@@ -149,7 +149,7 @@ async def main():
                         bo_objs_list, 
                         [("strat_bid", max), ("strat_ask", min)],
                         mode="auto")    
-        '''
+        
 # ============================================================
 # DEFINE STRATEGY
 # ============================================================ 
@@ -157,7 +157,7 @@ async def main():
         strat_dict[anchor] = strategy_dict[GroupTrade_LimitLimit](bo_obj)  
         # strat.need_to_print_active_orders   = False
         # strat.need_to_print_finished_orders = False  
-        '''
+        
 # ============================================================
 # RUN TASKS
 # ============================================================ 

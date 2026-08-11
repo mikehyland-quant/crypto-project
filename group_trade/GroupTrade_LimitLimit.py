@@ -14,11 +14,13 @@ class GroupTrade_LimitLimit(GroupTrade_Parent):
         output_price   = self._calc_price(filled_order.orderStatus.avgFillPrice, 
                                           obj, 1)  
 
-        trade = self.update_limit_order(obj=obj, 
+        trade = None
+        '''       
+         = self.update_limit_order(obj=obj, 
                                         size=size,       
                                         trade=obj.primary_trade,
                                         price=output_price)
-        
+        '''
         if trade is not None:
             # self._primary_trade_placed_order_admin(obj, trade, input_price, output_price)
             self._placed_order_admin(obj, trade, size, output_price)

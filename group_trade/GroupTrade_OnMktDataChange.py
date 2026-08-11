@@ -48,7 +48,7 @@ class GroupTrade_OnMktDataChange:
 # ============================================================
 # THIS CODE AACTUALLY UPDATES THE OUTPUT PRICES BASED ON THE NEW INPUT PRICES
 # ============================================================
-# two "XXX" amd two "size"
+# two "XXX" 
     async def _update_trade(self, x):
         bo_obj = self.bo_obj
 
@@ -61,7 +61,7 @@ class GroupTrade_OnMktDataChange:
 
         for obj in self.objs_list:
 
-            obj.bid_ask_spread = obj.price_screen_ask + obj.price_screen_bid
+            # obj.bid_ask_spread = obj.price_screen_ask - obj.price_screen_bid
 
             if obj.tgt_profit_units == 'amt':
                 profit_tgt = obj.tgt_profit_constant
@@ -72,11 +72,12 @@ class GroupTrade_OnMktDataChange:
                 new_unit_bid = profit_tgt - bo_obj_best_strat_ask
                 new_fi_bid = obj.decompose_unit_cf(new_unit_bid, 'taker')
                 new_fi_bid = obj.round_price_to_tick(abs(new_fi_bid[0]), 'BUY')
-
+                buy_trade = None
+                '''
                 buy_trade = self.update_limit_order(obj=obj, 
                                                     trade=obj.buy_trade, 
                                                     price=new_fi_bid)
-
+                '''
                 if buy_trade is not None:
                     setattr(obj, 'buy_trade', buy_trade)
                     self._placed_order_admin(obj, buy_trade, obj.buy_size, new_fi_bid)
@@ -85,11 +86,12 @@ class GroupTrade_OnMktDataChange:
                 new_unit_ask = profit_tgt - bo_obj_best_strat_ask
                 new_fi_ask = obj.obj.decompose_unit_cf(new_unit_ask, 'taker')
                 new_fi_ask = obj.round_price_to_tick(abs(new_fi_ask[0]), 'SELL')
-
+                sell_trade = None
+                '''
                 sell_trade = self.update_limit_order(obj=obj, 
                                                     trade=obj.sell_trade, 
                                                     price=new_fi_ask)
-
+                '''
                 if sell_trade is not None:
                     setattr(obj, 'sell_trade', sell_trade)
                     self._placed_order_admin(obj, sell_trade, obj.sell_size, new_fi_bid)
