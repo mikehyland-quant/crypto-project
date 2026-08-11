@@ -28,7 +28,7 @@ class BestOf(Subscriber):
     for auto mode:
         will be triggered by underlying objects at subscriber.update_unit_data() at end of mkt_data_update()
     '''
-
+ 
     consensus_attr_list = [
         'my_pf_name',
         'numerator_currency',
@@ -40,7 +40,7 @@ class BestOf(Subscriber):
                  my_name, 
                  objs_list, 
                  attr_tuples, 
-                 mode="timer",
+                 mode="timer", 
                  update_interval=1.0):
 
         super().__init__()

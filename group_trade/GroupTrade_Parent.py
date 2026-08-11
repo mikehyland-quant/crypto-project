@@ -1,62 +1,33 @@
 
 from strategies.Strategy_Parent             import Strategy_Parent
-from pairs_trade.PairsTrade_OnClosingPrice  import PairsTrade_OnClosingPrice
-from pairs_trade.PairsTrade_OnMktDataChange import PairsTrade_OnMktDataChange
-from pairs_trade.PairsTrade_OnTradeExec     import PairsTrade_OnTradeExec
+from group_trade.GroupTrade_OnClosingPrice  import GroupTrade_OnClosingPrice
+from group_trade.GroupTrade_OnMktDataChange import GroupTrade_OnMktDataChange
+from group_trade.GroupTrade_OnTradeExec     import GroupTrade_OnTradeExec
 
 
-class PairsTrade_Parent(PairsTrade_OnClosingPrice,
-                        PairsTrade_OnMktDataChange,
-                        PairsTrade_OnTradeExec,
+class GroupTrade_Parent(GroupTrade_OnClosingPrice,
+                        GroupTrade_OnMktDataChange,
+                        GroupTrade_OnTradeExec,
                         Strategy_Parent):
     
- 
-    def __init__(self, objs_list, df):
-        super().__init__(objs_list=objs_list,  df=df)  # this calls Strategy_Parent.__init__() 
+    def __init__(self, bo_objs):
+        super().__init__(bo_objs.objs_list)  # this calls Strategy_Parent.__init__() 
         
         # create self attributes
-        self.no_partial_trades_yet  = True
-        self.trades_by_orderId_dict = {}
-
-        self.target_spread          = float(df.loc['target_profit_per_unit'].sum())
-        self.epsilon                = float(df.loc['epsilon_per_unit'].sum())
-        df = df.drop(index=['target_profit_per_unit', 'epsilon_per_unit'])
-
         self.prepare_on_mkt_data_change()
 
         # attach attributes to objs
-        self.obj1, self.obj2 = self._attach_input_attr(objs_list, df.T)
-                                                 
-        self.obj1.opp_obj = self.obj2
-        self.obj2.opp_obj = self.obj1
-
-        self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
+        for obj in self.objs_list:
+            attach attributes to object
 
         # print(vars(self.obj1), vars(self.obj2))
 
-
-    def _attach_input_attr(self, objs_list, df):
-
-        for obj_name in df.index:
-            row = df.loc[obj_name]
-
-            row_name = row['my_fi_name']
-            row_pf   = row['my_pf_name']
-
-            obj = next((obj for obj in objs_list if obj.my_fi_name == row_name and obj.my_pf_name == row_pf), None)
-                
-            if obj is None:
-                raise ValueError(f"Could not find object for {obj_name}: {obj_dict}")
-    
-            setattr(self, obj_name.lower(), obj)
-     
-            for attr_key, attr_val in row.items():
-                setattr(obj, attr_key, attr_val)
-            
-        return self.obj1, self.obj2
-
   
     def _attach_strat_attr(self, objs_list):
+
+        obj.size = 
+
+
         buy_tuple  = ('BUY',  'cf_unit_lift_ask', -1)
         sell_tuple = ('SELL', 'cf_unit_hit_bid',   1)
         # min_coeff  = min(self.obj1.unit_coefficient, self.obj2.unit_coefficient)

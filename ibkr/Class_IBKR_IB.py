@@ -1,7 +1,8 @@
 
 # import asyncio
 
-import numpy as np
+import pandas as pd
+# import numpy as np
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -279,3 +280,39 @@ class IBKR_IB:
             obj.current_position = position
     '''
 
+    async def get_historical_closes_df(self, 
+                                       contract_list, 
+                                       lookback_period = '1 Y', 
+                                       length_of_each_period='1 day',
+                                       prices_to_use='TRADES',
+                                       use_regular_trading_hours=True,
+                                       remove_last_row=True):
+
+        df_list = []
+        for contract in contract_list:
+
+            sym = contract.symbol
+
+            bars = await self.ib.reqHistoricalDataAsync(
+                contract=contract,
+                endDateTime="",          # "" means now
+                durationStr=lookback_period,
+                barSizeSetting=length_of_each_period,
+                whatToShow=prices_to_use,
+                useRTH=use_regular_trading_hours,
+                formatDate=1
+            )
+
+            df = pd.DataFrame([(bar.date, bar.close) for bar in bars], columns=["date", "close"])
+            df['date'] = pd.to_datetime(df['date']).dt.date
+            df[sym] = df['close']
+            df = df.set_index("date")
+            
+            df_list.append(df[sym])
+        
+        closes_df = pd.concat(df_list, axis=1)
+        if remove_last_row:
+            closes_df = closes_df.iloc[:-1]
+        # print(closes_df)
+
+        return closes_df

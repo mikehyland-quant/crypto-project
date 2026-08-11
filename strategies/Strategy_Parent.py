@@ -22,8 +22,6 @@ class Strategy_Parent:
         for obj in self.objs_list:
             obj.strategy = self
 
-            obj.finished_trade_dict = {}
-
             obj.strat_on_closing_price   = True
             obj.strat_on_mkt_data_change = True
             obj.strat_on_trade_exec      = True

@@ -22,7 +22,6 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-
 # --- input/output ---
 from input_output.Class_InputOutput import InputOutput
 io = InputOutput()
@@ -33,7 +32,19 @@ ibkr = IBKR_IB(port=IBKR_PORT)
 
 # --- fin inst builders ---
 from fin_insts.Make_Single_Leg_Fin_Insts import get_db_df_and_make_single_leg_fin_insts
-# from fin_insts import FutureSpread, BestOf, Synthetic
+from fin_insts.derived.Class_FI_BestOf import BestOf #, FutureSpread,  
+
+def update_subscriber_data(self, obj):  # if self.mode == 'auto'
+    obj.total_cf_hit_bid  = obj.cf_unit_hit_bid  - obj.comm_unit_hit_bid
+    # obj.total_cf_join_bid = obj.cf_unit_join_bid - obj.comm_unit_join_bid
+            
+    # obj.total_cf_join_ask = obj.cf_unit_join_ask - obj.comm_unit_join_ask
+    obj.total_cf_lift_ask = obj.cf_unit_lift_ask - obj.comm_unit_lift_ask
+
+    self.update_best_of()
+    print(self.my_fi_name, self.total_cf_hit_bid, self.total_cf_lift_ask)
+
+BestOf.update_subscriber_data = update_subscriber_data
 
 # --- trading strategy ---
 from pairs_trade.PairsTrade_LimitMarket import PairsTrade_LimitMarket
@@ -42,57 +53,9 @@ from pairs_trade.PairsTrade_LimitLimit  import PairsTrade_LimitLimit
 strategy_dict = {"LimitMarket" : PairsTrade_LimitMarket,
                  "LimitLimit"  : PairsTrade_LimitLimit}
 
-
-# CODE
-
-async def get_historical_prices(objs_list, lookback_days, buffer_days):
-
-    lookback_period = int(lookback_days + buffer_days)
-    lookback_period = f"{lookback_period} D"
-
-    length_of_each_period = "1 day"
-    use_regular_trading_hours = True
-    prices_to_use = "TRADES"
-
-    df_list = []
-
-    for obj in objs_list:
-
-        contract = obj.ibkr_contract
-        sym = contract.symbol
-
-        bars = await ibkr.ib.reqHistoricalDataAsync(
-            contract=contract,
-            endDateTime="",          # "" means now
-            durationStr=lookback_period,
-            barSizeSetting=length_of_each_period,
-            whatToShow=prices_to_use,
-            useRTH=use_regular_trading_hours,
-            formatDate=1
-        )
-
-        df = pd.DataFrame([(bar.date, bar.close) for bar in bars], columns=["date", "close"])
-        df['date'] = pd.to_datetime(df['date']).dt.date
-        df[sym] = df['close']
-        df = df.set_index("date")
-
-        df_list.append(df[sym])
-
-    big_df = pd.concat(df_list, axis=1)
-    big_df = big_df.iloc[:-1]
-
-    return big_df
-
-
-
-
-def calc_unit_scalars(hist_prices_df, anchor_etf, moving_avg_days):
-    
-    return unit_scalars_dict
-
-
-
-
+# ============================================================
+# START
+# ============================================================
 
 async def main():
 
@@ -108,15 +71,15 @@ async def main():
 # GET ETFs FROM SPREADSHEET
 # ============================================================
 
-    strat_df = io.get_xw_df(ws, input_dict['fin_inst_table'], table=True)
-    strat_df = strat_df[strat_df["TRUE/FALSE"]]
-    # print(strat_df, '\n')
+    fi_df = io.get_xw_df(ws, input_dict['fin_inst_table'], table=True)
+    fi_df = fi_df[fi_df["TRUE/FALSE"]]
+    # print(fi_df, '\n')
 
 # ============================================================
 # MAKE FIs
 # ============================================================
 
-    objs_list = get_db_df_and_make_single_leg_fin_insts(strat_df)
+    objs_list = get_db_df_and_make_single_leg_fin_insts(fi_df)
     for obj in objs_list:
         obj.platform_obj = ibkr  # this is the object not the name 
     # print(objs_list, '\n')
@@ -131,73 +94,84 @@ async def main():
 # GET HISTORICAL PRICES
 # ============================================================ 
 
-    moving_avg_days = input_dict['moving_avg_days']
-    # print(moving_avg_days)
-    hist_prices_df = await get_historical_prices(objs_list, moving_avg_days, input_dict['buffer_days'])
+    contract_list = [obj.ibkr_contract for obj in objs_list]
+    hist_prices_df = await ibkr.get_historical_closes_df(contract_list, remove_last_row=True)
     # print(hist_prices_df)
 
 # ============================================================
-# DEFINE ANCHOR ETF
+# CREATE GROUPS
 # ============================================================ 
 
-    anchor_etf = hist_prices_df.iloc[-1].idxmax()
-    # print(anchor_etf)
+    strat_dict = {}
+
+    attr_names = fi_df.columns
+    attr_names = attr_names.drop(["my_fi_name", "my_pf_name", "TRUE/FALSE"])
+
+    groups= fi_df.groupby("anchor_fi")["my_fi_name"].apply(list)
+    # print(groups_df)
+
+    for anchor, sym_list in groups.items():
 
 # ============================================================
 # CALC MOVING AVERAGES
 # ============================================================ 
 
-    ratio_df = hist_prices_df.rdiv(hist_prices_df[anchor_etf], axis=0)
-    moving_avg_df = ratio_df.rolling(int(moving_avg_days)).mean()
-    unit_scalars_dict = moving_avg_df.iloc[-1].to_dict()
-    # print(unit_scalars_df)
+        bo_objs_list = []
+        for sym in sym_list:
+            row = fi_df.loc[fi_df["my_fi_name"] == sym].iloc[0]
+            moving_avg_days = row['moving_avg_days']
 
-    for obj in objs_list:
-        sym = obj.ibkr_contract.symbol
-        obj.scalar_size_FIs_per_unit = unit_scalars_dict[sym]
-        obj.reset_scalars()
-        # print(scalar)
+            ratio_df = hist_prices_df[anchor] / hist_prices_df[sym]
+            moving_avg_df = ratio_df.rolling(int(moving_avg_days)).mean()
 
+            obj = next(obj for obj in objs_list if obj.ibkr_contract.symbol == sym)
+
+            obj.scalar_size_FIs_per_unit = moving_avg_df.iloc[-1]
+            print(sym, obj.scalar_size_FIs_per_unit)
+
+            obj.reset_scalars()
+            
 # ============================================================
-# SET PROFIT TARGET 
+# ATTACH REMAINING ATTRIBUTES
 # ============================================================ 
 
-    if input_dict['target_profit_units'] == 'amt':
-        self.target_profit_amt = input_dict['target_profit_constant']
-    else:
-        self.target_profit_amt = (2 * input_dict['target_profit_constant'] * 
-                                  hist_prices_df[anchor_etf].iloc[-1])
+            for attr in attr_names:
+                setattr(obj, attr, row[attr])
+            
+            bo_objs_list.append(obj)
 
 # ============================================================
 # MAKE BEST OF OBJECT
 # ============================================================ 
-
-    bo_obj = BestOf(input_dict['group_name'], 
-                    objs_list, 
-                    [("cf_plus_comm_unit_hit_bid", "max"), ("cf_plus_comm_unit_lift_ask", "min")],
-                    mode="auto")    
-
+        
+        bo_obj = BestOf(anchor, 
+                        bo_objs_list, 
+                        [("total_cf_hit_bid", max), ("total_cf_lift_ask", min)],
+                        mode="auto")    
+        '''
 # ============================================================
 # DEFINE STRATEGY
 # ============================================================ 
 
-    strat = strategy_dict[STRAT_NAME](objs_list, strat_df)  
-    # strat.need_to_print_active_orders   = False
-    # strat.need_to_print_finished_orders = False  
-
+        strat_dict[anchor] = strategy_dict[GroupTrade_LimitLimit](bo_obj)  
+        # strat.need_to_print_active_orders   = False
+        # strat.need_to_print_finished_orders = False  
+        '''
 # ============================================================
 # RUN TASKS
 # ============================================================ 
 
     tasks = []
-    tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))
 
-    await strat.done_event.wait()   
+    tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))
+    await asyncio.sleep(120)
+
+#    await strat.done_event.wait()   
 
 # ============================================================
 # SHUT DOWN
 # ============================================================ 
-    
+    '''
     # then cancel everything else
     for task in tasks:
         task.cancel()
@@ -213,7 +187,7 @@ async def main():
 # ============================================================
 # MAIN
 # ============================================================ 
-
+    '''
 #await main()
 
 if __name__ == "__main__":
