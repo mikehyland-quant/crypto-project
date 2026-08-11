@@ -48,28 +48,28 @@ class GroupTrade_OnMktDataChange:
 # ============================================================
 # THIS CODE AACTUALLY UPDATES THE OUTPUT PRICES BASED ON THE NEW INPUT PRICES
 # ============================================================
-
-    async def _update_trade(self, input_obj):
+# two "XXX" amd two "size"
+    async def _update_trade(self, x):
         bo_obj = self.bo_obj
 
         if not bo_obj.is_mkt_data_valid():
             return
         
-        bo_obj_best_bid_cf = bo_obj.XXX
-        bo_obj_best_ask_cf = bo_obj.XXX
-        bo_obj_avg_price = (abs(bo_obj_best_bid_cf) + abs(bo_obj_best_ask_cf)) / 2
+        bo_obj_best_strat_bid = bo_obj.best_strat_bid
+        bo_obj_best_strat_ask = bo_obj.best_strat_ask
+        bo_obj_avg_price = (abs(bo_obj_best_strat_bid) + abs(bo_obj_best_strat_ask)) / 2
 
         for obj in self.objs_list:
 
-            obj.bid_ask_spread = obj.price_screen_ask - obj.price_screen_bid
+            obj.bid_ask_spread = obj.price_screen_ask + obj.price_screen_bid
 
             if obj.tgt_profit_units == 'amt':
                 profit_tgt = obj.tgt_profit_constant
             elif obj.tgt_profit_units == 'pct':
                 profit_tgt = bo_obj_avg_price * obj.tgt_profit_constant
 
-            if bo_obj_best_bid_cf != XXX:
-                new_unit_bid = profit_tgt - bo_obj_best_bid_cf
+            if bo_obj_best_strat_bid != XXX:
+                new_unit_bid = profit_tgt - bo_obj_best_strat_ask
                 new_fi_bid = obj.decompose_unit_cf(new_unit_bid, 'taker')
                 new_fi_bid = obj.round_price_to_tick(abs(new_fi_bid[0]), 'BUY')
 
@@ -79,11 +79,10 @@ class GroupTrade_OnMktDataChange:
 
                 if buy_trade is not None:
                     setattr(obj, 'buy_trade', buy_trade)
-                    self._primary_trade_placed_order_admin(obj, buy_trade, new_fi_bid, bo_obj_best_bid_cf)  # don't use market price as that may slow down hot path
-                    self._placed_order_admin(obj, trade, size, price)
+                    self._placed_order_admin(obj, buy_trade, obj.buy_size, new_fi_bid)
 
-            if bo_obj_best_ask_cf != XXX:
-                new_unit_ask = profit_tgt - bo_obj_best_ask_cf
+            if bo_obj_best_strat_bid != XXX:
+                new_unit_ask = profit_tgt - bo_obj_best_strat_ask
                 new_fi_ask = obj.obj.decompose_unit_cf(new_unit_ask, 'taker')
                 new_fi_ask = obj.round_price_to_tick(abs(new_fi_ask[0]), 'SELL')
 
@@ -92,9 +91,8 @@ class GroupTrade_OnMktDataChange:
                                                     price=new_fi_ask)
 
                 if sell_trade is not None:
-                    setattr(obj, 'sell_trade', trade)
-                    self._primary_trade_placed_order_admin(obj, sell_trade, new_fi_ask, bo_obj_best_ask_cf)  # don't use market price as that may slow down hot path
-                    self._placed_order_admin(obj, trade, size, price)
+                    setattr(obj, 'sell_trade', sell_trade)
+                    self._placed_order_admin(obj, sell_trade, obj.sell_size, new_fi_bid)
             
 
         

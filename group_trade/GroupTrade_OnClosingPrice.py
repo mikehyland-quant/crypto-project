@@ -25,7 +25,6 @@ class GroupTrade_OnClosingPrice:
 
             if trade is not None:
                 setattr(obj, action.lower() + '_trade', trade)
-                self._primary_trade_placed_order_admin(obj, trade, price, price)  # don't use market price as that may slow down hot path
                 self._placed_order_admin(obj, trade, size, price)
 
                 orders_placed += 1

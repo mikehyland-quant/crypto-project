@@ -16,60 +16,34 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
         # create self attributes
         self.prepare_on_mkt_data_change()
 
+        anchor_fi = next(obj for obj in objs_list if getattr(obj, "anchor_t/f"))
+        anchor_size = anchor_fi.tgt_anchor_units * anchor_fi.scalar_size_FIs_per_unit
+
         # attach attributes to objs
         for obj in self.objs_list:
-            attach attributes to object
+            obj.base_size = anchor_size * obj.scalar_size_FIs_per_unit
 
-        # print(vars(self.obj1), vars(self.obj2))
+            obj.buy_size = obj.base_size + obj.extra_shs
+            obj.sell_size = obj.base_size - obj.extra_shs
 
-  
-    def _attach_strat_attr(self, objs_list):
+            obj.buy_size = obj.round_size_to_increment(obj.buy_size)
+            obj.sell_size = obj.round_size_to_increment(obj.sell_size)
 
-        obj.size = 
+            obj.buy_trade = None
+            obj.sell_trade = None
 
+            obj.buy_trade_input_price = None
+            obj_sell_trade_input_price = None
 
-        buy_tuple  = ('BUY',  'cf_unit_lift_ask', -1)
-        sell_tuple = ('SELL', 'cf_unit_hit_bid',   1)
-        # min_coeff  = min(self.obj1.unit_coefficient, self.obj2.unit_coefficient)
-        
-        for obj in objs_list:
-            if obj.reset_FIs_per_unit is not False:
-                obj.scalar_size_FIs_per_unit = obj.reset_FIs_per_unit
-                obj.reset_scalars()
-
-            # obj.spread_ratio = obj.opp_obj.unit_coefficient / min_coeff
-            # obj.adj_spread   = self.target_spread           / obj.spread_ratio
-
-            if obj.buy_sell.upper() == 'BUY':
-                (obj.buy_sell, obj.input_price_attr, obj.final_spread_scalar) = buy_tuple 
-            elif obj.buy_sell.upper() == "SELL":
-                (obj.buy_sell, obj.input_price_attr, obj.final_spread_scalar) = sell_tuple  
-
-            obj.primary_trade                    = None
-            obj.primary_trade_base_price         = None
-            obj.primary_trade_order_price        = None
-
-            size = abs(obj.initial_order_size)
-            if obj.initial_order_size_type.lower() == "units":
-                size = size * obj.scalar_size_orders_per_unit
-            obj.primary_trade_initial_order_size = obj.round_size_to_increment(size)
-         
-            obj.trades_by_orderId = {}
-                                                                
-            if obj.active_passive.lower() == 'passive':
-                #was set to True in Strategy_Parent, so now set to False for passive leg
-                setattr(obj.opp_obj, 'strat_on_mkt_data_change', False)   
-
-        return self.obj1, self.obj2
+            obj.buy_trade_order_price = None
+            obj.sell_trade_order_price = None
 
     
-    def _primary_trade_placed_order_admin(self, obj, trade, base_price, order_price):
+    def _placed_order_admin(self, obj, trade, base_price, order_price):
         obj.primary_trade              = trade
         obj.primary_trade_base_price   = base_price  
         obj.primary_trade_order_price  = order_price
 
-    
-    def _placed_order_admin(self, obj, trade, size, price):
         trade_order = trade.order
 
         filled = trade.orderStatus.filled
@@ -115,16 +89,6 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
             
         if not obj.strat_on_trade_exec and not obj.opp_obj.strat_on_trade_exec:
             self.finish_strategy()
-
-
-    def _update_trading_amounts(self, obj):
-        obj.active_orders = sum(
-                rec["intended_size"] for rec in obj.trades_by_orderId.values() if rec["active"])
-
-        obj.traded_orders = sum(
-                rec["filled_size"] for rec in obj.trades_by_orderId.values() if not rec["active"])
-
-        obj.active_plus_traded_units = (obj.active_orders + obj.traded_orders) * obj.scalar_size_units_per_order
 
 
     def _finalize_results(self):
