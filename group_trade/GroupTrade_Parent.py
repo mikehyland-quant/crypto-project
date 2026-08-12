@@ -37,9 +37,11 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
 
             obj.buy_trade_order_price = None
             obj.sell_trade_order_price = None
-
+ 
     
     def _placed_order_admin(self, obj, trade, base_price, order_price):
+                        setattr(obj, f"{action.lower()}_trade", trade)
+
         obj.primary_trade              = trade
         obj.primary_trade_base_price   = base_price  
         obj.primary_trade_order_price  = order_price

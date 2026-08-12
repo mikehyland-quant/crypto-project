@@ -8,7 +8,7 @@ class GroupTrade_OnClosingPrice:
         orders_placed = 0
 
         for action in ['BUY', 'SELL']:
-
+ 
             if action == 'BUY':
                 price = mkt_close * 0.5
                 size = obj.buy_size
@@ -25,9 +25,7 @@ class GroupTrade_OnClosingPrice:
                                             all_or_none=True)
 
             if trade is not None:
-                setattr(obj, f"{action.lower()}_trade", trade)
-                self._placed_order_admin(obj, trade, size, price)
-
+                self._placed_order_admin(obj, trade, mkt_close)
                 orders_placed += 1
 
         if orders_placed == 2:

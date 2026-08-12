@@ -7,7 +7,7 @@ class GroupTrade_OnMktDataChange:
 # ============================================================
 # THIS CODE ALLOWS FOR ONLY THE MOST RECENT UPDATES TO BE PROCESSED
 # ============================================================
-
+ 
     def prepare_on_mkt_data_change(self):
         self.pending_mkt_data_objs = set()
  
@@ -52,49 +52,56 @@ class GroupTrade_OnMktDataChange:
     async def _update_trade(self, x):
         bo_obj = self.bo_obj
 
-        if not bo_obj.is_mkt_data_valid():
-            return
+        # if not bo_obj.is_mkt_data_valid():
+          #  return
         
-        bo_obj_best_strat_bid = bo_obj.best_strat_bid
-        bo_obj_best_strat_ask = bo_obj.best_strat_ask
-        bo_obj_avg_price = (abs(bo_obj_best_strat_bid) + abs(bo_obj_best_strat_ask)) / 2
+        bo_obj_strat_bid = bo_obj.strat_bid
+        bo_obj_strat_ask = bo_obj.strat_ask
 
         for obj in self.objs_list:
+            profit_tgt = self.calc_profit_tgt(obj, bo_obj_strat_bid, bo_obj_strat_ask)
+            self.create_trade(obj, "BUY", profit_tgt, bo_obj_strat_bid)
+            self.create_trade(obj, "SELL", profit_tgt, bo_obj_strat_ask)
 
-            # obj.bid_ask_spread = obj.price_screen_ask - obj.price_screen_bid
 
-            if obj.tgt_profit_units == 'amt':
-                profit_tgt = obj.tgt_profit_constant
-            elif obj.tgt_profit_units == 'pct':
-                profit_tgt = bo_obj_avg_price * obj.tgt_profit_constant
+    def calc_profit_tgt(self, obj, bid, ask):
+        if obj.tgt_profit_units == 'amt':
+            return obj.tgt_profit_constant
+        elif obj.tgt_profit_units == 'pct':
+            bo_obj_avg_price = (abs(bid) + abs(ask)) / 2
+            return bo_obj_avg_price * obj.tgt_profit_constant
 
-            if bo_obj_best_strat_bid != XXX:
-                new_unit_bid = profit_tgt - bo_obj_best_strat_ask
-                new_fi_bid = obj.decompose_unit_cf(new_unit_bid, 'taker')
-                new_fi_bid = obj.round_price_to_tick(abs(new_fi_bid[0]), 'BUY')
-                buy_trade = None
-                '''
-                buy_trade = self.update_limit_order(obj=obj, 
-                                                    trade=obj.buy_trade, 
-                                                    price=new_fi_bid)
-                '''
-                if buy_trade is not None:
-                    setattr(obj, 'buy_trade', buy_trade)
-                    self._placed_order_admin(obj, buy_trade, obj.buy_size, new_fi_bid)
 
-            if bo_obj_best_strat_bid != XXX:
-                new_unit_ask = profit_tgt - bo_obj_best_strat_ask
-                new_fi_ask = obj.obj.decompose_unit_cf(new_unit_ask, 'taker')
-                new_fi_ask = obj.round_price_to_tick(abs(new_fi_ask[0]), 'SELL')
-                sell_trade = None
-                '''
-                sell_trade = self.update_limit_order(obj=obj, 
-                                                    trade=obj.sell_trade, 
-                                                    price=new_fi_ask)
-                '''
-                if sell_trade is not None:
-                    setattr(obj, 'sell_trade', sell_trade)
-                    self._placed_order_admin(obj, sell_trade, obj.sell_size, new_fi_bid)
+    def create_trade(self, obj, buy_sell, profit_tgt, bo_obj_price):
+        if buy_sell == 'BUY':
+            prev_trade = obj.buy_trade
+            prev_input_price = obj.XXXXX
+        elif buy_sell == 'SELL':
+            prev_trade = obj.sell_trade
+            prev_input_price = obj.XXXXX
+
+        if bo_obj_price != prev_input_price:
+            new_unit_price = profit_tgt - bo_obj_price
+            new_fi_price = obj.decompose_unit_cf(new_unit_price, 'taker')
+            new_fi_price = obj.round_price_to_tick(abs(new_fi_price[0]), buy_sell)
+
+
+            trade = None
+            '''
+            trade = self.update_limit_order(obj=obj, 
+                                            trade=obj.buy_trade, 
+                                            price=new_fi_price)
+            '''
+
+
+
+            
+            if trade is not None:
+                self._placed_order_admin(obj, trade, bo_obj_price)
+
+
+
+
             
 
         
