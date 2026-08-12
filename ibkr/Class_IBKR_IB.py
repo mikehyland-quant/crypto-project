@@ -192,10 +192,10 @@ class IBKR_IB:
         return trade
     
 
-    def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None, tif='DAY'):
+    def place_limit_order(self, obj=None, size=None, buy_sell=None, price=None, tif='DAY', all_or_none=False):
         tif = 'Minutes' if obj.pf_prod_type == 'CRYPTO' else 'DAY'
 
-        order = LimitOrder(action=buy_sell, totalQuantity=size, lmtPrice=price, tif=tif)
+        order = LimitOrder(action=buy_sell, totalQuantity=size, lmtPrice=price, tif=tif, allOrNone=all_or_none)
         print(order, '\n')
 
         trade = self.ib.placeOrder(obj.ibkr_contract, order)
@@ -233,7 +233,7 @@ class IBKR_IB:
         return trade 
     
 
-    def modify_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None):
+    def modify_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None, all_or_none=None):
         if trade is None:
             raise ValueError(f"Trade not found")
     
@@ -250,6 +250,9 @@ class IBKR_IB:
 
         if buy_sell is not None:
             trade.order.action = buy_sell
+
+        if all_or_none is not None:
+            trade.order.allOrNone = all_or_none
 
         trade = self.ib.placeOrder(obj.ibkr_contract, trade.order)
         # print(trade, '\n')

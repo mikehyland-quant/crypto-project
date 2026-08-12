@@ -49,11 +49,11 @@ def update_subscriber_data(self, obj):  # if self.mode == 'auto'
 BestOf.update_subscriber_data = update_subscriber_data
 
 # --- trading strategy ---
-from pairs_trade.PairsTrade_LimitMarket import PairsTrade_LimitMarket
-from pairs_trade.PairsTrade_LimitLimit  import PairsTrade_LimitLimit
+#from group_trade.GroupTrade_LimitMarket import GroupTrade_LimitMarket
+from group_trade.GroupTrade_LimitLimit  import GroupTrade_LimitLimit
 
-strategy_dict = {"LimitMarket" : PairsTrade_LimitMarket,
-                 "LimitLimit"  : PairsTrade_LimitLimit}
+strategy_type_dict = {# "LimitMarket" : GroupTrade_LimitMarket,
+                      "LimitLimit"  : GroupTrade_LimitLimit}
 
 # ============================================================
 # START
@@ -103,11 +103,13 @@ async def main():
 # ============================================================
 # CREATE GROUPS
 # ============================================================
+    strat_dict = {}
 
     attr_names = fi_df.columns
     attr_names = attr_names.drop(["my_fi_name", "my_pf_name", "TRUE/FALSE"])
 
     groups= fi_df.groupby("anchor_fi")["my_fi_name"].apply(list)
+
     # print(groups_df)
 
     for anchor, sym_list in groups.items():
@@ -154,9 +156,11 @@ async def main():
 # DEFINE STRATEGY
 # ============================================================ 
 
-        strat_dict[anchor] = strategy_dict[GroupTrade_LimitLimit](bo_obj)  
+        strat_dict[anchor] = strategy_type_dict[STRAT_NAME](bo_obj)  
         # strat.need_to_print_active_orders   = False
         # strat.need_to_print_finished_orders = False  
+
+        # await strat_dict[anchor].done_event.wait()
         
 # ============================================================
 # RUN TASKS

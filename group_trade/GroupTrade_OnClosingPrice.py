@@ -11,7 +11,7 @@ class GroupTrade_OnClosingPrice:
 
             if action == 'BUY':
                 price = mkt_close * 0.5
-                size = obj.buy_size')
+                size = obj.buy_size
             else: # action == 'SELL'
                 price = mkt_close * 2.0
                 size = obj.sell_size

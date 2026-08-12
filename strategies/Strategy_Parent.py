@@ -99,11 +99,15 @@ class Strategy_Parent:
         raise NotImplementedError(f"No market order handler for platform {obj.my_pf_name}")
             
 
-    def update_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None):
+    def update_limit_order(self, obj=None, size=None, buy_sell=None, trade=None, price=None, all_or_none=None):
         if trade is None:
-            return obj.platform_obj.place_limit_order(obj=obj, size=size, buy_sell=buy_sell, price=price)
+            if all_or_none is None:
+                all_or_none = False
+            return obj.platform_obj.place_limit_order(obj=obj, size=size, buy_sell=buy_sell, 
+                                                      price=price, all_or_none=all_or_none)
         else:
-            return obj.platform_obj.modify_limit_order(obj=obj, size=size, buy_sell=buy_sell, trade=trade, price=price)
+            return obj.platform_obj.modify_limit_order(obj=obj, size=size, buy_sell=buy_sell, 
+                                                       trade=trade, price=price, all_or_none=all_or_none)
         raise NotImplementedError(f"No order handler for platform {obj.my_pf_name}")
     
 

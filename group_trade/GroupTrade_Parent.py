@@ -16,7 +16,7 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
         # create self attributes
         self.prepare_on_mkt_data_change()
 
-        anchor_fi = next(obj for obj in objs_list if getattr(obj, "anchor_t/f"))
+        anchor_fi = next(obj for obj in self.objs_list if getattr(obj, "anchor_t/f"))
         anchor_size = anchor_fi.tgt_anchor_units * anchor_fi.scalar_size_FIs_per_unit
 
         # attach attributes to objs
