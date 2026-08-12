@@ -98,7 +98,7 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         obj.primary_trade_order_price  = order_price
 
     
-    def _placed_order_admin(self, obj, trade, size, price):
+    def _placed_order_admin(self, obj, trade, price):
         trade_order = trade.order
 
         filled = trade.orderStatus.filled
@@ -113,7 +113,7 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         if self.need_to_print_active_orders:
             self.print_orders("active",
                               trade_order.action, 
-                              size, 
+                              trade_order.size, 
                               obj.my_fi_name,
                               price, 
                               order_id)

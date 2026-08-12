@@ -37,9 +37,7 @@ from fin_insts.derived.Class_FI_BestOf import BestOf #, FutureSpread,
 def update_subscriber_data(self, obj):  # if self.mode == 'auto'
     obj.strat_bid  = obj.cf_unit_hit_bid  - obj.comm_unit_hit_bid
     obj.strat_bid_size = obj.size_unit_bid
-    # obj.total_cf_join_bid = obj.cf_unit_join_bid - obj.comm_unit_join_bid
             
-    # obj.total_cf_join_ask = obj.cf_unit_join_ask - obj.comm_unit_join_ask
     obj.strat_ask = obj.cf_unit_lift_ask - obj.comm_unit_lift_ask
     obj.strat_ask_size = obj.size_unit_ask
 
@@ -115,12 +113,20 @@ async def main():
     for anchor, sym_list in groups.items():
         print()
 
+        bo_objs_list = []
+        for sym in sym_list:
+
+# ============================================================
+# ATTACH SPREADSHEET ATTRIBUTES
+# ============================================================ 
+
+            for attr in attr_names:
+                setattr(obj, attr, row[attr])
+
 # ============================================================
 # CALC MOVING AVERAGES
 # ============================================================ 
 
-        bo_objs_list = []
-        for sym in sym_list:
             row = fi_df.loc[fi_df["my_fi_name"] == sym].iloc[0]
             moving_avg_days = row['moving_avg_days']
 
@@ -133,13 +139,17 @@ async def main():
             print(f"{sym:<4}  {obj.scalar_size_FIs_per_unit:.3f}")
 
             obj.reset_scalars()
-            
+
 # ============================================================
-# ATTACH REMAINING ATTRIBUTES
+# CALC BUY AND SELL LEVELS
 # ============================================================ 
 
-            for attr in attr_names:
-                setattr(obj, attr, row[attr])
+            obj.buy_price_scalar  = 1 / (obj.scalar_size_FIs_per_unit + obj.positive_addon)
+            obj.sell_price_scalar = 1 / (obj.scalar_size_FIs_per_unit + obj.negative_addon)
+
+# ============================================================
+# BUILD BEST OF OBJS LIST
+# ============================================================ 
             
             bo_objs_list.append(obj)
 
@@ -161,7 +171,7 @@ async def main():
         # strat.need_to_print_finished_orders = False  
 
         # await strat_dict[anchor].done_event.wait()
-        
+         
 # ============================================================
 # RUN TASKS
 # ============================================================ 

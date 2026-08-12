@@ -32,62 +32,44 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
             obj.buy_trade = None
             obj.sell_trade = None
 
-            obj.buy_trade_input_price = None
-            obj_sell_trade_input_price = None
+            obj.buy_input_price = None
+            obj.sell_input_price = None
 
-            obj.buy_trade_order_price = None
-            obj.sell_trade_order_price = None
+            obj.buy_order_price = None
+            obj.sell_order_price = None
  
-    
-    def _placed_order_admin(self, obj, trade, base_price, order_price):
-                        setattr(obj, f"{action.lower()}_trade", trade)
-
-        obj.primary_trade              = trade
-        obj.primary_trade_base_price   = base_price  
-        obj.primary_trade_order_price  = order_price
-
+     
+    def _placed_order_admin(self, obj, trade, input_price):
         trade_order = trade.order
 
-        filled = trade.orderStatus.filled
-
+        buy_sell = trade_order.action.lower()
+        order_price = trade_order.price
         order_id = trade_order.orderId
-        obj.trades_by_orderId[order_id] = {'active'        : True,
-                                           'intended_size' : max(size, filled),
-                                           "filled_size"   : filled}
 
-        self._update_trading_amounts(obj)
+        setattr(obj, f"{buy_sell}_trade", trade)
+        setattr(obj, f"{buy_sell}_input_price", input_price)
+        setattr(obj, f"{buy_sell}_order_price", order_price)
 
         if self.need_to_print_active_orders:
             self.print_orders("active",
-                              trade_order.action, 
-                              size, 
+                              buy_sell, 
+                              trade_order.size, 
                               obj.my_fi_name,
-                              price, 
+                              order_price, 
                               order_id)
 
 
     def _finished_order_admin(self, obj, trade):
-        obj.finished_trade_dict[trade.order.orderId] = trade
-
         trade_order       = trade.order
         trade_orderStatus = trade.orderStatus
-
-        order_id   = trade_order.orderId
-        trade_size = trade_orderStatus.filled
-
-        obj.trades_by_orderId[order_id] = {'active'        : False,
-                                           'intended_size' : None,
-                                           'filled_size'   : trade_size}
-
-        self._update_trading_amounts(obj)
 
         if self.need_to_print_finished_orders:
             self.print_orders("finished",
                               trade_order.action, 
-                              trade_size, 
+                              trade_orderStatus.filled, 
                               obj.my_fi_name, 
                               trade_orderStatus.avgFillPrice, 
-                              order_id)
+                              trade_order.orderId)
             
         if not obj.strat_on_trade_exec and not obj.opp_obj.strat_on_trade_exec:
             self.finish_strategy()

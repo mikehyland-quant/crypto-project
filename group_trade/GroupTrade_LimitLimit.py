@@ -6,46 +6,29 @@ class GroupTrade_LimitLimit(GroupTrade_Parent):
 
     def __init__(self, bo_obj):
         super().__init__(bo_obj) 
-
  
-    def modify_primary_order(self, obj, size, filled_order):  
+    def modify_primary_order(self, filled_obj, unfilled_obj, filled_order, unfilled_action):  
         avg_fill_price = filled_order.orderStatus.avgFillPrice
-        #input_price    = avg_fill_price * obj.opp_obj.filled_scalar
-        output_price   = self._calc_price(filled_order.orderStatus.avgFillPrice, 
-                                          obj, 1)  
+        avg_fill_cf = avg_fill_price - filled_obj.calc_comm(avg_fill_price, 'maker')
+        filled_unit_cf = avg_fill_cf * filled_obj.scalar_size_FIs_per_unit
 
-        trade = None
+        unfilled_price = unfilled_obj.decompose_unit_cf(filled_unit_cf, maker_taker="taker")
+        unfilled_price = unfilled_obj.round_price_to_tick(abs(unfilled_price[0]), unfilled_action)
+
+        unfilled_trade = getattr(obj, f"{unfilled_action}_trade")
+
+        new_trade = None
         '''       
-         = self.update_limit_order(obj=obj, 
-                                        size=size,       
-                                        trade=obj.primary_trade,
-                                        price=output_price)
+         = self.update_limit_order(obj=unfilled_obj,  
+                                   trade=unfilled_trade,
+                                   price=unfilled_price)
         '''
-        if trade is not None:
+        if new_trade is not None:
             # self._primary_trade_placed_order_admin(obj, trade, input_price, output_price)
-            self._placed_order_admin(obj, trade, size, output_price)
+            self._placed_order_admin(unfilled_obj, new_trade, avg_fill_price)
 
-            return trade
+            return new_trade
 
     '''
     #  if initial trades are all-or-none then no need for balancing orders
-    def launch_balancing_order(self, obj, size, filled_order):
-        opp_obj fillavg_fill_price = 
-        input_price    = avg_fill_price * obj.opp_obj.filled_scalar
-
-
-        output_price   = self.calc_price(input_price, obj, 1) 
-    
-        trade =  self.update_limit_order(obj=obj, 
-                                         size=size, 
-                                         buy_sell=obj.buy_sell,
-                                         price=output_price,
-                                         trade=None)
-    
-        if trade is not None:
-            self._placed_order_admin(obj, trade, size, output_price)
-
-            return trade
     '''
-
-
