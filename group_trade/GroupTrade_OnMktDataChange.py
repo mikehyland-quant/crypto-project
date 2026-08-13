@@ -46,7 +46,7 @@ class GroupTrade_OnMktDataChange:
             self.is_update_in_progress = False
 
 # ============================================================
-# THIS CODE AACTUALLY UPDATES THE OUTPUT PRICES BASED ON THE NEW INPUT PRICES
+# THIS CODE ACTUALLY UPDATES THE OUTPUT PRICES BASED ON THE NEW INPUT PRICES
 # ============================================================
 
     async def _update_trade(self, x):
@@ -56,7 +56,6 @@ class GroupTrade_OnMktDataChange:
         bo_obj_strat_ask = bo_obj.strat_ask
 
         for obj in self.objs_list:
-            profit_tgt = self.calc_profit_tgt(obj, bo_obj_strat_bid, bo_obj_strat_ask)
             self.create_trade(obj, "BUY", bo_obj_strat_bid)
             self.create_trade(obj, "SELL", bo_obj_strat_ask)
 
@@ -66,31 +65,22 @@ class GroupTrade_OnMktDataChange:
             prev_trade = obj.buy_trade
             prev_input_price = obj.buy_input_price
             prev_order_price = obj.buy_order_price
-            scalar = obj.buy_price_scalar
+            margin = self.buy_profit_margin
         elif buy_sell == 'SELL':
             prev_trade = obj.sell_trade
             prev_input_price = obj.sell_input_price
             prev_order_price = obj.sell_order_price
-            scalar = obj.sell_price_scalar
+            margin = self.sell_profit_margin
             
         if bo_obj_price != prev_input_price:
-            new_unit_price = bo_obj_price * scalar
+            new_unit_price = bo_obj_price + margin
             new_fi_price = obj.decompose_unit_cf(new_unit_price, 'taker')
             new_fi_price = obj.round_price_to_tick(abs(new_fi_price[0]), buy_sell)
 
             if new_fi_price != prev_order_price:
-                trade = None
-                
-                # trade = self.update_limit_order(obj=obj, 
-                  #                              trade=prev_trade, 
-                   #                             price=new_fi_price)
+                trade = self.update_limit_order(obj=obj, 
+                                                trade=prev_trade, 
+                                                price=new_fi_price)
                 
                 if trade is not None:
                     self._placed_order_admin(obj, trade, bo_obj_price)
-
-
-
-
-            
-
-        

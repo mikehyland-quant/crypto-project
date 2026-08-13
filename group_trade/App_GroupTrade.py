@@ -5,7 +5,7 @@ need to decide limit vs mkt
 
 # CONSTANTS 
 
-IBKR_PORT      = 7496
+IBKR_PORT      = 7497
 
 STRAT_NAME     = "LimitLimit"
 
@@ -120,32 +120,26 @@ async def main():
 # ATTACH SPREADSHEET ATTRIBUTES
 # ============================================================ 
 
+            obj = next(obj for obj in objs_list if obj.ibkr_contract.symbol == sym)
+
+            row = fi_df.loc[fi_df["my_fi_name"] == sym].iloc[0]
             for attr in attr_names:
                 setattr(obj, attr, row[attr])
+                # print(attr)
 
 # ============================================================
 # CALC MOVING AVERAGES
 # ============================================================ 
 
-            row = fi_df.loc[fi_df["my_fi_name"] == sym].iloc[0]
             moving_avg_days = row['moving_avg_days']
 
             ratio_df = hist_prices_df[anchor] / hist_prices_df[sym]
             moving_avg_df = ratio_df.rolling(int(moving_avg_days)).mean()
 
-            obj = next(obj for obj in objs_list if obj.ibkr_contract.symbol == sym)
-
             obj.scalar_size_FIs_per_unit = moving_avg_df.iloc[-1]
             print(f"{sym:<4}  {obj.scalar_size_FIs_per_unit:.3f}")
 
             obj.reset_scalars()
-
-# ============================================================
-# CALC BUY AND SELL LEVELS
-# ============================================================ 
-
-            obj.buy_price_scalar  = 1 / (obj.scalar_size_FIs_per_unit + obj.positive_addon)
-            obj.sell_price_scalar = 1 / (obj.scalar_size_FIs_per_unit + obj.negative_addon)
 
 # ============================================================
 # BUILD BEST OF OBJS LIST
@@ -171,7 +165,21 @@ async def main():
         # strat.need_to_print_finished_orders = False  
 
         # await strat_dict[anchor].done_event.wait()
-         
+
+# ============================================================
+# DETERMINE PROFIT MARGIN
+# ============================================================ 
+
+        anchor_obj = next(obj for obj in self.objs_list if getattr(obj, "anchor_t/f"))
+
+        if anchor_obj.profit_margin_units == 'amt':
+            mult = 1
+        else: # units == 'pct'
+            mult = hist_prices_df[anchor].iloc[-1]
+
+        set_attr(strat_dict[anchor], "buy_profit_margin", anchor_obj.buy_profit_margin * mult * -1)
+        set_attr(strat_dict[anchor], "sell_profit_margin", anchor_obj.sell_profit_margin * mult)
+
 # ============================================================
 # RUN TASKS
 # ============================================================ 
@@ -181,14 +189,14 @@ async def main():
     tasks = []
     tasks.append(asyncio.create_task(ibkr.start_streams(objs_list)))
     
-    await asyncio.sleep(120)
+    await asyncio.sleep(1)
 
-#    await strat.done_event.wait()   
+    await asyncio.gather(*(strat.done_event.wait() for strat in strat_dict.values()))
 
 # ============================================================
 # SHUT DOWN
 # ============================================================ 
-    '''
+    
     # then cancel everything else
     for task in tasks:
         task.cancel()
@@ -204,7 +212,7 @@ async def main():
 # ============================================================
 # MAIN
 # ============================================================ 
-    '''
+
 #await main()
 
 if __name__ == "__main__":

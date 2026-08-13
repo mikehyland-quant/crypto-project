@@ -7,19 +7,19 @@ class GroupTrade_OnClosingPrice:
 
         orders_placed = 0
 
-        for action in ['BUY', 'SELL']:
+        for buy_sell in ['BUY', 'SELL']:
  
-            if action == 'BUY':
+            if buy_sell == 'BUY':
                 price = mkt_close * 0.5
                 size = obj.buy_size
-            else: # action == 'SELL'
+            else: # buy_sell == 'SELL'
                 price = mkt_close * 2.0
                 size = obj.sell_size
 
-            price = obj.round_price_to_tick(price, action)
+            price = obj.round_price_to_tick(price, buy_sell)
 
             trade = self.update_limit_order(obj=obj, 
-                                            buy_sell=action, 
+                                            buy_sell=buy_sell, 
                                             price=price,
                                             size=size, 
                                             all_or_none=True)

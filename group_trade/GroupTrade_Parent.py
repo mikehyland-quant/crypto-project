@@ -10,8 +10,10 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
                         GroupTrade_OnTradeExec,
                         Strategy_Parent):
     
-    def __init__(self, bo_objs):
-        super().__init__(bo_objs.objs_list)  # this calls Strategy_Parent.__init__() 
+    def __init__(self, bo_obj):
+        super().__init__(bo_obj.objs_list)  # this calls Strategy_Parent.__init__() 
+
+        self.bo_obj = bo_obj
         
         # create self attributes
         self.prepare_on_mkt_data_change()
@@ -43,7 +45,7 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
         trade_order = trade.order
 
         buy_sell = trade_order.action.lower()
-        order_price = trade_order.price
+        order_price = trade_order.lmtPrice
         order_id = trade_order.orderId
 
         setattr(obj, f"{buy_sell}_trade", trade)
@@ -53,7 +55,7 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
         if self.need_to_print_active_orders:
             self.print_orders("active",
                               buy_sell, 
-                              trade_order.size, 
+                              trade_order.totalQuantity, 
                               obj.my_fi_name,
                               order_price, 
                               order_id)
