@@ -55,8 +55,8 @@ class InputOutput():
         else:
             return ws.range(range).options(pd.DataFrame, index = False, numbers=style, header=int(headerRows)).value
 
-    def print_xw_df(self, range, df, headerRows=1):       
-        range(range).options(index = False, header=headerRows).value = df
+    def print_xw_df(self, rng, df, headerRows=1):       
+        rng.options(index = False, header=headerRows).value = df
 
 
     # additional shortcuts  

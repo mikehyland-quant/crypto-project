@@ -51,13 +51,10 @@ class GroupTrade_OnMktDataChange:
 
     async def _update_trade(self, x):
         bo_obj = self.bo_obj
-        
-        bo_obj_strat_bid = bo_obj.strat_bid
-        bo_obj_strat_ask = bo_obj.strat_ask
 
         for obj in self.objs_list:
-            self.create_trade(obj, "BUY", bo_obj_strat_bid)
-            self.create_trade(obj, "SELL", bo_obj_strat_ask)
+            self.create_trade(obj, "BUY", bo_obj.strat_hit_bid)
+            self.create_trade(obj, "SELL", bo_obj.strat_lift_ask)
 
 
     def create_trade(self, obj, buy_sell, bo_obj_price):
@@ -73,8 +70,8 @@ class GroupTrade_OnMktDataChange:
             margin = self.sell_profit_margin
             
         if bo_obj_price != prev_input_price:
-            new_unit_price = bo_obj_price + margin
-            new_fi_price = obj.decompose_unit_cf(new_unit_price, 'taker')
+            profitable_unit_cf = margin - bo_obj_price 
+            new_fi_price = obj.decompose_unit_cf(profitable_unit_cf, 'taker')
             new_fi_price = obj.round_price_to_tick(abs(new_fi_price[0]), buy_sell)
 
             if new_fi_price != prev_order_price:

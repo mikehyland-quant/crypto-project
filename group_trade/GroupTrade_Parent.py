@@ -61,19 +61,16 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
                               order_id)
 
 
-    def _finished_order_admin(self, obj, trade):
-        trade_order       = trade.order
-        trade_orderStatus = trade.orderStatus
-
+    def _finished_order_admin(self, obj, trade_order, trade_orderStatus):
         if self.need_to_print_finished_orders:
-            self.print_orders("finished",
+            self.print_orders("finished", 
                               trade_order.action, 
                               trade_orderStatus.filled, 
                               obj.my_fi_name, 
                               trade_orderStatus.avgFillPrice, 
                               trade_order.orderId)
-            
-        if not obj.strat_on_trade_exec and not obj.opp_obj.strat_on_trade_exec:
+
+        if not any(obj.strat_on_trade_exec for obj in self.objs_list):
             self.finish_strategy()
 
 
