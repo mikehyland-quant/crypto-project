@@ -23,10 +23,10 @@ class GroupTrade_OnTradeExec:
     def _on_first_fill(self, filled_obj, filled_trade_order, filled_trade_status, filled_action):
         if filled_action.upper() == 'BUY':
             opp_action = 'sell'
-            opp_task = 'lift_ask'
+            opp_task = 'hit_bid'
         else:
             opp_action = 'buy'
-            opp_task = 'hit_bid'
+            opp_task = 'lift_ask'
 
         best_obj = getattr(self.bo_obj, f'strat_{opp_task}_obj')
         x = self.send_follow_up_order(filled_obj, best_obj, filled_trade_status, opp_action) # see specialty code

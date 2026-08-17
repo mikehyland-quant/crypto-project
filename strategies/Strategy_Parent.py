@@ -112,31 +112,14 @@ class Strategy_Parent:
     
 
     def cancel_order(self, obj, trade):
-        obj.platform_obj.cancel_order(trade)
+        if trade is not None:
+            obj.platform_obj.cancel_order(trade)
 
      
     def print_orders(self, active_finished, buy_sell, size, fi_name, price, order_id):
         if price == None:
             price = "market"
         print(f"{active_finished} order: {buy_sell} {size} of {fi_name} at {price} - order_id: {order_id}", '\n')
-
-
-    def calc_final_fills_and_avg_price(self, obj):
-        trade_list = obj.finished_trade_dict.values()
-
-        total_filled = sum(t.orderStatus.filled for t in trade_list)
-
-        if total_filled == 0:
-            return 0, None
-
-        total_dollars = sum(
-            t.orderStatus.filled * t.orderStatus.avgFillPrice
-            for t in trade_list
-        )
-
-        avg_fill_price = total_dollars / total_filled
-
-        return total_filled, avg_fill_price
     
 
     def finish_strategy(self):

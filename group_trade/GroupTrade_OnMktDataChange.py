@@ -58,16 +58,19 @@ class GroupTrade_OnMktDataChange:
 
 
     def create_trade(self, obj, buy_sell, bo_obj_price):
+
+        # would be nice to test all mkt data before doing below
+
         if buy_sell == 'BUY':
             prev_trade = obj.buy_trade
             prev_input_price = obj.buy_input_price
             prev_order_price = obj.buy_order_price
-            margin = self.buy_profit_margin
+            margin = obj.buy_profit_margin
         elif buy_sell == 'SELL':
             prev_trade = obj.sell_trade
             prev_input_price = obj.sell_input_price
             prev_order_price = obj.sell_order_price
-            margin = self.sell_profit_margin
+            margin = obj.sell_profit_margin
             
         if bo_obj_price != prev_input_price:
             profitable_unit_cf = margin - bo_obj_price 

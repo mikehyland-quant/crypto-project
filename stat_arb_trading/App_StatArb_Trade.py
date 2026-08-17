@@ -1,19 +1,8 @@
-'''
-need to attach a _calc_price (amt vs pct)
-need to decide limit vs mkt
-'''
- 
-# CONSTANTS 
 
-IBKR_PORT      = 7497
-
-STRAT_NAME     = "LimitLimit"
-
-STRAT_WB_NAME  = "2026 Inputs for Pairs Trading.xlsx"
-STRAT_WS_NAME  = "INPUTS"
-STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
-
+# ============================================================
 # IMPORTS
+# ============================================================
+
 import asyncio
 import pandas as pd
 
@@ -24,11 +13,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # --- input/output ---
 from input_output.Class_InputOutput import InputOutput
-io = InputOutput()
 
 # --- IBKR ---
 from ibkr.Class_IBKR_IB import IBKR_IB
-ibkr = IBKR_IB(port=IBKR_PORT) 
 
 # --- fin inst builders ---
 from fin_insts.Make_Single_Leg_Fin_Insts import get_db_df_and_make_single_leg_fin_insts
@@ -50,18 +37,38 @@ BestOf.update_subscriber_data = update_subscriber_data
 #from group_trade.GroupTrade_LimitMarket import GroupTrade_LimitMarket
 from group_trade.GroupTrade_LimitLimit  import GroupTrade_LimitLimit
 
+# ============================================================
+# CONSTANTS
+# ============================================================
+
+IBKR_PORT      = 7496
+
+STRAT_NAME     = "LimitLimit"
+
+STRAT_WS_NAME  = "ADMIN INPUTS"
+STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
+
 strategy_type_dict = {# "LimitMarket" : GroupTrade_LimitMarket,
                       "LimitLimit"  : GroupTrade_LimitLimit}
+
+# ============================================================
+# # INSTANTIATE HELPER OBJECTS
+# ============================================================
+
+io = InputOutput()
+ibkr = IBKR_IB(port=IBKR_PORT)
 
 # ============================================================
 # START
 # ============================================================
 
-async def main():
+async def main(group_or_pairs):
 
 # ============================================================
 # GET VARIABLES FROM SPREADSHEET
 # ============================================================
+
+    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsx"
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
     input_dict = io.get_xw_dict(ws, STRAT_TBL_NAME, table=True)
@@ -71,10 +78,9 @@ async def main():
 # GET ETFs FROM SPREADSHEET
 # ============================================================
 
-    fi_df = io.get_xw_df(ws, input_dict['fin_inst_table'], table=True)
-    columns_to_delete = ["TRUE/FALSE", "extra_shs", "moving_avg_days", "closing_price",	"tgt_anchor_units",	 
-                         "profit_margin_unit_buy", "profit_margin_unit_sell", "profit_margin_units"]
-    fi_df = fi_df.drop(columns=columns_to_delete)
+    ws = io.set_xw_sheet(wb, input_dict['trading_inputs_sheet'])
+    fi_df = ws.range(input_dict['trading_inputs_cell']).expand().options(pd.DataFrame, index=False).value
+    fi_df = fi_df[fi_df['TRUE/FALSE']]
     # print(fi_df, '\n')
 
 # ============================================================
@@ -93,14 +99,6 @@ async def main():
     await asyncio.gather(*(ibkr.complete_obj(obj) for obj in objs_list))
 
 # ============================================================
-# GET HISTORICAL PRICES
-# ============================================================ 
-
-    contract_list = [obj.ibkr_contract for obj in objs_list]
-    hist_prices_df = await ibkr.get_historical_closes_df(contract_list, remove_last_row=True)
-    # print(hist_prices_df)
-
-# ============================================================
 # CREATE GROUPS
 # ============================================================
     strat_dict = {}
@@ -112,7 +110,7 @@ async def main():
 
     for anchor_sym, sym_list in groups.items():
 
-        bo_objs_list = []
+        anchor_objs_list = []
         for sym in sym_list:
 
 # ============================================================
@@ -123,7 +121,7 @@ async def main():
 
             row = fi_df.loc[fi_df["my_fi_name"] == sym].iloc[0]
 
-            obj.scalar_size_FIs_per_unit = row['multiplier']
+            obj.scalar_size_FIs_per_unit = float(row['multiplier'])
             obj.reset_scalars()
 
             for attr in attr_names:
@@ -134,22 +132,28 @@ async def main():
 # BUILD BEST OF OBJS LIST
 # ============================================================ 
             
-            bo_objs_list.append(obj)
+            anchor_objs_list.append(obj)
 
 # ============================================================
 # MAKE BEST OF OBJECT
 # ============================================================ 
         
-        bo_obj = BestOf(anchor_sym, 
-                        bo_objs_list, 
-                        [("strat_hit_bid", max), ("strat_lift_ask", min)],
-                        mode="auto")    
+        if group_or_pairs == 'group':
+            bo_obj = BestOf(anchor_sym, 
+                            anchor_objs_list, 
+                            [("strat_hit_bid", max), ("strat_lift_ask", min)],
+                            mode="auto")    
         
 # ============================================================
 # DEFINE STRATEGY
 # ============================================================ 
 
-        strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](bo_obj)  
+            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pairs, bo_obj)  
+
+        else: # group_or_pairs == 'pairs'
+
+            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pairs, anchor_objs_list)  
+
         # strat_dict[anchor_sym].need_to_print_active_orders   = False
         # strat_dict[anchor_sym].need_to_print_finished_orders = False  
 
@@ -184,7 +188,7 @@ async def main():
 # MAIN
 # ============================================================ 
 
-#await main()
+# await stat_arb_trade()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main("group")) # "group" or "pairs"

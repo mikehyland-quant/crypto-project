@@ -1,6 +1,7 @@
 
 # IMPORTS
 
+# import pandas as pd
 import asyncio
 import sys
 from pathlib import Path
@@ -15,8 +16,7 @@ from ibkr.Class_IBKR_IB import IBKR_IB
 
 IBKR_PORT = 7496
 
-STRAT_WB_NAME = "2026 Inputs for Group Trading.xlsx"
-STRAT_WS_NAME = "INPUTS"
+STRAT_WS_NAME = "ADMIN INPUTS"
 STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
 # INSTANTIATE HELPER OBJECTS
@@ -26,18 +26,19 @@ ibkr = IBKR_IB(port=IBKR_PORT)
 
 # START SCRIPT
 
-async def group_trade_prep_one():
+async def stat_arb_prep(group_or_pairs):
 
-    # GET INPUTS
+# GET INPUTS
+
+    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsx"
 
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
     input_dict = io.get_xw_dict(ws, STRAT_TBL_NAME, table=True)
 
-    ws = io.set_xw_sheet(wb, input_dict["group_FIs_sheet"])
-    df = io.get_xw_df(ws, input_dict["group_FIs_table"], table=True)
-    df = df[df["TRUE/FALSE"]].copy()
+    ws = io.set_xw_sheet(wb, input_dict["FIs_sheet"])
+    df = io.get_xw_df(ws, input_dict["FIs_table"], table=True)
 
-    # MAKE FINANCIAL INSTRUMENTS
+# MAKE FINANCIAL INSTRUMENTS
 
     objs_list = get_db_df_and_make_single_leg_fin_insts(df)
 
@@ -47,16 +48,14 @@ async def group_trade_prep_one():
     await asyncio.gather(*(ibkr.create_simple_contract(obj) for obj in objs_list))
     await asyncio.gather(*(ibkr.complete_obj(obj) for obj in objs_list))
 
-    # GET HISTORICAL PRICES
+# GET HISTORICAL PRICES
 
     contracts = [obj.ibkr_contract for obj in objs_list]
-
     hist_prices_df = await ibkr.get_historical_closes_df(contracts, remove_last_row=True)
 
-    # CALCULATE MULTIPLIERS
+# CALCULATE MULTIPLIERS
 
-    df["multiplier"] = None
-    df["closing_price"] = None
+    df["multiplier"] = float("nan")
 
     for idx, row in df.iterrows():
         sym = row["my_fi_name"]
@@ -64,18 +63,22 @@ async def group_trade_prep_one():
         ma_days = int(row["moving_avg_days"])
 
         ratio = hist_prices_df[anchor] / hist_prices_df[sym]
+        df.at[idx, "multiplier"] = ratio.rolling(ma_days).mean().iloc[-1]
 
-        df.loc[idx, "multiplier"] = ratio.rolling(ma_days).mean().iloc[-1]
-        df.loc[idx, "closing_price"] = hist_prices_df[sym].iloc[-1]
+    df = df.drop(columns=['moving_avg_days'])
 
-    # OUTPUT TO SPREADSHEET
+# OUTPUT TO SPREADSHEET
 
-    ws, rng = io.set_xw_sheet_and_range(wb, input_dict["fi_mults_sheet"], input_dict["fi_mults_cell"])
-    ws.clear_contents()
+    ws, rng = io.set_xw_sheet_and_range(wb, input_dict["trading_inputs_sheet"], 
+                                            input_dict["trading_inputs_download_cell"])
+    # ws.clear_contents()
     io.print_xw_df(rng, df)    
 
-    # CLOSE IBKR
+# FINISH UP
 
     ibkr.ib.disconnect()
+    print()
+    print("Finished")
+    print()
 
-asyncio.run(group_trade_prep_one())
+asyncio.run(stat_arb_prep("group"))  #  "group" or "pairs"

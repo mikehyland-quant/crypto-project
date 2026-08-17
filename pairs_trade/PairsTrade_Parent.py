@@ -15,17 +15,14 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         super().__init__(objs_list=objs_list,  df=df)  # this calls Strategy_Parent.__init__() 
         
         # create self attributes
-        self.no_partial_trades_yet  = True
-        self.trades_by_orderId_dict = {}
+self.target_spread          = float(df.loc['target_profit_per_unit'].sum())
+self.epsilon                = float(df.loc['epsilon_per_unit'].sum())
 
-        self.target_spread          = float(df.loc['target_profit_per_unit'].sum())
-        self.epsilon                = float(df.loc['epsilon_per_unit'].sum())
-        df = df.drop(index=['target_profit_per_unit', 'epsilon_per_unit'])
-
+        # create self attributes
         self.prepare_on_mkt_data_change()
 
         # attach attributes to objs
-        self.obj1, self.obj2 = self._attach_input_attr(objs_list, df.T)
+assign self.obj1, self.obj2
                                                  
         self.obj1.opp_obj = self.obj2
         self.obj2.opp_obj = self.obj1
@@ -33,27 +30,6 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         self.obj1, self.obj2 = self._attach_strat_attr([self.obj1, self.obj2])
 
         # print(vars(self.obj1), vars(self.obj2))
-
-
-    def _attach_input_attr(self, objs_list, df):
-
-        for obj_name in df.index:
-            row = df.loc[obj_name]
-
-            row_name = row['my_fi_name']
-            row_pf   = row['my_pf_name']
-
-            obj = next((obj for obj in objs_list if obj.my_fi_name == row_name and obj.my_pf_name == row_pf), None)
-                
-            if obj is None:
-                raise ValueError(f"Could not find object for {obj_name}: {obj_dict}")
-    
-            setattr(self, obj_name.lower(), obj)
-     
-            for attr_key, attr_val in row.items():
-                setattr(obj, attr_key, attr_val)
-            
-        return self.obj1, self.obj2
 
   
     def _attach_strat_attr(self, objs_list):
@@ -92,13 +68,11 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
         return self.obj1, self.obj2
 
     
-    def _primary_trade_placed_order_admin(self, obj, trade, base_price, order_price):
+    def _placed_order_admin(self, obj, trade, price):
         obj.primary_trade              = trade
         obj.primary_trade_base_price   = base_price  
         obj.primary_trade_order_price  = order_price
 
-    
-    def _placed_order_admin(self, obj, trade, price):
         trade_order = trade.order
 
         filled = trade.orderStatus.filled
@@ -144,16 +118,6 @@ class PairsTrade_Parent(PairsTrade_OnClosingPrice,
             
         if not obj.strat_on_trade_exec and not obj.opp_obj.strat_on_trade_exec:
             self.finish_strategy()
-
-
-    def _update_trading_amounts(self, obj):
-        obj.active_orders = sum(
-                rec["intended_size"] for rec in obj.trades_by_orderId.values() if rec["active"])
-
-        obj.traded_orders = sum(
-                rec["filled_size"] for rec in obj.trades_by_orderId.values() if not rec["active"])
-
-        obj.active_plus_traded_units = (obj.active_orders + obj.traded_orders) * obj.scalar_size_units_per_order
 
 
     def _finalize_results(self):

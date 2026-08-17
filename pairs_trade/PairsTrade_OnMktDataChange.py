@@ -1,10 +1,12 @@
 
 import asyncio
 
-
 # handles the on market data change event and updates the trades accordingly
 class PairsTrade_OnMktDataChange:
 
+# ============================================================
+# THIS CODE ALLOWS FOR ONLY THE MOST RECENT UPDATES TO BE PROCESSED
+# ============================================================
 
     def prepare_on_mkt_data_change(self):
         self.pending_mkt_data_objs = set()
@@ -43,6 +45,9 @@ class PairsTrade_OnMktDataChange:
         finally:
             self.is_update_in_progress = False
 
+# ============================================================
+# THIS CODE ACTUALLY UPDATES THE OUTPUT PRICES BASED ON THE NEW INPUT PRICES
+# ============================================================
 
     async def _update_trade(self, input_obj):
 
@@ -50,12 +55,16 @@ class PairsTrade_OnMktDataChange:
         if not input_obj.is_mkt_data_valid() or not output_obj.is_mkt_data_valid():
             return
 
-        input_price = getattr(input_obj, input_obj.input_price_attr)
+        input_cf = getattr(input_obj, input_obj.input_price_attr)
         active_base_price = output_obj.primary_trade_base_price
         if active_base_price is not None and abs(input_price - active_base_price) < 1e-9:
             return
 
-        output_price = self._calc_price(input_price, output_obj)
+output_cf = margin - input_cf 
+output_price = obj.decompose_unit_cf(output_cf_cf, 'taker')
+output_price = obj.round_price_to_tick(abs(output_price[0]), buy_sell)
+
+      #  output_price = self._calc_price(input_price, output_obj)
         active_order_price = output_obj.primary_trade_order_price
         if active_order_price is not None and abs(output_price - active_order_price) < 1e-9:
             return     
@@ -68,15 +77,6 @@ class PairsTrade_OnMktDataChange:
             self._primary_trade_placed_order_admin(output_obj, trade, input_price, output_price)
             self._placed_order_admin(output_obj, trade, output_obj.primary_trade_initial_order_size, output_price)
 
-
-    def _calc_price(self, unit_input_price, output_obj, epsilon_scalar=0):
-        # input prices are coming in as cash flows with either =/- signs
-        unit_fair_value   = (unit_input_price * output_obj.opp_obj.unit_coefficient) - self.target_spread
-        unit_output_price = unit_fair_value - (epsilon_scalar * self.epsilon)
-        mkt_output_price  = unit_output_price * output_obj.scalar_size_units_per_FI
-        mkt_output_price  = output_obj.round_price_to_tick(abs(mkt_output_price))    
-        # print(unit_input_price, output_obj.adjusted_spread, unit_fair_value, mkt_output_price)                                         
-        return mkt_output_price
 
 
     

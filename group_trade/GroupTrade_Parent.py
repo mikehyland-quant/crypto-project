@@ -18,18 +18,9 @@ class GroupTrade_Parent(GroupTrade_OnClosingPrice,
         # create self attributes
         self.prepare_on_mkt_data_change()
 
-        anchor_fi = next(obj for obj in self.objs_list if getattr(obj, "anchor_t/f"))
-        anchor_size = anchor_fi.tgt_anchor_units * anchor_fi.scalar_size_FIs_per_unit
-
         # attach attributes to objs
         for obj in self.objs_list:
-            obj.base_size = anchor_size * obj.scalar_size_FIs_per_unit
-
-            obj.buy_size = obj.base_size + obj.extra_shs
-            obj.sell_size = obj.base_size - obj.extra_shs
-
-            obj.buy_size = obj.round_size_to_increment(obj.buy_size)
-            obj.sell_size = obj.round_size_to_increment(obj.sell_size)
+            obj.profit_margin = float(obj.profit_margin)
 
             obj.buy_trade = None
             obj.sell_trade = None

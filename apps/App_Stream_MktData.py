@@ -4,8 +4,8 @@
 IBKR_PORT        = 7496
 
 INPUT_WB_NAME    = "2026 Fin Inst Database.xlsx"
-INPUT_WS_NAME    = "MKT DATA INPUTS"
-INPUT_TBL_NAME   = "MKT_DATA_INPUTS"
+INPUT_WS_NAME    = "MKT DATA STREAMING INPUTS"
+INPUT_TBL_NAME   = INPUT_WS_NAME.replace(" ", "_")
 
 CRYPTO_COLS = [ 'my_prod_type',
 
@@ -40,7 +40,8 @@ CRYPTO_COLS = [ 'my_prod_type',
                 'days_settle_expiry_near', 	 
                 'days_settle_expiry_far',
 
-                'price_screen_close',]
+                'price_screen_close',
+                'position']
 
 BTC_ETF_COLS = ['my_fi_name',
                 'price_screen_bid',
@@ -57,7 +58,8 @@ STAT_ARB_COLS = ['my_prod_type',
                  'price_screen_ask',
                  'size_screen_ask',
                  
-                 'price_screen_close']
+                 'price_screen_close',
+                 'position']
 
 BO_ATTR_LIST = [('price_unit_bid', max),
                 ('price_unit_ask', min),        
@@ -76,7 +78,8 @@ from zoneinfo import ZoneInfo
 # --- system setup ---
 import sys
 import os
-sys.path.append(os.path.abspath(".."))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # --- utils ---
 # from IPython.display import display, clear_output
@@ -231,6 +234,7 @@ async def edited_standard_output(input_dict, output_list, bo_objs_list, OUTPUT_C
 
         if xl_mode:
             df = history_df if xl_mode == 'append' else current_df
+            ws.clear_contents()
             cell.options(index=False, header=True).value = df
         
         await asyncio.sleep(refresh)
@@ -241,13 +245,10 @@ async def main():
     wb, ws = io.set_xw_book_and_sheet(INPUT_WB_NAME, INPUT_WS_NAME)
     df     = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
 
-    crypto_input_df   = df[df['Family'] == 'Crypto'].drop(columns=['Family'])
-    stat_arb_input_df = df[df['Family'] == 'Stat Arb'].drop(columns=['Family'])
-    btc_etf_input_df  = df[df['Family'] == 'BTC ETF'].drop(columns=['Family'])
-
-    crypto_input_dict   = crypto_input_df.set_index("Keys")['Values'].to_dict()
-    stat_arb_input_dict = stat_arb_input_df.set_index("Keys")['Values'].to_dict()
-    btc_etf_input_dict  = btc_etf_input_df.set_index("Keys")['Values'].to_dict()
+    crypto_input_dict   = df.set_index("Keys")['Crypto'].to_dict()
+    stat_arb_pairs_input_dict = df.set_index("Keys")['Stat_Arb_Pairs'].to_dict()
+    stat_arb_group_input_dict = df.set_index("Keys")['Stat_Arb_Group'].to_dict()
+    btc_etf_input_dict  = df.set_index("Keys")['BTC_ETF'].to_dict()
     
     db_df       = get_db_df()
     db_df       = db_df[db_df['mkt_data_stream'] == True]
@@ -265,6 +266,15 @@ async def main():
     await ws_feed.complete_fi_objects()   
         
     ibkr_objs_list = [obj for obj in objs_list if obj.my_pf_name == 'IBKR']
+
+    for obj in ibkr_objs_list:
+        obj.position = 0
+
+    def position_handler(position):
+        for obj in ibkr_objs_list:
+            if obj.ibkr_contract.conId == position.contract.conId:
+                obj.position = position.position
+
     if ibkr_objs_list:
         await ibkr.connect()
         print("IBKR connected:", ibkr.ib.isConnected())
@@ -272,11 +282,15 @@ async def main():
         await asyncio.gather(*(ibkr.create_simple_contract(obj) for obj in ibkr_objs_list))
         await asyncio.gather(*(ibkr.complete_obj(obj) for obj in ibkr_objs_list))
 
+        ibkr.ib.positionEvent += position_handler
+
+        for position in ibkr.ib.positions():
+            position_handler(position)
+
     #for obj in ibkr_objs_list:
     #   print(obj.ibkr_details)
 
-    
-#rarely change anything above here
+
   
 
     #''' 
@@ -330,9 +344,13 @@ async def main():
         await asyncio.sleep(10)
         tasks.append(asyncio.create_task(edited_standard_output(crypto_input_dict, output_list, bo_objs_list, CRYPTO_COLS)))
 
-    if stat_arb_input_dict['active']:
+    if stat_arb_pairs_input_dict['active']:
         await asyncio.sleep(10)
-        tasks.append(asyncio.create_task(standard_output(stat_arb_input_dict, stat_arb_objs_list, STAT_ARB_COLS)))
+        tasks.append(asyncio.create_task(standard_output(stat_arb_pairs_input_dict, stat_arb_objs_list, STAT_ARB_COLS)))
+
+    if stat_arb_group_input_dict['active']:
+        await asyncio.sleep(10)
+        tasks.append(asyncio.create_task(standard_output(stat_arb_group_input_dict, stat_arb_objs_list, STAT_ARB_COLS)))
     
     if btc_etf_input_dict['active']:
         await asyncio.sleep(10)
@@ -341,9 +359,9 @@ async def main():
     await asyncio.gather(*tasks)  # expose this for .py usage
 
 
-# for ipynb usage
-# await main()
+# for vs code usage
+asyncio.run(main())
 
 # for .py usage and remember to expose await at end of main and comment out the two autoreload lines
-if __name__ == "__main__":
-   asyncio.run(main())
+# if __name__ == "__main__":
+  # asyncio.run(main())

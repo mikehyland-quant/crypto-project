@@ -9,10 +9,12 @@ class GroupTrade_LimitLimit(GroupTrade_Parent):
  
     def send_follow_up_order(self, filled_obj, unfilled_obj, filled_status, unfilled_action):  
         avg_fill_price = filled_status.avgFillPrice
+        if unfilled_action == 'sell':
+            avg_fill_price = -avg_fill_price
         avg_fill_cf = avg_fill_price - filled_obj.calc_comm(avg_fill_price, 'maker')
         filled_unit_cf = avg_fill_cf * filled_obj.scalar_size_FIs_per_unit
 
-        profitable_unit_cf = getattr(self, f"{unfilled_action}_profit_margin") - filled_unit_cf
+        profitable_unit_cf = getattr(unfilled_obj, f"{unfilled_action}_profit_margin") - filled_unit_cf
 
         unfilled_price = unfilled_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
         unfilled_price = unfilled_obj.round_price_to_tick(abs(unfilled_price[0]), unfilled_action)
