@@ -84,7 +84,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
         if not any(obj.strat_on_trade_exec for obj in self.objs_list):
             self.finish_strategy()
 
-#needs redo
+            
     def _finalize_results(self):
         print("\nTRADE PACKAGE FINISHED")
         print("----------------------")
@@ -92,10 +92,11 @@ class StatArb_Parent(StatArb_OnClosingPrice,
         final_spread = 0
         net_units = 0
         for buy_sell in ['BUY', 'SELL']:
+            buy_sell_lower = buy_sell.lower()
             buy_sell_scalar = 1 if buy_sell == 'SELL' else -1
 
-            obj = getattr(self, f"{buy_sell}_obj")
-            trade = getattr(obj, f"{buy_sell}_trade")
+            obj = getattr(self, f"{buy_sell_lower}_obj")
+            trade = getattr(obj, f"active_{buy_sell_lower}_trade")
             trade_order_status = trade.orderStatus
 
             filled_FIs = trade_order_status.filled

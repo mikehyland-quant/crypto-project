@@ -10,16 +10,16 @@ class StatArb_LimitLimit(StatArb_Parent):
         if filled_buy_sell_lower == 'buy':
             unfilled_buy_sell_upper = 'SELL'
             unfilled_buy_sell_lower = 'sell'
-            buy_sell_scalar = 1
+            buy_sell_scalar = -1
         else:
             unfilled_buy_sell_upper = 'BUY'
             unfilled_buy_sell_lower = 'buy'
-            buy_sell_scalar = -1
+            buy_sell_scalar = 1
 
         filled_trade_order_status = filled_trade.orderStatus
 
         avg_filled_price = filled_trade_order_status.avgFillPrice
-        filled_quantity = filled_trade_order_status.orderStatus.filled
+        filled_quantity = filled_trade_order_status.filled
         commission = filled_trade.commissionReport.commission
 
         total_filled_cf = avg_filled_price * filled_quantity * buy_sell_scalar - commission

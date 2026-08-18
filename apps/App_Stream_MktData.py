@@ -139,7 +139,7 @@ def calc_best_of(bo_objs_list):
 
             # print(obj_.my_fi_name, obj_.cf_unit_hit_bid_all_in, obj_.cf_unit_lift_ask_all_in)
         
-        obj.update_best_of()
+        obj.update_best_of_best_only()
         
         for attr, x in BO_ATTR_LIST:
 

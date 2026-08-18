@@ -14,16 +14,20 @@ class StatArb_OnTradeExec():
 
     def _on_first_fill(self, filled_obj, filled_trade):
         filled_buy_sell_lower = filled_trade.order.action.lower()
+        if filled_buy_sell_lower == 'buy':
+            hit_lift = "hit_bid"
+        else:
+            hit_lift = 'lift_ask'
 
         if self.g_or_p == "group":
-            objs_list = bo_obj ranked list
+            objs_list = getattr(self.bo_obj, f"strat_{hit_lift}_ranked_objs_list")
         else: # pairs
             objs_list = filled_obj.rest_of_objs_list
 
         self.send_follow_up_order(objs_list, filled_obj, filled_trade, filled_buy_sell_lower) # see specialty code
 
         for obj in filled_obj.rest_of_objs_list:
-            order_to_cancel = getattr(obj, f"active_{filled_buy_sell_lower()}_trade")
+            order_to_cancel = getattr(obj, f"active_{filled_buy_sell_lower}_trade")
             self.cancel_order(obj, order_to_cancel)
             obj.strat_on_mkt_data_change = False
 
@@ -35,19 +39,8 @@ class StatArb_OnTradeExec():
         filled_buy_sell_lower = filled_trade.order.action.lower()
          
         for obj in self.objs_list:
-            order_to_cancel = getattr(obj, f"active_{filled_buy_sell_lower()}_trade")
+            order_to_cancel = getattr(obj, f"active_{filled_buy_sell_lower}_trade")
             self.cancel_order(obj, order_to_cancel)
             obj.strat_on_trade_exec = False
 
         self._finished_order_admin(filled_obj, filled_trade) 
-
-
-
-
-
-
-            
-  
-
-        
-

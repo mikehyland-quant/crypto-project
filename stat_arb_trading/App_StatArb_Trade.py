@@ -21,6 +21,8 @@ from ibkr.Class_IBKR_IB import IBKR_IB
 from fin_insts.Make_Single_Leg_Fin_Insts import get_db_df_and_make_single_leg_fin_insts
 from fin_insts.derived.Class_FI_BestOf import BestOf #, FutureSpread,  
 
+original_update_subscriber_data = BestOf.update_subscriber_data
+
 def update_subscriber_data(self, obj):  # if self.mode == 'auto'
     obj.strat_hit_bid  = obj.cf_unit_hit_bid  - obj.comm_unit_hit_bid
     obj.strat_bid_size = obj.size_unit_bid
@@ -28,14 +30,14 @@ def update_subscriber_data(self, obj):  # if self.mode == 'auto'
     obj.strat_lift_ask = obj.cf_unit_lift_ask - obj.comm_unit_lift_ask
     obj.strat_ask_size = obj.size_unit_ask
 
-    self.update_best_of()
+    original_update_subscriber_data(self, obj)
     # print(self.my_fi_name, self.strat_bid_size, self.strat_bid, self.strat_ask, self.strat_ask_size)
 
 BestOf.update_subscriber_data = update_subscriber_data
 
 # --- trading strategy ---
-#from group_trade.GroupTrade_LimitMarket import GroupTrade_LimitMarket
-from group_trade.GroupTrade_LimitLimit  import GroupTrade_LimitLimit
+# from stat_arb_trading.StatArb_LimitMarket import StatArb_LimitMarket
+from stat_arb_trading.StatArb_LimitLimit  import StatArb_LimitLimit
 
 # ============================================================
 # CONSTANTS
@@ -48,8 +50,8 @@ STRAT_NAME     = "LimitLimit"
 STRAT_WS_NAME  = "ADMIN INPUTS"
 STRAT_TBL_NAME = STRAT_WS_NAME.replace(" ", "_")
 
-strategy_type_dict = {# "LimitMarket" : GroupTrade_LimitMarket,
-                      "LimitLimit"  : GroupTrade_LimitLimit}
+strategy_type_dict = {# "LimitMarket" : StatArb_LimitMarket,
+                      "LimitLimit"  : StatArb_LimitLimit}
 
 # ============================================================
 # # INSTANTIATE HELPER OBJECTS
@@ -142,7 +144,8 @@ async def main(group_or_pairs):
             bo_obj = BestOf(anchor_sym, 
                             anchor_objs_list, 
                             [("strat_hit_bid", max), ("strat_lift_ask", min)],
-                            mode="auto")    
+                            mode="auto",
+                            ranked_list=True)    
         
 # ============================================================
 # DEFINE STRATEGY

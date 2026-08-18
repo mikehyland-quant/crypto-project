@@ -36,18 +36,24 @@ class BestOf(Subscriber):
         'pf_prod_type'
                         ]
 
+
     def __init__(self, 
                  my_name, 
                  objs_list, 
                  attr_tuples, 
                  mode="timer", 
-                 update_interval=1.0):
+                 update_interval=1.0,
+                 ranked_list=False):
+
 
         super().__init__()
-        
+
+
         self.objs_list = objs_list
         self.mode = mode.lower() 
-        self.update_interval = update_interval            
+        self.update_interval = update_interval  
+
+        self.ranked_list = ranked_list          
         
         self.my_prod_type = 'best_of'
         self.my_fi_name = 'b/o ' + my_name
@@ -67,25 +73,53 @@ class BestOf(Subscriber):
             for obj in self.objs_list:
                 obj.subscribers.append(self)
 
+
     def _consensus_attr(self, attr_name):
         values = {getattr(obj, attr_name, None) for obj in self.objs_list}
         return values.pop() if len(values) == 1 else "multi"
-    
+
+
     async def run_timer(self):  # if self.mode == 'timer'
         self._running = True
         while self._running:
             self.update_best_of()
             #strat.on_best_of_update()
             await asyncio.sleep(self.update_interval)
- 
+
+
     def stop_timer(self):  # if self.mode == 'timer'
         self._running = False
 
+
     def update_subscriber_data(self, obj):  # if self.mode == 'auto'
-        self.update_best_of()
+        if self.ranked_list:
+            self.update_best_of_ranked()
+        else:
+            self.update_best_of_best_only()
+            
         for subscriber in self.subscribers:
             subscriber.update_subscriber_data()
         
+
+    def update_best_of_ranked(self):
+        for attr, agg_fn in self.mkt_attr_tuples:
+
+            candidates = [
+                (getattr(obj, attr), obj)
+                for obj in self.objs_list
+                if not pd.isna(getattr(obj, attr, np.nan))
+            ]
+
+            ranked = sorted(
+                candidates,
+                key=lambda x: x[0],
+                reverse=agg_fn is max
+            )
+
+            setattr(self, attr + "_ranked_amts_list", [amt for amt, obj in ranked])
+            setattr(self, attr + "_ranked_objs_list", [obj for amt, obj in ranked])  
+
+
     def update_best_of_best_only(self):
         for attr, agg_fn in self.mkt_attr_tuples:
 
@@ -111,21 +145,3 @@ class BestOf(Subscriber):
             setattr(self, attr, best_amt)
             setattr(self, attr + '_obj', best_obj)  
             
-
-    def update_best_of_ranked(self):
-        for attr, agg_fn in self.mkt_attr_tuples:
-
-            candidates = [
-                (getattr(obj, attr), obj)
-                for obj in self.objs_list
-                if not pd.isna(getattr(obj, attr, np.nan))
-            ]
-
-            ranked = sorted(
-                candidates,
-                key=lambda x: x[0],
-                reverse=agg_fn is max
-            )
-
-            setattr(self, attr + "_ranked_amts", [amt for amt, obj in ranked])
-            setattr(self, attr + "_ranked_objs", [obj for amt, obj in ranked])  

@@ -30,7 +30,7 @@ async def stat_arb_prep(group_or_pairs):
 
 # GET INPUTS
 
-    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsx"
+    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsm"
 
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
     input_dict = io.get_xw_dict(ws, STRAT_TBL_NAME, table=True)
@@ -81,4 +81,5 @@ async def stat_arb_prep(group_or_pairs):
     print("Finished")
     print()
 
-asyncio.run(stat_arb_prep("group"))  #  "group" or "pairs"
+if __name__ == "__main__":
+    asyncio.run(stat_arb_prep("group"))  # "group" or "pairs"
