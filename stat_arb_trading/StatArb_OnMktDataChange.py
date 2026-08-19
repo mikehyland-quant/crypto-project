@@ -61,32 +61,32 @@ class StatArb_OnMktDataChange():
                 x = await self._update_trade_details(output_obj, "sell", bo_obj.strat_lift_ask)
 
         else: # g_or_p == "pairs"
-            new_input_amt = getattr(updated_obj, updated_obj.XXXXXXXXXZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+            new_input_amt = (getattr(updated_obj, updated_obj.input_price_attr) - 
+                             getattr(updated_obj, updated_obj.input_comm_attr))
             for output_obj in updated_obj.rest_of_objs_list:
-                buy_sell_lower = output_obj.buy_or_sell.lower()
-                x = await self._update_trade_details(output_obj, buy_sell_lower, new_input_amt)
+                x = await self._update_trade_details(output_obj, output_obj.buy_or_sell.lower(), new_input_amt)
 
 
-    async def _update_trade_details(self, output_obj, buy_sell_lower, new_input_amt):
+    async def _update_trade_details(self, output_obj, buy_sell, new_input_amt):
         if not output_obj.is_mkt_data_valid():
             return
         
-        active_order_input = getattr(output_obj, f"active_{buy_sell_lower}_order_input")           
+        active_order_input = getattr(output_obj, f"active_{buy_sell}_order_input")           
         if abs(active_order_input - new_input_amt) < 1e-9:
             return
 
-        active_order_price = getattr(output_obj, f"active_{buy_sell_lower}_order_price")
+        active_order_price = getattr(output_obj, f"active_{buy_sell}_order_price")
 
-        margin = getattr(output_obj, f"{buy_sell_lower}_profit_margin")   
+        margin = getattr(output_obj, "profit_margin") # f"{buy_sell}_profit_margin")   
         profitable_unit_cf = margin - new_input_amt  
 
         [new_order_price, comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
-        new_order_price = output_obj.round_price_to_tick(abs(new_order_price), buy_sell_lower.upper())
+        new_order_price = output_obj.round_price_to_tick(abs(new_order_price), buy_sell.upper())
 
         if abs(active_order_price - new_order_price) < 1e-9:
             return
         
-        active_trade = getattr(output_obj, f"active_{buy_sell_lower}_trade")
+        active_trade = getattr(output_obj, f"active_{buy_sell}_trade")
         new_trade = self.update_limit_order(obj=output_obj, 
                                             trade=active_trade, 
                                             price=new_order_price)

@@ -24,7 +24,7 @@ class StatArb_OnTradeExec():
         else: # pairs
             objs_list = filled_obj.rest_of_objs_list
 
-        self.send_follow_up_order(objs_list, filled_obj, filled_trade, filled_buy_sell_lower) # see specialty code
+        self.send_follow_up_orders(objs_list, filled_obj, filled_trade, filled_buy_sell_lower) # see specialty code
 
         for obj in filled_obj.rest_of_objs_list:
             order_to_cancel = getattr(obj, f"active_{filled_buy_sell_lower}_trade")

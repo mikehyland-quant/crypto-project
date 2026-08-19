@@ -38,6 +38,14 @@ class StatArb_Parent(StatArb_OnClosingPrice,
 
             obj.active_buy_order_price = None
             obj.active_sell_order_price = None
+
+            if self.g_or_p == "pairs":
+                if obj.buy_or_sell == 'BUY':
+                    obj.input_price_attr = 'cf_unit_lift_ask'
+                    obj.input_comm_attr = "comm_unit_lift_ask"
+                else:
+                    obj.input_price_attr = 'cf_unit_hit_bid'
+                    obj.input_comm_attr = "comm_unit_hit_bid"
  
      
     def _placed_order_admin(self, obj, trade, input_amt):

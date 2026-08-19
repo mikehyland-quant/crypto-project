@@ -6,7 +6,7 @@ class StatArb_LimitLimit(StatArb_Parent):
     def __init__(self, group_or_pairs, bo_obj_or_objs_list):
         super().__init__(group_or_pairs, bo_obj_or_objs_list) 
  
-    def send_follow_up_order(self, objs_list, filled_obj, filled_trade, filled_buy_sell_lower):  
+    def send_follow_up_orders(self, objs_list, filled_obj, filled_trade, filled_buy_sell_lower):  
         if filled_buy_sell_lower == 'buy':
             unfilled_buy_sell_upper = 'SELL'
             unfilled_buy_sell_lower = 'sell'
@@ -19,11 +19,9 @@ class StatArb_LimitLimit(StatArb_Parent):
         filled_trade_order_status = filled_trade.orderStatus
 
         avg_filled_price = filled_trade_order_status.avgFillPrice
-        filled_quantity = filled_trade_order_status.filled
-        commission = filled_trade.commissionReport.commission
+        commission = 0.005 # getattr(filled_obj, filled_obj.input_comm_attr))
 
-        total_filled_cf = avg_filled_price * filled_quantity * buy_sell_scalar - commission
-        avg_filled_cf = total_filled_cf / filled_quantity
+        avg_filled_cf   = (buy_sell_scalar * avg_filled_price) - commission
 
         new_input_amt = avg_filled_cf * filled_obj.scalar_size_FIs_per_unit
 
