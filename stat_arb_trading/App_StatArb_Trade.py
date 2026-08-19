@@ -43,7 +43,7 @@ from stat_arb_trading.StatArb_LimitLimit  import StatArb_LimitLimit
 # CONSTANTS
 # ============================================================
 
-IBKR_PORT      = 7496
+IBKR_PORT      = 7497
 
 STRAT_NAME     = "LimitLimit"
 
@@ -70,7 +70,7 @@ async def main(group_or_pairs):
 # GET VARIABLES FROM SPREADSHEET
 # ============================================================
 
-    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsx"
+    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsm"
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
     input_dict = io.get_xw_dict(ws, STRAT_TBL_NAME, table=True)
@@ -81,7 +81,7 @@ async def main(group_or_pairs):
 # ============================================================
 
     ws = io.set_xw_sheet(wb, input_dict['trading_inputs_sheet'])
-    fi_df = ws.range(input_dict['trading_inputs_cell']).expand().options(pd.DataFrame, index=False).value
+    fi_df = ws.range(input_dict['trading_inputs_upload_cell']).expand().options(pd.DataFrame, index=False).value
     fi_df = fi_df[fi_df['TRUE/FALSE']]
     # print(fi_df, '\n')
 
@@ -194,4 +194,4 @@ async def main(group_or_pairs):
 # await stat_arb_trade()
 
 if __name__ == "__main__":
-    asyncio.run(main("group")) # "group" or "pairs"
+    asyncio.run(main("pairs")) # "group" or "pairs"
