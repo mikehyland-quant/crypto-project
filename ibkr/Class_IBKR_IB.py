@@ -6,7 +6,7 @@ import pandas as pd
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
+ 
 from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder, Order
 
 from fin_insts.parents.Class_FI_Dates import Dates
@@ -289,7 +289,7 @@ class IBKR_IB:
                                        length_of_each_period='1 day',
                                        prices_to_use='TRADES',
                                        use_regular_trading_hours=True,
-                                       remove_last_row=True):
+                                       remove_today=True):
 
         df_list = []
         for contract in contract_list:
@@ -314,8 +314,11 @@ class IBKR_IB:
             df_list.append(df[sym])
         
         closes_df = pd.concat(df_list, axis=1)
-        if remove_last_row:
-            closes_df = closes_df.iloc[:-1]
-        # print(closes_df)
+
+        if remove_today:
+            today = pd.Timestamp.today().date()
+         
+            if closes_df.index[-1] == today:
+                closes_df = closes_df.iloc[:-1]
 
         return closes_df

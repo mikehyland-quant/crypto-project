@@ -51,7 +51,7 @@ async def stat_arb_prep(group_or_pairs):
 # GET HISTORICAL PRICES
 
     contracts = [obj.ibkr_contract for obj in objs_list]
-    hist_prices_df = await ibkr.get_historical_closes_df(contracts, remove_last_row=True)
+    hist_prices_df = await ibkr.get_historical_closes_df(contracts, remove_today=True)
 
 # CALCULATE MULTIPLIERS
 
