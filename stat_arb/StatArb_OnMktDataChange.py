@@ -84,8 +84,11 @@ class StatArb_OnMktDataChange():
 
         [new_order_price, comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
         new_order_price = output_obj.round_price_to_tick(abs(new_order_price), buy_sell.upper())
-        print(new_input_amt, margin, profitable_unit_cf, new_order_price)
+
+        #print(new_input_amt, margin, profitable_unit_cf, new_order_price)
+
         if abs(active_order_price - new_order_price) < 1000000000: #1e-9:
+        # if abs(active_order_price - new_order_price) < 1e-9:
             return
         
         active_trade = getattr(output_obj, f"active_{buy_sell}_trade")
