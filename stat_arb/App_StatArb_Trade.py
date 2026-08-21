@@ -37,13 +37,13 @@ BestOf.update_subscriber_data = update_subscriber_data
 
 # --- trading strategy ---
 # from stat_arb_trading.StatArb_LimitMarket import StatArb_LimitMarket
-from stat_arb_trading.StatArb_LimitLimit  import StatArb_LimitLimit
+from stat_arb.StatArb_LimitLimit  import StatArb_LimitLimit
 
 # ============================================================
 # CONSTANTS
 # ============================================================
 
-IBKR_PORT      = 7497
+IBKR_PORT      = 7496
 
 STRAT_NAME     = "LimitLimit"
 
@@ -127,7 +127,12 @@ async def main(group_or_pairs):
             obj.reset_scalars()
 
             for attr in attr_names:
-                setattr(obj, attr, row[attr])
+                value = row[attr]
+
+                if isinstance(value, str):
+                    value = value.upper()
+
+                setattr(obj, attr, value)
                 # print(attr)
 
 # ============================================================

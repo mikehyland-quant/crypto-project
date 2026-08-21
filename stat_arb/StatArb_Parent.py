@@ -1,8 +1,8 @@
 
 from strategies.Strategy_Parent               import Strategy_Parent
-from stat_arb_trading.StatArb_OnClosingPrice  import StatArb_OnClosingPrice
-from stat_arb_trading.StatArb_OnMktDataChange import StatArb_OnMktDataChange
-from stat_arb_trading.StatArb_OnTradeExec     import StatArb_OnTradeExec
+from stat_arb.StatArb_OnClosingPrice  import StatArb_OnClosingPrice
+from stat_arb.StatArb_OnMktDataChange import StatArb_OnMktDataChange
+from stat_arb.StatArb_OnTradeExec     import StatArb_OnTradeExec
 
 
 class StatArb_Parent(StatArb_OnClosingPrice,

@@ -1,5 +1,10 @@
 
-from stat_arb_trading.StatArb_Parent import StatArb_Parent
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from stat_arb.StatArb_Parent import StatArb_Parent
 
 class StatArb_LimitLimit(StatArb_Parent):
 
