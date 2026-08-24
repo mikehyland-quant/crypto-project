@@ -64,7 +64,7 @@ class StatArb_OnMktDataChange():
             trade_cf = getattr(updated_obj, updated_obj.input_price_attr)
             comm_cf = getattr(updated_obj, updated_obj.input_comm_attr)
             new_input_amt = trade_cf - comm_cf
-            print(updated_obj.my_fi_name, trade_cf, comm_cf, new_input_amt)
+            # print(updated_obj.my_fi_name, trade_cf, comm_cf, new_input_amt)
             for output_obj in updated_obj.rest_of_objs_list:
                 x = await self._update_trade_details(output_obj, output_obj.buy_or_sell.lower(), new_input_amt)
 
@@ -85,10 +85,9 @@ class StatArb_OnMktDataChange():
         [new_order_price, comm] = output_obj.decompose_unit_cf(profitable_unit_cf, 'taker')
         new_order_price = output_obj.round_price_to_tick(abs(new_order_price), buy_sell.upper())
 
-        #print(new_input_amt, margin, profitable_unit_cf, new_order_price)
+        # print(new_input_amt, margin, profitable_unit_cf, new_order_price)
 
-        if abs(active_order_price - new_order_price) < 1000000000: #1e-9:
-        # if abs(active_order_price - new_order_price) < 1e-9:
+        if abs(active_order_price - new_order_price) < 1e-9:
             return
         
         active_trade = getattr(output_obj, f"active_{buy_sell}_trade")

@@ -29,7 +29,8 @@ class StatArb_OnClosingPrice():
                                             buy_sell=buy_sell, 
                                             price=price,
                                             size=size, 
-                                            all_or_none=True)
+                                            # all_or_none=True
+                                            )
 
             if trade is not None:
                 self._placed_order_admin(obj, trade, mkt_close)
