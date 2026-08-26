@@ -11,7 +11,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
                         Strategy_Parent):
     
     def __init__(self, group_or_pairs, bo_obj_or_objs_list):
-        self.g_or_p = group_or_pairs
+        self.g_or_p = group_or_pairs.lower()
         
         if self.g_or_p == "group":
             self.bo_obj = bo_obj_or_objs_list
@@ -39,7 +39,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             obj.active_buy_order_price = None
             obj.active_sell_order_price = None
 
-            if self.g_or_p == "pairs":
+            if self.g_or_p == "pair":
                 if obj.buy_or_sell == 'BUY':
                     obj.input_price_attr = 'cf_unit_lift_ask'
                     obj.input_comm_attr = "comm_unit_lift_ask"
@@ -107,10 +107,14 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             trade = getattr(obj, f"active_{buy_sell_lower}_trade")
             trade_order_status = trade.orderStatus
 
+            print()
+            print(trade)
+            print()
+
             filled_FIs = trade_order_status.filled
             avg_price = trade_order_status.avgFillPrice
 
-            comm_cf = -trade.commissionReport.commission
+            comm_cf = 0 #-trade.commissionReport.commission
 
             filled_units = filled_FIs * obj.scalar_size_units_per_FI * -buy_sell_scalar
 
@@ -120,6 +124,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             final_spread += avg_unit_price
             net_units += filled_units
 
+            print()
             print(
                 obj.my_fi_name,
                 obj.buy_sell,
@@ -129,6 +134,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
                 ", filled_units:",     f'{filled_units:.2f}',
                 ", avg_unit_price:",   f'{abs(avg_unit_price):.2f}'
             )
+            print()
 
         print('Final spread: ', f'{final_spread:.2f}', ', Net open units: ', f'{net_units:.2f}', '\n')
 

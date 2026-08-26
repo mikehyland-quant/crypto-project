@@ -64,13 +64,13 @@ ibkr = IBKR_IB(port=IBKR_PORT)
 # START
 # ============================================================
 
-async def main(group_or_pairs):
+async def main():
 
 # ============================================================
 # GET VARIABLES FROM SPREADSHEET
 # ============================================================
 
-    STRAT_WB_NAME = f"2026 {group_or_pairs} Trading Inputs.xlsm"
+    STRAT_WB_NAME = "2026 Group Trading Inputs.xlsm"
     wb, ws = io.set_xw_book_and_sheet(STRAT_WB_NAME, STRAT_WS_NAME)
 
     input_dict = io.get_xw_dict(ws, STRAT_TBL_NAME, table=True)
@@ -84,6 +84,16 @@ async def main(group_or_pairs):
     fi_df = ws.range(input_dict['trading_inputs_upload_cell']).expand().options(pd.DataFrame, index=False).value
     fi_df = fi_df[fi_df['TRUE/FALSE']]
     # print(fi_df, '\n')
+
+# ============================================================
+# GET GROUP OR PAIR
+# ============================================================  
+
+    g_or_p = fi_df['g_or_p'].unique()
+    if len(g_or_p) != 1:
+        raise ValueError(f"Expected exactly one g_or_p value, found: {g_or_p}")
+    else:
+        group_or_pair = g_or_p[0]
 
 # ============================================================
 # MAKE FIs
@@ -145,7 +155,7 @@ async def main(group_or_pairs):
 # MAKE BEST OF OBJECT
 # ============================================================ 
         
-        if group_or_pairs == 'group':
+        if group_or_pair == 'group':
             bo_obj = BestOf(anchor_sym, 
                             anchor_objs_list, 
                             [("strat_hit_bid", max), ("strat_lift_ask", min)],
@@ -156,11 +166,11 @@ async def main(group_or_pairs):
 # DEFINE STRATEGY
 # ============================================================ 
 
-            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pairs, bo_obj)  
+            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pair, bo_obj)  
 
-        else: # group_or_pairs == 'pairs'
+        else: # group_or_pair == 'pair'
 
-            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pairs, anchor_objs_list)  
+            strat_dict[anchor_sym] = strategy_type_dict[STRAT_NAME](group_or_pair, anchor_objs_list)  
 
         # strat_dict[anchor_sym].need_to_print_active_orders   = False
         # strat_dict[anchor_sym].need_to_print_finished_orders = False  
@@ -199,4 +209,4 @@ async def main(group_or_pairs):
 # await stat_arb_trade()
 
 if __name__ == "__main__":
-    asyncio.run(main("pairs")) # "group" or "pairs"
+    asyncio.run(main()) 

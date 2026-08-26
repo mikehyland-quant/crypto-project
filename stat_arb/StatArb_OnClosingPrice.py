@@ -12,7 +12,7 @@ class StatArb_OnClosingPrice():
         else: # pairs
             buy_sell = obj.buy_or_sell
             buy_sell_list = [buy_sell.upper()]
-            setattr(obj, f"{buy_sell.lower()}_size", obj.size)
+            # setattr(obj, f"{buy_sell.lower()}_size", obj.size)
 
         for buy_sell in buy_sell_list:
  
