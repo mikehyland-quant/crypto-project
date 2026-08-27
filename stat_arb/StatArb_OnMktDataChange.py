@@ -57,8 +57,8 @@ class StatArb_OnMktDataChange():
             bo_obj = self.bo_obj
         
             for output_obj in self.objs_list:
-                x = await self._update_trade_details(output_obj, "buy", bo_obj.strat_hit_bid)
-                x = await self._update_trade_details(output_obj, "sell", bo_obj.strat_lift_ask)
+                x = await self._update_trade_details(output_obj, "buy", bo_obj.strat_hit_bid_ranked_amts_list[0])
+                x = await self._update_trade_details(output_obj, "sell", bo_obj.strat_lift_ask_ranked_amts_list[0])
 
         else: # g_or_p == "pairs"
             trade_cf = getattr(updated_obj, updated_obj.input_price_attr)

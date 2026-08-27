@@ -246,7 +246,7 @@ async def main():
     df     = io.get_xw_df(ws, INPUT_TBL_NAME, table=True)
 
     crypto_input_dict   = df.set_index("Keys")['Crypto'].to_dict()
-    stat_arb_pairs_input_dict = df.set_index("Keys")['Stat_Arb_Pairs'].to_dict()
+    # stat_arb_pairs_input_dict = df.set_index("Keys")['Stat_Arb_Pairs'].to_dict()
     stat_arb_group_input_dict = df.set_index("Keys")['Stat_Arb_Group'].to_dict()
     btc_etf_input_dict  = df.set_index("Keys")['BTC_ETF'].to_dict()
     
@@ -344,9 +344,9 @@ async def main():
         await asyncio.sleep(10)
         tasks.append(asyncio.create_task(edited_standard_output(crypto_input_dict, output_list, bo_objs_list, CRYPTO_COLS)))
 
-    if stat_arb_pairs_input_dict['active']:
-        await asyncio.sleep(10)
-        tasks.append(asyncio.create_task(standard_output(stat_arb_pairs_input_dict, stat_arb_objs_list, STAT_ARB_COLS)))
+    #if stat_arb_pairs_input_dict['active']:
+     #   await asyncio.sleep(10)
+      #  tasks.append(asyncio.create_task(standard_output(stat_arb_pairs_input_dict, stat_arb_objs_list, STAT_ARB_COLS)))
 
     if stat_arb_group_input_dict['active']:
         await asyncio.sleep(10)

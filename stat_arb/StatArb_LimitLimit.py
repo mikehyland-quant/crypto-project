@@ -8,8 +8,8 @@ from stat_arb.StatArb_Parent import StatArb_Parent
 
 class StatArb_LimitLimit(StatArb_Parent):
 
-    def __init__(self, group_or_pairs, bo_obj_or_objs_list):
-        super().__init__(group_or_pairs, bo_obj_or_objs_list) 
+    def __init__(self, group_or_pair, bo_obj_or_objs_list):
+        super().__init__(group_or_pair, bo_obj_or_objs_list) 
  
     def send_follow_up_orders(self, objs_list, filled_obj, filled_trade, filled_buy_sell_lower):  
         if filled_buy_sell_lower == 'buy':

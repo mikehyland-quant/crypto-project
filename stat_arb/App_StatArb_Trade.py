@@ -31,7 +31,6 @@ def update_subscriber_data(self, obj):  # if self.mode == 'auto'
     obj.strat_ask_size = obj.size_unit_ask
 
     original_update_subscriber_data(self, obj)
-    # print(self.my_fi_name, self.strat_bid_size, self.strat_bid, self.strat_ask, self.strat_ask_size)
 
 BestOf.update_subscriber_data = update_subscriber_data
 
@@ -93,7 +92,7 @@ async def main():
     if len(g_or_p) != 1:
         raise ValueError(f"Expected exactly one g_or_p value, found: {g_or_p}")
     else:
-        group_or_pair = g_or_p[0]
+        group_or_pair = g_or_p[0].lower()
 
 # ============================================================
 # MAKE FIs
