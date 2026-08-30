@@ -252,8 +252,8 @@ async def main():
     
     db_df       = get_db_df()
     db_df       = db_df[db_df['mkt_data_stream'] == True]
-    crypto_df   = db_df[db_df['family'] == 'Crypto']
-    stat_arb_df = db_df[db_df['family'] == 'Stat Arb']
+    crypto_df   = db_df[db_df['group'] == 'crypto']
+    stat_arb_df = db_df[db_df["group"].isin(["fixed income", "sector"])]
 
     crypto_objs_list   = make_single_leg_fin_insts(crypto_df)
     stat_arb_objs_list = make_single_leg_fin_insts(stat_arb_df)

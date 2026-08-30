@@ -59,13 +59,13 @@ async def stat_arb_prep(group_or_pairs):
 
     for idx, row in df.iterrows():
         sym = row["my_fi_name"]
-        anchor = row["anchor_fi"]
+        anchor = row["anchor"]
         ma_days = int(row["moving_avg_days"])
 
         ratio = hist_prices_df[anchor] / hist_prices_df[sym]
         df.at[idx, "multiplier"] = ratio.rolling(ma_days).mean().iloc[-1]
 
-    df = df.drop(columns=['moving_avg_days'])
+    df = df.drop(columns=['moving_avg_days', 'div_treatment'])
 
 # OUTPUT TO SPREADSHEET
 
