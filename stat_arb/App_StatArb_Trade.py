@@ -117,7 +117,7 @@ async def main():
     attr_names = fi_df.columns
     attr_names = attr_names.drop(["my_fi_name", "my_pf_name", "multiplier"])
 
-    groups= fi_df.groupby("anchor_fi")["my_fi_name"].apply(list)
+    groups= fi_df.groupby("anchor")["my_fi_name"].apply(list)
 
     for anchor_sym, sym_list in groups.items():
 

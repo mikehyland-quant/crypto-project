@@ -74,7 +74,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
 
         buy_sell = trade_order.action
 
-        if buy_sell == "BUY":
+        if buy_sell.lower() == "buy":
             self.buy_obj = obj
         else:
             self.sell_obj = obj
@@ -114,7 +114,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             filled_FIs = trade_order_status.filled
             avg_price = trade_order_status.avgFillPrice
 
-            comm_cf = 0 #-trade.commissionReport.commission
+            comm_cf = -obj.comm_maker_amount * filled_FIs
 
             filled_units = filled_FIs * obj.scalar_size_units_per_FI * -buy_sell_scalar
 
@@ -122,15 +122,15 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             avg_unit_price = (gross_cf / filled_units)
 
             final_spread += avg_unit_price
-            net_units += filled_units
+            net_units += (filled_units * -buy_sell_scalar)
 
             print()
             print(
                 obj.my_fi_name,
-                obj.buy_sell,
+                obj.buy_or_sell,
                 ", filled_FIs:",       filled_FIs,
                 ", avg_FI_price:",     f'{avg_price:.2f}',
-                ", total commission:", f'{comm_cf:.2f}',
+                ", estimated commission:", f'{comm_cf:.2f}',
                 ", filled_units:",     f'{filled_units:.2f}',
                 ", avg_unit_price:",   f'{abs(avg_unit_price):.2f}'
             )
