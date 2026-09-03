@@ -21,6 +21,7 @@ class MktData:
     
     def __init__(self):
         self.subscribers = []
+        self.avg_daily_volume = 0
 
         self.scalar_price_raw_to_screen  = 1  # overwritten in platform if necessary (this is the IBKR priceMagnifier)
         self.scalar_size_raw_to_screen   = 1  # overwritten in platform if necessary
@@ -203,6 +204,7 @@ class MktData:
 
     def on_close_update(self, close_price=np.nan):
         close_price = self._safe_float(close_price, default=np.nan)
+        
         if close_price is not None and not np.isnan(close_price):
             self.price_raw_close    = close_price 
 

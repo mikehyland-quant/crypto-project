@@ -1,13 +1,15 @@
 
 # import asyncio
 
+import asyncio
+import math
 import pandas as pd
 # import numpy as np
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
  
-from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder, Order
+from ib_insync import IB, Contract, ComboLeg, LimitOrder, MarketOrder, Order, obj
 
 from fin_insts.parents.Class_FI_Dates import Dates
 
@@ -161,7 +163,7 @@ class IBKR_IB:
                                    ask_size=ticker.askSize)
         
         elif obj.need_to_save_closing_price:     
-            obj.on_close_update(close_price=ticker.close) 
+            obj.on_close_update(close_price=ticker.close)
            
 
     def order_handler(self, trade):
@@ -322,3 +324,67 @@ class IBKR_IB:
                 closes_df = closes_df.iloc[:-1]
 
         return closes_df
+
+    async def get_avg_daily_volume_df(self, contract_list, timeout=15.0):
+
+        requests = []
+        for contract in contract_list:
+            ticker = self.ib.reqMktData(
+                contract,
+                genericTickList="165",
+                snapshot=False,
+                regulatorySnapshot=False,
+            )
+
+            requests.append({
+                "contract": contract,
+                "ticker": ticker,
+                "adv": None,
+            })  
+        
+        deadline = asyncio.get_running_loop().time() + timeout 
+
+        try:
+            while any(item["adv"] is None for item in requests):
+                for item in requests:
+                    if item["adv"] is not None:
+                        continue
+
+                    value = item["ticker"].avVolume
+
+                    if value is not None and not math.isnan(value) and value >= 0:
+                        # IBKR reports stock average volume in hundreds of shares.
+                        item["adv"] = float(value) * 100
+
+                        # This symbol is complete, so release its market-data line.
+                        self.ib.cancelMktData(item["contract"])
+
+                if asyncio.get_running_loop().time() >= deadline:
+                    missing = [
+                        item["contract"].localSymbol
+                        or item["contract"].symbol
+                        for item in requests
+                        if item["adv"] is None
+                    ]
+                    raise TimeoutError(
+                        f"Timed out waiting for average volume: {missing}"
+                    )
+
+                await asyncio.sleep(0.05)
+
+        finally:
+            # Also cleans up every unfinished request on timeout or cancellation.
+            for item in requests:
+                if item["adv"] is None:
+                    self.ib.cancelMktData(item["contract"])
+
+        return pd.DataFrame(
+                {
+                    "symbol": (
+                        item["contract"].localSymbol
+                        or item["contract"].symbol
+                    ),
+                    "avg_daily_volume": item["adv"],
+                }
+                for item in requests
+            )

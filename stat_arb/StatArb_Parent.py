@@ -122,7 +122,7 @@ class StatArb_Parent(StatArb_OnClosingPrice,
             avg_unit_price = (gross_cf / filled_units)
 
             final_spread += avg_unit_price
-            net_units += (filled_units * -buy_sell_scalar)
+            net_units += filled_units
 
             print()
             print(

@@ -82,7 +82,7 @@ async def main():
     ws = io.set_xw_sheet(wb, input_dict['trading_inputs_sheet'])
     fi_df = ws.range(input_dict['trading_inputs_upload_cell']).expand().options(pd.DataFrame, index=False).value
     fi_df = fi_df[fi_df['TRUE/FALSE']]
-    # print(fi_df, '\n')
+    print(fi_df, '\n')
 
 # ============================================================
 # GET GROUP OR PAIR

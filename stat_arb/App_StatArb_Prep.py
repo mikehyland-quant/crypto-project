@@ -53,6 +53,10 @@ async def stat_arb_prep(group_or_pairs):
     contracts = [obj.ibkr_contract for obj in objs_list]
     hist_prices_df = await ibkr.get_historical_closes_df(contracts, remove_today=True)
 
+# GET AVERAGE DAILY VOLUME
+
+    adv_df = await ibkr.get_avg_daily_volume_df(contracts)
+
 # CALCULATE MULTIPLIERS
 
     df["multiplier"] = float("nan")
@@ -65,12 +69,17 @@ async def stat_arb_prep(group_or_pairs):
         ratio = hist_prices_df[anchor] / hist_prices_df[sym]
         df.at[idx, "multiplier"] = ratio.rolling(ma_days).mean().iloc[-1]
 
-    df = df.drop(columns=['moving_avg_days', 'div_treatment'])
+
+
+# MERGE MULTIPLIERS AND ADV
+
+    df = df.merge(adv_df, how="left", left_on="my_fi_name", right_on="symbol")
+    df = df.drop(columns=['moving_avg_days', 'div_treatment', 'symbol'])
 
 # OUTPUT TO SPREADSHEET
 
-    ws, rng = io.set_xw_sheet_and_range(wb, input_dict["trading_inputs_sheet"], 
-                                            input_dict["trading_inputs_download_cell"])
+    ws, rng = io.set_xw_sheet_and_range(wb, input_dict["scalar_outputs_sheet"], 
+                                            input_dict["scalar_outputs_download_cell"])
     # ws.clear_contents()
     io.print_xw_df(rng, df)    
 
